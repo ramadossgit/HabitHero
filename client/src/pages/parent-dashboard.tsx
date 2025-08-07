@@ -65,6 +65,10 @@ export default function ParentDashboard() {
     createHeroMutation.mutate({ name: heroName.trim(), avatarType });
   };
 
+  const [showAddHero, setShowAddHero] = useState(false);
+  const [newHeroName, setNewHeroName] = useState("");
+  const [newAvatarType, setNewAvatarType] = useState("robot");
+
   const avatarTypes = [
     { id: "robot", name: "🤖 Robot Hero", icon: UserRound, description: "Tech-savvy and logical" },
     { id: "princess", name: "👑 Princess Hero", icon: Crown, description: "Elegant and wise" },
@@ -239,6 +243,10 @@ export default function ParentDashboard() {
       <header className="text-white p-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-fredoka text-4xl hero-title">Parent Dashboard</h1>
+              <p className="text-white/90 text-lg">🎯 Managing {child.name}'s Hero Journey</p>
+            </div>
             <div className="flex items-center space-x-4">
               <Link href="/">
                 <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
@@ -246,12 +254,6 @@ export default function ParentDashboard() {
                   Back to Kid View
                 </Button>
               </Link>
-              <div>
-                <h1 className="font-fredoka text-4xl hero-title">Parent Dashboard</h1>
-                <p className="text-white/90 text-lg">🎯 Managing {child.name}'s Hero Journey</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
               <div className="text-right">
                 <div className="text-sm text-white/80">Total Family XP This Week</div>
                 <div className="font-bold text-2xl">{child.totalXp.toLocaleString()} XP ⭐</div>
@@ -267,76 +269,37 @@ export default function ParentDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto p-6 relative z-10">
-        {/* Top Achiever & Kids Management */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Top Achiever Card */}
-          <div className="lg:col-span-2">
-            <div className="bounce-in">
-              <Card className="fun-card p-6 border-4 border-coral">
-                <h3 className="font-fredoka text-2xl text-gray-800 mb-4 flex items-center">
-                  <Trophy className="w-8 h-8 text-sunshine mr-3" />
-                  Top Achiever This Week
-                </h3>
-                <div className="flex items-center space-x-6">
-                  <img 
-                    src={getAvatarImage(child.avatarType)} 
-                    alt={`${child.name}'s Hero`} 
-                    className="w-20 h-20 rounded-full border-4 border-coral avatar-glow object-cover"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-fredoka text-2xl text-gray-800 mb-1">{child.name}</h4>
-                    <p className="text-gray-600 text-lg mb-2">
-                      Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
-                    </p>
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-5 h-5 text-sunshine" />
-                        <span className="font-bold text-gray-800">{child.totalXp.toLocaleString()} XP</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Flame className="w-5 h-5 text-orange-500" />
-                        <span className="font-bold text-gray-800">{(child as any).streakCount || 0} day streak</span>
-                      </div>
-                    </div>
+        {/* Top Achiever */}
+        <div className="bounce-in mb-8">
+          <Card className="fun-card p-6 border-4 border-coral">
+            <h3 className="font-fredoka text-2xl text-gray-800 mb-4 flex items-center">
+              <Trophy className="w-8 h-8 text-sunshine mr-3" />
+              Top Achiever This Week
+            </h3>
+            <div className="flex items-center space-x-6">
+              <img 
+                src={getAvatarImage(child.avatarType)} 
+                alt={`${child.name}'s Hero`} 
+                className="w-20 h-20 rounded-full border-4 border-coral avatar-glow object-cover"
+              />
+              <div className="flex-1">
+                <h4 className="font-fredoka text-2xl text-gray-800 mb-1">{child.name}</h4>
+                <p className="text-gray-600 text-lg mb-2">
+                  Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
+                </p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-5 h-5 text-sunshine" />
+                    <span className="font-bold text-gray-800">{child.totalXp.toLocaleString()} XP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    <span className="font-bold text-gray-800">{(child as any).streakCount || 0} day streak</span>
                   </div>
                 </div>
-              </Card>
-            </div>
-          </div>
-
-          {/* Kids Management Card */}
-          <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
-            <Card className="fun-card p-6 border-4 border-purple-500 h-full">
-              <h3 className="font-fredoka text-xl text-gray-800 mb-4 flex items-center">
-                <UserRound className="w-6 h-6 text-purple-500 mr-2" />
-                Kids Management
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <img 
-                      src={getAvatarImage(child.avatarType)} 
-                      alt={child.name} 
-                      className="w-10 h-10 rounded-full border-2 border-purple-300 object-cover"
-                    />
-                    <div>
-                      <div className="font-bold text-gray-800">{child.name}</div>
-                      <div className="text-sm text-gray-600">Level {child.level}</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-bold text-purple-600">{child.totalXp} XP</div>
-                </div>
-                <Button 
-                  onClick={() => createHeroMutation.mutate({ name: "New Hero", avatarType: "robot" })}
-                  disabled={createHeroMutation.isPending}
-                  className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Another Hero
-                </Button>
               </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
         </div>
 
         {/* Quick Stats */}
@@ -376,6 +339,22 @@ export default function ParentDashboard() {
           {/* Habit Management Section */}
           <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
             <HabitManagementSection childId={child.id} />
+          </div>
+
+          {/* Kids Management Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.25s' }}>
+            <KidsManagementSection 
+              children={children} 
+              createHeroMutation={createHeroMutation} 
+              getAvatarImage={getAvatarImage}
+              showAddHero={showAddHero}
+              setShowAddHero={setShowAddHero}
+              newHeroName={newHeroName}
+              setNewHeroName={setNewHeroName}
+              newAvatarType={newAvatarType}
+              setNewAvatarType={setNewAvatarType}
+              avatarTypes={avatarTypes}
+            />
           </div>
 
           {/* Reward Settings Section */}
@@ -549,6 +528,148 @@ function ParentalControlsSection({ childId }: { childId: string }) {
       <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold">
         ⚙️ Configure Controls
       </Button>
+    </Card>
+  );
+}
+
+// Kids Management Section Component
+function KidsManagementSection({ 
+  children, 
+  createHeroMutation, 
+  getAvatarImage,
+  showAddHero,
+  setShowAddHero,
+  newHeroName,
+  setNewHeroName,
+  newAvatarType,
+  setNewAvatarType,
+  avatarTypes
+}: { 
+  children: Child[]; 
+  createHeroMutation: any;
+  getAvatarImage: (type: string) => string;
+  showAddHero: boolean;
+  setShowAddHero: (show: boolean) => void;
+  newHeroName: string;
+  setNewHeroName: (name: string) => void;
+  newAvatarType: string;
+  setNewAvatarType: (type: string) => void;
+  avatarTypes: any[];
+}) {
+  const { toast } = useToast();
+
+  const handleAddHero = () => {
+    if (!newHeroName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for the hero!",
+        variant: "destructive",
+      });
+      return;
+    }
+    createHeroMutation.mutate({ 
+      name: newHeroName.trim(), 
+      avatarType: newAvatarType 
+    });
+    setNewHeroName("");
+    setNewAvatarType("robot");
+    setShowAddHero(false);
+  };
+
+  return (
+    <Card className="fun-card p-8 border-4 border-purple-500">
+      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
+        <UserRound className="w-8 h-8 text-purple-500 mr-3" />
+        👨‍👩‍👧‍👦 Kids Management
+      </h3>
+      <p className="text-gray-600 mb-6">Manage all your children's hero accounts</p>
+      
+      <div className="space-y-4 mb-6">
+        {children.map((child) => (
+          <div key={child.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+            <div className="flex items-center space-x-4">
+              <img 
+                src={getAvatarImage(child.avatarType)} 
+                alt={child.name} 
+                className="w-12 h-12 rounded-full border-2 border-purple-300 object-cover"
+              />
+              <div>
+                <div className="font-bold text-gray-800">{child.name}</div>
+                <div className="text-sm text-gray-600">
+                  Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
+              <div className="text-xs text-gray-500">Total Earned</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!showAddHero ? (
+        <Button 
+          onClick={() => setShowAddHero(true)}
+          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Another Hero
+        </Button>
+      ) : (
+        <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+          <h4 className="font-bold text-gray-800">Create New Hero</h4>
+          
+          <div className="space-y-3">
+            <Input
+              type="text"
+              placeholder="Enter hero name..."
+              value={newHeroName}
+              onChange={(e) => setNewHeroName(e.target.value)}
+              className="border-2 border-purple-300"
+            />
+            
+            <div className="grid grid-cols-2 gap-2">
+              {avatarTypes.map((type) => (
+                <div
+                  key={type.id}
+                  onClick={() => setNewAvatarType(type.id)}
+                  className={`p-3 rounded-lg cursor-pointer border-2 text-center ${
+                    newAvatarType === type.id
+                      ? 'border-purple-500 bg-purple-100'
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{type.name.split(' ')[0]}</div>
+                  <div className="text-xs text-gray-600">{type.name.split(' ').slice(1).join(' ')}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button 
+              onClick={handleAddHero}
+              disabled={createHeroMutation.isPending}
+              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white"
+            >
+              {createHeroMutation.isPending ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              Create Hero
+            </Button>
+            <Button 
+              onClick={() => setShowAddHero(false)}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
