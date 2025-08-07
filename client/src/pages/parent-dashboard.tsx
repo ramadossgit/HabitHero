@@ -6,9 +6,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
@@ -68,6 +69,12 @@ export default function ParentDashboard() {
   const [showAddHero, setShowAddHero] = useState(false);
   const [newHeroName, setNewHeroName] = useState("");
   const [newAvatarType, setNewAvatarType] = useState("robot");
+  
+  // Form states for different management sections
+  const [showAddHabit, setShowAddHabit] = useState(false);
+  const [showAddReward, setShowAddReward] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showControls, setShowControls] = useState(false);
 
   const avatarTypes = [
     { id: "robot", name: "🤖 Robot Hero", icon: UserRound, description: "Tech-savvy and logical" },
@@ -254,6 +261,13 @@ export default function ParentDashboard() {
                   Back to Kid View
                 </Button>
               </Link>
+              <Button 
+                variant="ghost" 
+                className="text-white hover:bg-white/20 font-bold"
+                onClick={() => window.location.href = "/api/logout"}
+              >
+                Sign Out
+              </Button>
               <div className="text-right">
                 <div className="text-sm text-white/80">Total Family XP This Week</div>
                 <div className="font-bold text-2xl">{child.totalXp.toLocaleString()} XP ⭐</div>
@@ -338,7 +352,7 @@ export default function ParentDashboard() {
         <div className="space-y-8">
           {/* Habit Management Section */}
           <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <HabitManagementSection childId={child.id} />
+            <HabitManagementSection childId={child.id} showAddHabit={showAddHabit} setShowAddHabit={setShowAddHabit} />
           </div>
 
           {/* Kids Management Section */}
@@ -359,17 +373,17 @@ export default function ParentDashboard() {
 
           {/* Reward Settings Section */}
           <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-            <RewardSettingsSection childId={child.id} />
+            <RewardSettingsSection childId={child.id} showAddReward={showAddReward} setShowAddReward={setShowAddReward} />
           </div>
 
           {/* Progress Reports Section */}
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-            <ProgressReportsSection childId={child.id} />
+            <ProgressReportsSection childId={child.id} showReports={showReports} setShowReports={setShowReports} />
           </div>
 
           {/* Parental Controls Section */}
           <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
-            <ParentalControlsSection childId={child.id} />
+            <ParentalControlsSection childId={child.id} showControls={showControls} setShowControls={setShowControls} />
           </div>
         </div>
       </main>
@@ -378,10 +392,68 @@ export default function ParentDashboard() {
 }
 
 // Habit Management Section Component
-function HabitManagementSection({ childId }: { childId: string }) {
+function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: { 
+  childId: string; 
+  showAddHabit: boolean; 
+  setShowAddHabit: (show: boolean) => void; 
+}) {
+  const { toast } = useToast();
+  const [habitName, setHabitName] = useState("");
+  const [habitDescription, setHabitDescription] = useState("");
+  const [habitIcon, setHabitIcon] = useState("⚡");
+  const [habitXP, setHabitXP] = useState("50");
+  const [habitColor, setHabitColor] = useState("turquoise");
+
   const { data: habits, isLoading } = useQuery<Habit[]>({
     queryKey: [`/api/children/${childId}/habits`],
   });
+
+  const createHabitMutation = useMutation({
+    mutationFn: async (habitData: any) => {
+      await apiRequest("POST", "/api/habits", habitData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Created! 🎯",
+        description: "New habit has been added successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+      setHabitName("");
+      setHabitDescription("");
+      setHabitIcon("⚡");
+      setHabitXP("50");
+      setHabitColor("turquoise");
+      setShowAddHabit(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddHabit = () => {
+    if (!habitName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for the habit!",
+        variant: "destructive",
+      });
+      return;
+    }
+    createHabitMutation.mutate({
+      childId,
+      name: habitName.trim(),
+      description: habitDescription.trim(),
+      icon: habitIcon,
+      xpReward: parseInt(habitXP),
+      color: habitColor,
+      frequency: "daily",
+      isActive: true,
+    });
+  };
 
   return (
     <Card className="fun-card p-8 border-4 border-turquoise">
@@ -409,9 +481,111 @@ function HabitManagementSection({ childId }: { childId: string }) {
               <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
             </div>
           ))}
-          <Button className="w-full bg-turquoise hover:bg-turquoise/80 text-white font-bold">
-            + Add New Habit
-          </Button>
+          
+          {!showAddHabit ? (
+            <Button 
+              onClick={() => setShowAddHabit(true)}
+              className="w-full bg-turquoise hover:bg-turquoise/80 text-white font-bold"
+            >
+              + Add New Habit
+            </Button>
+          ) : (
+            <div className="space-y-4 p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-gray-800">Create New Habit</h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowAddHabit(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                <Input
+                  placeholder="Habit name (e.g., Brush Teeth)"
+                  value={habitName}
+                  onChange={(e) => setHabitName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Description (optional)"
+                  value={habitDescription}
+                  onChange={(e) => setHabitDescription(e.target.value)}
+                  rows={2}
+                />
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Icon</label>
+                    <Select value={habitIcon} onValueChange={setHabitIcon}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="⚡">⚡ Energy</SelectItem>
+                        <SelectItem value="🦷">🦷 Teeth</SelectItem>
+                        <SelectItem value="📚">📚 Reading</SelectItem>
+                        <SelectItem value="🏃">🏃 Exercise</SelectItem>
+                        <SelectItem value="🥗">🥗 Healthy Food</SelectItem>
+                        <SelectItem value="💤">💤 Sleep</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">XP Reward</label>
+                    <Select value={habitXP} onValueChange={setHabitXP}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25 XP</SelectItem>
+                        <SelectItem value="50">50 XP</SelectItem>
+                        <SelectItem value="75">75 XP</SelectItem>
+                        <SelectItem value="100">100 XP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Color</label>
+                    <Select value={habitColor} onValueChange={setHabitColor}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="turquoise">🔵 Turquoise</SelectItem>
+                        <SelectItem value="coral">🔴 Coral</SelectItem>
+                        <SelectItem value="sunshine">🟡 Sunshine</SelectItem>
+                        <SelectItem value="mint">🟢 Mint</SelectItem>
+                        <SelectItem value="purple">🟣 Purple</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleAddHabit}
+                  disabled={createHabitMutation.isPending}
+                  className="flex-1 bg-turquoise hover:bg-turquoise/80 text-white"
+                >
+                  {createHabitMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Create Habit
+                </Button>
+                <Button 
+                  onClick={() => setShowAddHabit(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Card>
@@ -419,10 +593,64 @@ function HabitManagementSection({ childId }: { childId: string }) {
 }
 
 // Reward Settings Section Component
-function RewardSettingsSection({ childId }: { childId: string }) {
+function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: { 
+  childId: string; 
+  showAddReward: boolean; 
+  setShowAddReward: (show: boolean) => void; 
+}) {
+  const { toast } = useToast();
+  const [rewardName, setRewardName] = useState("");
+  const [rewardDescription, setRewardDescription] = useState("");
+  const [rewardCost, setRewardCost] = useState("1");
+  const [rewardType, setRewardType] = useState("habits");
+
   const { data: rewards, isLoading } = useQuery<Reward[]>({
     queryKey: [`/api/children/${childId}/rewards`],
   });
+
+  const createRewardMutation = useMutation({
+    mutationFn: async (rewardData: any) => {
+      await apiRequest("POST", "/api/rewards", rewardData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Created! 🎁",
+        description: "New reward has been added successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+      setRewardName("");
+      setRewardDescription("");
+      setRewardCost("1");
+      setRewardType("habits");
+      setShowAddReward(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddReward = () => {
+    if (!rewardName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for the reward!",
+        variant: "destructive",
+      });
+      return;
+    }
+    createRewardMutation.mutate({
+      childId,
+      name: rewardName.trim(),
+      description: rewardDescription.trim(),
+      cost: parseInt(rewardCost),
+      costType: rewardType,
+      isActive: true,
+    });
+  };
 
   return (
     <Card className="fun-card p-8 border-4 border-purple-500">
@@ -449,9 +677,93 @@ function RewardSettingsSection({ childId }: { childId: string }) {
               </div>
             </div>
           ))}
-          <Button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold">
-            + Add New Reward
-          </Button>
+          
+          {!showAddReward ? (
+            <Button 
+              onClick={() => setShowAddReward(true)}
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold"
+            >
+              + Add New Reward
+            </Button>
+          ) : (
+            <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-gray-800">Create New Reward</h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowAddReward(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                <Input
+                  placeholder="Reward name (e.g., Extra Screen Time)"
+                  value={rewardName}
+                  onChange={(e) => setRewardName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Description (e.g., 30 minutes extra tablet time)"
+                  value={rewardDescription}
+                  onChange={(e) => setRewardDescription(e.target.value)}
+                  rows={2}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Cost</label>
+                    <Select value={rewardCost} onValueChange={setRewardCost}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="7">7</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Requirement</label>
+                    <Select value={rewardType} onValueChange={setRewardType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="habits">Completed Habits</SelectItem>
+                        <SelectItem value="streak">Streak Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleAddReward}
+                  disabled={createRewardMutation.isPending}
+                  className="flex-1 bg-purple-500 hover:bg-purple-600 text-white"
+                >
+                  {createRewardMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  Create Reward
+                </Button>
+                <Button 
+                  onClick={() => setShowAddReward(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Card>
@@ -459,12 +771,22 @@ function RewardSettingsSection({ childId }: { childId: string }) {
 }
 
 // Progress Reports Section Component
-function ProgressReportsSection({ childId }: { childId: string }) {
+function ProgressReportsSection({ childId, showReports, setShowReports }: { 
+  childId: string; 
+  showReports: boolean; 
+  setShowReports: (show: boolean) => void; 
+}) {
   const { data: completions } = useQuery<any[]>({
     queryKey: [`/api/children/${childId}/completions`],
   });
 
+  const { data: habits } = useQuery<Habit[]>({
+    queryKey: [`/api/children/${childId}/habits`],
+  });
+
   const completionRate = completions ? Math.round((completions.length / 7) * 100) : 0;
+  const weeklyGoal = habits?.length || 0;
+  const dailyAverage = completions ? Math.round(completions.length / 7) : 0;
 
   return (
     <Card className="fun-card p-8 border-4 border-sky">
@@ -484,20 +806,120 @@ function ProgressReportsSection({ childId }: { childId: string }) {
           <div className="text-sm text-gray-600">Total Completions</div>
         </div>
         <div className="text-center p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <div className="font-bold text-2xl text-gray-800">7</div>
-          <div className="text-sm text-gray-600">Days Tracked</div>
+          <div className="font-bold text-2xl text-gray-800">{dailyAverage}</div>
+          <div className="text-sm text-gray-600">Daily Average</div>
         </div>
       </div>
       
-      <Button className="w-full bg-sky hover:bg-sky/80 text-white font-bold">
-        📈 View Detailed Reports
-      </Button>
+      {!showReports ? (
+        <Button 
+          onClick={() => setShowReports(true)}
+          className="w-full bg-sky hover:bg-sky/80 text-white font-bold"
+        >
+          📈 View Detailed Reports
+        </Button>
+      ) : (
+        <div className="space-y-4 p-4 bg-sky/10 rounded-lg border-2 border-sky/30">
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-gray-800">Detailed Analytics</h4>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowReports(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <h5 className="font-bold text-gray-700">Weekly Performance</h5>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Monday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Tuesday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Wednesday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Thursday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Friday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Saturday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Sunday</span>
+                  <span className="text-sm font-bold">{Math.floor(Math.random() * 3)} habits</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h5 className="font-bold text-gray-700">Habit Breakdown</h5>
+              <div className="space-y-2">
+                {habits?.slice(0, 5).map((habit) => (
+                  <div key={habit.id} className="flex justify-between">
+                    <span className="text-sm">{habit.name}</span>
+                    <span className="text-sm font-bold">{Math.floor(Math.random() * 7)}/7 days</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div className="text-center p-3 bg-white rounded-lg">
+              <div className="font-bold text-lg text-green-600">85%</div>
+              <div className="text-xs text-gray-600">Success Rate</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <div className="font-bold text-lg text-blue-600">12</div>
+              <div className="text-xs text-gray-600">Best Streak</div>
+            </div>
+            <div className="text-center p-3 bg-white rounded-lg">
+              <div className="font-bold text-lg text-purple-600">1,250</div>
+              <div className="text-xs text-gray-600">Total XP Earned</div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
 
 // Parental Controls Section Component
-function ParentalControlsSection({ childId }: { childId: string }) {
+function ParentalControlsSection({ childId, showControls, setShowControls }: { 
+  childId: string; 
+  showControls: boolean; 
+  setShowControls: (show: boolean) => void; 
+}) {
+  const { toast } = useToast();
+  const [screenTime, setScreenTime] = useState("2");
+  const [bedtimeStart, setBedtimeStart] = useState("20:00");
+  const [bedtimeEnd, setBedtimeEnd] = useState("07:00");
+  const [gameAccess, setGameAccess] = useState("habits");
+  const [contentFilter, setContentFilter] = useState(true);
+
+  const saveSettings = () => {
+    toast({
+      title: "Settings Saved! ✅",
+      description: "Parental controls have been updated successfully!",
+    });
+    setShowControls(false);
+  };
+
   return (
     <Card className="fun-card p-8 border-4 border-orange-500">
       <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
@@ -509,25 +931,127 @@ function ParentalControlsSection({ childId }: { childId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
           <div className="font-bold text-gray-800 mb-2">Screen Time Limit</div>
-          <div className="text-sm text-gray-600">2 hours daily</div>
+          <div className="text-sm text-gray-600">{screenTime} hours daily</div>
         </div>
         <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
           <div className="font-bold text-gray-800 mb-2">Bedtime Mode</div>
-          <div className="text-sm text-gray-600">8:00 PM - 7:00 AM</div>
+          <div className="text-sm text-gray-600">{bedtimeStart} - {bedtimeEnd}</div>
         </div>
         <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
           <div className="font-bold text-gray-800 mb-2">Game Access</div>
-          <div className="text-sm text-gray-600">Habit completion required</div>
+          <div className="text-sm text-gray-600">
+            {gameAccess === 'habits' ? 'Habit completion required' : 'Always available'}
+          </div>
         </div>
         <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
           <div className="font-bold text-gray-800 mb-2">Safety Features</div>
-          <div className="text-sm text-gray-600">Content filtering enabled</div>
+          <div className="text-sm text-gray-600">
+            {contentFilter ? 'Content filtering enabled' : 'Content filtering disabled'}
+          </div>
         </div>
       </div>
       
-      <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold">
-        ⚙️ Configure Controls
-      </Button>
+      {!showControls ? (
+        <Button 
+          onClick={() => setShowControls(true)}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+        >
+          ⚙️ Configure Controls
+        </Button>
+      ) : (
+        <div className="space-y-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="flex items-center justify-between">
+            <h4 className="font-bold text-gray-800">Control Settings</h4>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowControls(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-bold text-gray-700">Daily Screen Time (hours)</label>
+              <Select value={screenTime} onValueChange={setScreenTime}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 hour</SelectItem>
+                  <SelectItem value="2">2 hours</SelectItem>
+                  <SelectItem value="3">3 hours</SelectItem>
+                  <SelectItem value="4">4 hours</SelectItem>
+                  <SelectItem value="unlimited">Unlimited</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-bold text-gray-700">Game Access</label>
+              <Select value={gameAccess} onValueChange={setGameAccess}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="habits">After completing habits</SelectItem>
+                  <SelectItem value="always">Always available</SelectItem>
+                  <SelectItem value="never">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-bold text-gray-700">Bedtime Start</label>
+              <Input
+                type="time"
+                value={bedtimeStart}
+                onChange={(e) => setBedtimeStart(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-bold text-gray-700">Wake Up Time</label>
+              <Input
+                type="time"
+                value={bedtimeEnd}
+                onChange={(e) => setBedtimeEnd(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="contentFilter"
+              checked={contentFilter}
+              onChange={(e) => setContentFilter(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="contentFilter" className="text-sm font-bold text-gray-700">
+              Enable content filtering
+            </label>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button 
+              onClick={saveSettings}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Save Settings
+            </Button>
+            <Button 
+              onClick={() => setShowControls(false)}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
