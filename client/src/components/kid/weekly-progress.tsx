@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Star, Trophy, Medal, Gem, Flame, Hourglass } from "lucide-react";
 import type { HabitCompletion } from "@shared/schema";
 
@@ -23,10 +23,10 @@ export default function WeeklyProgress({ childId }: WeeklyProgressProps) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + index);
       
-      const dayCompletions = completions?.filter((completion: HabitCompletion) => {
+      const dayCompletions = Array.isArray(completions) ? completions.filter((completion: HabitCompletion) => {
         const completionDate = new Date(completion.date);
         return completionDate.toDateString() === date.toDateString();
-      }) || [];
+      }) : [];
 
       const completionCount = dayCompletions.length;
       const maxHabits = 5; // Assuming 5 habits per day

@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -31,6 +31,9 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
   const { data: todaysCompletions } = useQuery({
     queryKey: ["/api/children", childId, "completions", "today"],
   });
+
+  const habitsArray = Array.isArray(habits) ? habits : [];
+  const completionsArray = Array.isArray(todaysCompletions) ? todaysCompletions : [];
 
   const completeMissionMutation = useMutation({
     mutationFn: async (habitId: string) => {
@@ -96,7 +99,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
     );
   }
 
-  const completedHabitIds = new Set(todaysCompletions?.map((c: HabitCompletion) => c.habitId) || []);
+  const completedHabitIds = new Set(completionsArray.map((c: HabitCompletion) => c.habitId) || []);
 
   return (
     <section className="mb-8">
@@ -106,7 +109,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {habits?.map((habit: Habit) => {
+        {habitsArray.map((habit: Habit) => {
           const isCompleted = completedHabitIds.has(habit.id);
           const IconComponent = getIconComponent(habit.icon);
           const colorClasses = getColorClasses(habit.color);

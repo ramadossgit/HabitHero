@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -24,6 +24,33 @@ interface RewardsSectionProps {
 export default function RewardsSection({ childId }: RewardsSectionProps) {
   const { toast } = useToast();
 
+  const defaultMiniGames = [
+    {
+      id: "word-puzzle",
+      name: "Word Puzzle Adventure",
+      description: "Solve puzzles and learn new words!",
+      icon: "puzzle",
+      unlockRequirement: 2,
+      isActive: true,
+    },
+    {
+      id: "math-hero",
+      name: "Math Hero Challenge",
+      description: "Practice math skills with fun challenges!",
+      icon: "calculator",
+      unlockRequirement: 2,
+      isActive: true,
+    },
+    {
+      id: "memory-master",
+      name: "Memory Master",
+      description: "Test your memory with colorful patterns!",
+      icon: "brain",
+      unlockRequirement: 3,
+      isActive: true,
+    },
+  ];
+
   const { data: rewards } = useQuery({
     queryKey: ["/api/children", childId, "rewards"],
   });
@@ -31,6 +58,9 @@ export default function RewardsSection({ childId }: RewardsSectionProps) {
   const { data: miniGames } = useQuery({
     queryKey: ["/api/mini-games"],
   });
+
+  const rewardsArray = Array.isArray(rewards) ? rewards : [];
+  const miniGamesArray = Array.isArray(miniGames) ? miniGames : defaultMiniGames;
 
   const claimRewardMutation = useMutation({
     mutationFn: async (rewardId: string) => {
@@ -62,33 +92,6 @@ export default function RewardsSection({ childId }: RewardsSectionProps) {
     return icons[type as keyof typeof icons] || Gift;
   };
 
-  const defaultMiniGames = [
-    {
-      id: "word-puzzle",
-      name: "Word Puzzle Adventure",
-      description: "Solve puzzles and learn new words!",
-      icon: "puzzle",
-      unlockRequirement: 2,
-      isActive: true,
-    },
-    {
-      id: "math-hero",
-      name: "Math Hero Challenge",
-      description: "Practice math skills with fun challenges!",
-      icon: "calculator",
-      unlockRequirement: 2,
-      isActive: true,
-    },
-    {
-      id: "memory-master",
-      name: "Memory Master",
-      description: "Test your memory with colorful patterns!",
-      icon: "brain",
-      unlockRequirement: 3,
-      isActive: true,
-    },
-  ];
-
   return (
     <Card className="p-6 shadow-lg">
       <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
@@ -100,7 +103,7 @@ export default function RewardsSection({ childId }: RewardsSectionProps) {
       <div className="mb-6">
         <h4 className="font-nunito font-bold mb-3">Play Mini-Games</h4>
         <div className="space-y-3">
-          {defaultMiniGames.map((game, index) => {
+          {miniGamesArray.map((game, index) => {
             const isUnlocked = index < 2; // First 2 games unlocked
             const IconComponent = game.icon === "puzzle" ? Puzzle : game.icon === "calculator" ? Calculator : Brain;
             const gradientColors = [
@@ -144,7 +147,7 @@ export default function RewardsSection({ childId }: RewardsSectionProps) {
       <div>
         <h4 className="font-nunito font-bold mb-3">Real-World Rewards</h4>
         <div className="space-y-2">
-          {rewards?.map((reward: Reward) => {
+          {rewardsArray.map((reward: Reward) => {
             const IconComponent = getRewardIcon(reward.type);
             const isAvailable = true; // TODO: Check if child meets requirements
             
