@@ -12,16 +12,35 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 magic-gradient rounded-full mx-auto mb-6 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+          </div>
+          <p className="text-white text-xl font-bold">✨ Loading... ✨</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      {/* Kids routes - accessible without authentication for child play */}
+      <Route path="/kids" component={Home} />
+      <Route path="/kids/play" component={Home} />
+      
+      {/* Parent/Auth required routes */}
+      <Route path="/parent" component={isAuthenticated ? ParentDashboard : Landing} />
+      
+      {/* Main routes */}
+      {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/parent" component={ParentDashboard} />
-        </>
+        <Route path="/" component={Home} />
       )}
+      
       <Route component={NotFound} />
     </Switch>
   );

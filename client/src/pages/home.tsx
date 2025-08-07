@@ -14,8 +14,9 @@ import type { Child } from "@shared/schema";
 export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
-  const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
+  const { data: children, isLoading: childrenLoading, error } = useQuery<Child[]>({
     queryKey: ["/api/children"],
+    retry: false,
   });
 
   const selectedChild = children?.find((child: Child) => child.id === selectedChildId) || children?.[0];
@@ -33,7 +34,8 @@ export default function Home() {
     );
   }
 
-  if (!children || children.length === 0) {
+  // If there's an error (like 401 Unauthorized), show the kids-only demo version
+  if (error || (!childrenLoading && (!children || children.length === 0))) {
     return (
       <div className="min-h-screen hero-gradient">
         <div className="container mx-auto px-4 py-8">
@@ -45,11 +47,17 @@ export default function Home() {
                 <p className="text-gray-700 mb-6 text-lg font-semibold">
                   Let's start your EPIC adventure by creating an amazing hero character! 🚀
                 </p>
-                <Link href="/parent">
-                  <Button className="super-button text-xl px-8 py-4">
-                    🎮 Go to Parent Dashboard ⚡
+                <div className="space-y-4">
+                  <Button 
+                    className="super-button text-xl px-8 py-4 w-full"
+                    onClick={() => window.location.href = "/api/login"}
+                  >
+                    🎮 Parent Login ⚡
                   </Button>
-                </Link>
+                  <div className="text-sm text-gray-600">
+                    Parents need to log in first to create hero profiles for their kids!
+                  </div>
+                </div>
               </CardContent>
             </div>
           </div>
