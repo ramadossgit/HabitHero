@@ -443,6 +443,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
   const [habitIcon, setHabitIcon] = useState("⚡");
   const [habitXP, setHabitXP] = useState("50");
   const [habitColor, setHabitColor] = useState("turquoise");
+  const [editingHabit, setEditingHabit] = useState<string | null>(null);
+  const [editHabitName, setEditHabitName] = useState("");
+  const [editHabitDescription, setEditHabitDescription] = useState("");
+  const [editHabitIcon, setEditHabitIcon] = useState("⚡");
+  const [editHabitXP, setEditHabitXP] = useState("50");
+  const [editHabitColor, setEditHabitColor] = useState("turquoise");
 
   const { data: habits, isLoading } = useQuery<Habit[]>({
     queryKey: [`/api/children/${childId}/habits`],
@@ -469,6 +475,48 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
       toast({
         title: "Error",
         description: "Failed to create habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const editHabitMutation = useMutation({
+    mutationFn: async (data: { habitId: string; updates: any }) => {
+      await apiRequest("PATCH", `/api/habits/${data.habitId}`, data.updates);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Updated! 🎯",
+        description: "Habit has been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+      setEditingHabit(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteHabitMutation = useMutation({
+    mutationFn: async (habitId: string) => {
+      await apiRequest("DELETE", `/api/habits/${habitId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Deleted! 🗑️",
+        description: "Habit has been removed successfully!",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete habit. Please try again.",
         variant: "destructive",
       });
     },
@@ -510,15 +558,136 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
       ) : (
         <div className="space-y-4">
           {habits?.map((habit) => (
-            <div key={habit.id} className="flex items-center justify-between p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: habit.color }}></div>
-                <div>
-                  <div className="font-bold text-gray-800">{habit.name}</div>
-                  <div className="text-sm text-gray-600">{habit.description}</div>
+            <div key={habit.id} className="p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
+              {editingHabit === habit.id ? (
+                <div className="space-y-3">
+                  <Input
+                    value={editHabitName}
+                    onChange={(e) => setEditHabitName(e.target.value)}
+                    placeholder="Habit name"
+                    className="border-2 border-turquoise"
+                  />
+                  <Input
+                    value={editHabitDescription}
+                    onChange={(e) => setEditHabitDescription(e.target.value)}
+                    placeholder="Description"
+                    className="border-2 border-turquoise"
+                  />
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">Icon</label>
+                      <Select value={editHabitIcon} onValueChange={setEditHabitIcon}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="⚡">⚡ Energy</SelectItem>
+                          <SelectItem value="🦷">🦷 Teeth</SelectItem>
+                          <SelectItem value="📚">📚 Reading</SelectItem>
+                          <SelectItem value="🏃">🏃 Exercise</SelectItem>
+                          <SelectItem value="🥗">🥗 Healthy Food</SelectItem>
+                          <SelectItem value="💤">💤 Sleep</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">XP Reward</label>
+                      <Select value={editHabitXP} onValueChange={setEditHabitXP}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 XP</SelectItem>
+                          <SelectItem value="50">50 XP</SelectItem>
+                          <SelectItem value="75">75 XP</SelectItem>
+                          <SelectItem value="100">100 XP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">Color</label>
+                      <Select value={editHabitColor} onValueChange={setEditHabitColor}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="turquoise">🟢 Turquoise</SelectItem>
+                          <SelectItem value="coral">🔴 Coral</SelectItem>
+                          <SelectItem value="sunshine">🟡 Yellow</SelectItem>
+                          <SelectItem value="purple">🟣 Purple</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => {
+                        editHabitMutation.mutate({
+                          habitId: habit.id,
+                          updates: {
+                            name: editHabitName,
+                            description: editHabitDescription,
+                            icon: editHabitIcon,
+                            xpReward: parseInt(editHabitXP),
+                            color: editHabitColor,
+                          }
+                        });
+                      }}
+                      disabled={editHabitMutation.isPending}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      {editHabitMutation.isPending ? "Saving..." : "💾 Save"}
+                    </Button>
+                    <Button
+                      onClick={() => setEditingHabit(null)}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">{habit.icon}</div>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: habit.color }}></div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-800">{habit.name}</div>
+                      <div className="text-sm text-gray-600">{habit.description}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right mr-4">
+                      <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
+                      <div className="text-xs text-gray-500">Reward</div>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setEditingHabit(habit.id);
+                        setEditHabitName(habit.name);
+                        setEditHabitDescription(habit.description);
+                        setEditHabitIcon(habit.icon);
+                        setEditHabitXP(habit.xpReward.toString());
+                        setEditHabitColor(habit.color);
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (confirm(`Delete "${habit.name}" habit? This cannot be undone.`)) {
+                          deleteHabitMutation.mutate(habit.id);
+                        }
+                      }}
+                      disabled={deleteHabitMutation.isPending}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                    >
+                      {deleteHabitMutation.isPending ? "..." : "🗑️"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           
