@@ -311,30 +311,45 @@ export default function ParentDashboard() {
           <Card className="fun-card p-6 border-4 border-coral">
             <h3 className="font-fredoka text-2xl text-gray-800 mb-4 flex items-center">
               <Trophy className="w-8 h-8 text-sunshine mr-3" />
-              Top Achiever This Week
+              {children.length > 1 ? "All Heroes Progress" : "Top Achiever This Week"}
             </h3>
-            <div className="flex items-center space-x-6">
-              <img 
-                src={getAvatarImage(child.avatarType)} 
-                alt={`${child.name}'s Hero`} 
-                className="w-20 h-20 rounded-full border-4 border-coral avatar-glow object-cover"
-              />
-              <div className="flex-1">
-                <h4 className="font-fredoka text-2xl text-gray-800 mb-1">{child.name}</h4>
-                <p className="text-gray-600 text-lg mb-2">
-                  Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
-                </p>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-5 h-5 text-sunshine" />
-                    <span className="font-bold text-gray-800">{child.totalXp.toLocaleString()} XP</span>
+            <div className="space-y-4">
+              {children
+                .sort((a, b) => b.totalXp - a.totalXp) // Sort by highest XP first
+                .map((hero, index) => (
+                  <div key={hero.id} className={`flex items-center space-x-6 p-4 rounded-lg ${index === 0 ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-gray-50'}`}>
+                    <div className="relative">
+                      <img 
+                        src={hero.avatarUrl || getAvatarImage(hero.avatarType)} 
+                        alt={`${hero.name}'s Hero`} 
+                        className="w-16 h-16 rounded-full border-4 border-coral avatar-glow object-cover"
+                      />
+                      {index === 0 && (
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                          <Trophy className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-fredoka text-xl text-gray-800 mb-1">
+                        {hero.name} {index === 0 && "👑"}
+                      </h4>
+                      <p className="text-gray-600 mb-2">
+                        Level {hero.level} {hero.avatarType.charAt(0).toUpperCase() + hero.avatarType.slice(1)} Hero
+                      </p>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-4 h-4 text-sunshine" />
+                          <span className="font-bold text-gray-800">{hero.totalXp.toLocaleString()} XP</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Flame className="w-4 h-4 text-orange-500" />
+                          <span className="font-bold text-gray-800">{(hero as any).streakCount || 0} day streak</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                    <span className="font-bold text-gray-800">{(child as any).streakCount || 0} day streak</span>
-                  </div>
-                </div>
-              </div>
+                ))}
             </div>
           </Card>
         </div>
@@ -628,6 +643,10 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
   const [rewardDescription, setRewardDescription] = useState("");
   const [rewardCost, setRewardCost] = useState("1");
   const [rewardType, setRewardType] = useState("habits");
+  const [editingReward, setEditingReward] = useState<string | null>(null);
+  const [editRewardName, setEditRewardName] = useState("");
+  const [editRewardDescription, setEditRewardDescription] = useState("");
+  const [editRewardCost, setEditRewardCost] = useState("1");
 
   const { data: rewards, isLoading } = useQuery<Reward[]>({
     queryKey: [`/api/children/${childId}/rewards`],
@@ -653,6 +672,48 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       toast({
         title: "Error",
         description: "Failed to create reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const editRewardMutation = useMutation({
+    mutationFn: async (data: { rewardId: string; updates: any }) => {
+      await apiRequest("PATCH", `/api/rewards/${data.rewardId}`, data.updates);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Updated! 🎁",
+        description: "Reward has been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+      setEditingReward(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteRewardMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      await apiRequest("DELETE", `/api/rewards/${rewardId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Deleted! 🗑️",
+        description: "Reward has been removed successfully!",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete reward. Please try again.",
         variant: "destructive",
       });
     },
@@ -692,14 +753,94 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       ) : (
         <div className="space-y-4">
           {rewards?.map((reward) => (
-            <div key={reward.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-              <div>
-                <div className="font-bold text-gray-800">{reward.name}</div>
-                <div className="text-sm text-gray-600">{reward.description}</div>
-              </div>
-              <div className="text-sm font-bold text-purple-600">
-                {reward.cost} {reward.costType === 'habits' ? 'habits' : 'streak days'}
-              </div>
+            <div key={reward.id} className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+              {editingReward === reward.id ? (
+                <div className="space-y-3">
+                  <Input
+                    value={editRewardName}
+                    onChange={(e) => setEditRewardName(e.target.value)}
+                    placeholder="Reward name"
+                    className="border-2 border-purple-300"
+                  />
+                  <Input
+                    value={editRewardDescription}
+                    onChange={(e) => setEditRewardDescription(e.target.value)}
+                    placeholder="Description"
+                    className="border-2 border-purple-300"
+                  />
+                  <Input
+                    type="number"
+                    value={editRewardCost}
+                    onChange={(e) => setEditRewardCost(e.target.value)}
+                    placeholder="Cost"
+                    min="1"
+                    className="border-2 border-purple-300"
+                  />
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => {
+                        editRewardMutation.mutate({
+                          rewardId: reward.id,
+                          updates: {
+                            name: editRewardName,
+                            description: editRewardDescription,
+                            cost: parseInt(editRewardCost),
+                          }
+                        });
+                      }}
+                      disabled={editRewardMutation.isPending}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      {editRewardMutation.isPending ? "Saving..." : "💾 Save"}
+                    </Button>
+                    <Button
+                      onClick={() => setEditingReward(null)}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800">{reward.name}</div>
+                    <div className="text-sm text-gray-600">{reward.description}</div>
+                    <div className="text-sm text-purple-600">
+                      Cost: {reward.cost} {reward.costType === 'habits' ? 'Habits' : 'XP Points'}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right mr-4">
+                      <div className="text-sm font-bold text-purple-600">
+                        {reward.isActive ? 'Active' : 'Inactive'}
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setEditingReward(reward.id);
+                        setEditRewardName(reward.name);
+                        setEditRewardDescription(reward.description);
+                        setEditRewardCost(reward.cost.toString());
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (confirm(`Delete "${reward.name}" reward? This cannot be undone.`)) {
+                          deleteRewardMutation.mutate(reward.id);
+                        }
+                      }}
+                      disabled={deleteRewardMutation.isPending}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                    >
+                      {deleteRewardMutation.isPending ? "..." : "🗑️"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           
@@ -936,6 +1077,13 @@ function ParentalControlsSection({ childId, showControls, setShowControls }: {
   const [bedtimeEnd, setBedtimeEnd] = useState("07:00");
   const [gameAccess, setGameAccess] = useState("habits");
   const [contentFilter, setContentFilter] = useState(true);
+  const [editingControl, setEditingControl] = useState<string | null>(null);
+  const [controls, setControls] = useState([
+    { id: 'screen-time', name: 'Screen Time Limit', value: '2 hours daily', editable: true },
+    { id: 'bedtime', name: 'Bedtime Mode', value: '20:00 - 07:00', editable: true },
+    { id: 'game-access', name: 'Game Access', value: 'Habit completion required', editable: true },
+    { id: 'content-filter', name: 'Safety Features', value: 'Content filtering enabled', editable: true },
+  ]);
 
   const saveSettings = () => {
     toast({
@@ -953,27 +1101,74 @@ function ParentalControlsSection({ childId, showControls, setShowControls }: {
       </h3>
       <p className="text-gray-600 mb-6">Configure safety and time limits</p>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <div className="font-bold text-gray-800 mb-2">Screen Time Limit</div>
-          <div className="text-sm text-gray-600">{screenTime} hours daily</div>
-        </div>
-        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <div className="font-bold text-gray-800 mb-2">Bedtime Mode</div>
-          <div className="text-sm text-gray-600">{bedtimeStart} - {bedtimeEnd}</div>
-        </div>
-        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <div className="font-bold text-gray-800 mb-2">Game Access</div>
-          <div className="text-sm text-gray-600">
-            {gameAccess === 'habits' ? 'Habit completion required' : 'Always available'}
+      <div className="space-y-4 mb-6">
+        {controls.map((control) => (
+          <div key={control.id} className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+            {editingControl === control.id ? (
+              <div className="space-y-3">
+                <Input
+                  value={control.value}
+                  onChange={(e) => {
+                    setControls(controls.map(c => 
+                      c.id === control.id ? { ...c, value: e.target.value } : c
+                    ));
+                  }}
+                  placeholder={control.name}
+                  className="border-2 border-orange-300"
+                />
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => {
+                      toast({
+                        title: "Control Updated! ✅",
+                        description: `${control.name} has been updated successfully!`,
+                      });
+                      setEditingControl(null);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    💾 Save
+                  </Button>
+                  <Button
+                    onClick={() => setEditingControl(null)}
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="font-bold text-gray-800 mb-2">{control.name}</div>
+                  <div className="text-sm text-gray-600">{control.value}</div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => setEditingControl(control.id)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                  >
+                    ✏️ Edit
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (confirm(`Reset "${control.name}" to default? This cannot be undone.`)) {
+                        toast({
+                          title: "Control Reset! 🔄",
+                          description: `${control.name} has been reset to default.`,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                  >
+                    🔄 Reset
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <div className="font-bold text-gray-800 mb-2">Safety Features</div>
-          <div className="text-sm text-gray-600">
-            {contentFilter ? 'Content filtering enabled' : 'Content filtering disabled'}
-          </div>
-        </div>
+        ))}
       </div>
       
       {!showControls ? (
@@ -1193,16 +1388,40 @@ function KidsManagementSection({
                   </button>
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="font-bold text-gray-800">{child.name}</div>
                 <div className="text-sm text-gray-600">
                   Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
-              <div className="text-xs text-gray-500">Total Earned</div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
+                <div className="text-xs text-gray-500">Total Earned</div>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setEditingChild(editingChild === child.id ? null : child.id)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                >
+                  ✏️ Edit
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
+                      toast({
+                        title: "Hero Deleted",
+                        description: `${child.name}'s profile has been removed.`,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                >
+                  🗑️
+                </Button>
+              </div>
             </div>
           </div>
         ))}
