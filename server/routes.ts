@@ -12,6 +12,14 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Extend session data interface
+declare module 'express-session' {
+  interface SessionData {
+    childId: string;
+    isChildUser: boolean;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -26,6 +34,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
+  });
+
+  // Child login route
+  app.post('/api/auth/child-login', async (req, res) => {
+    try {
+      const { username, pin } = req.body;
+      
+      if (!username || !pin) {
+        return res.status(400).json({ message: "Username and PIN are required" });
+      }
+
+      const child = await storage.getChildByUsername(username);
+      
+      if (!child || child.pin !== pin) {
+        return res.status(401).json({ message: "Invalid username or PIN" });
+      }
+
+      // Create a simple session for the child
+      req.session.childId = child.id;
+      req.session.isChildUser = true;
+      
+      res.json({
+        id: child.id,
+        name: child.name,
+        avatarType: child.avatarType,
+        avatarUrl: child.avatarUrl,
+        level: child.level,
+        xp: child.xp,
+        role: "child"
+      });
+    } catch (error) {
+      console.error("Child login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Get current child user
+  app.get('/api/auth/child', async (req: any, res) => {
+    try {
+      if (!req.session.childId || !req.session.isChildUser) {
+        return res.status(401).json({ message: "Not logged in as child" });
+      }
+
+      const child = await storage.getChild(req.session.childId);
+      if (!child) {
+        return res.status(404).json({ message: "Child not found" });
+      }
+
+      res.json({
+        id: child.id,
+        name: child.name,
+        avatarType: child.avatarType,
+        avatarUrl: child.avatarUrl,
+        level: child.level,
+        xp: child.xp,
+        role: "child"
+      });
+    } catch (error) {
+      console.error("Error fetching child:", error);
+      res.status(500).json({ message: "Failed to fetch child" });
+    }
+  });
+
+  // Child logout
+  app.post('/api/auth/child-logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
   });
 
   // Children routes

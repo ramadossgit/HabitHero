@@ -40,6 +40,8 @@ export const children = pgTable("children", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   parentId: varchar("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
+  username: varchar("username").unique(), // for child login
+  pin: varchar("pin"), // 4-digit PIN for child login
   avatarType: varchar("avatar_type").notNull().default("robot"), // robot, princess, ninja, animal
   avatarUrl: varchar("avatar_url"),
   level: integer("level").notNull().default(1),

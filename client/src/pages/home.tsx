@@ -9,17 +9,27 @@ import DailyMissions from "@/components/kid/daily-missions";
 import HeroCustomization from "@/components/kid/hero-customization";
 import RewardsSection from "@/components/kid/rewards-section";
 import WeeklyProgress from "@/components/kid/weekly-progress";
+import { useChildAuth } from "@/hooks/useChildAuth";
 import type { Child } from "@shared/schema";
 
 export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  
+  // Check if this is a child user accessing their own account
+  const { child: loggedInChild, isChildAuthenticated, isLoading: childAuthLoading } = useChildAuth();
 
   const { data: children, isLoading: childrenLoading, error } = useQuery<Child[]>({
     queryKey: ["/api/children"],
     retry: false,
+    enabled: !isChildAuthenticated, // Only fetch if not a child user
   });
 
-  const selectedChild = children?.find((child: Child) => child.id === selectedChildId) || children?.[0];
+  // If child is logged in, use their data; otherwise use parent's children
+  const selectedChild = isChildAuthenticated 
+    ? loggedInChild
+    : children?.find((child: Child) => child.id === selectedChildId) || children?.[0];
+  
+  const isLoading = childAuthLoading || childrenLoading;
 
   if (childrenLoading) {
     return (

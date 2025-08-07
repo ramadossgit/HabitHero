@@ -33,12 +33,24 @@ export default function Landing() {
               </p>
             </div>
           </div>
-          <Button 
-            className="super-button text-2xl px-12 py-6 wiggle"
-            onClick={() => window.location.href = "/api/login"}
-          >
-            🎮 Start Your Hero Journey! ⚡
-          </Button>
+          <div className="space-y-4">
+            <Button 
+              className="super-button text-2xl px-12 py-6 wiggle w-full"
+              onClick={() => window.location.href = "/login"}
+            >
+              🎮 Start Your Hero Journey! ⚡
+            </Button>
+            <div className="text-white text-lg">
+              <span>New to Habit Heroes? </span>
+              <Button 
+                variant="outline" 
+                className="text-white border-white hover:bg-white hover:text-gray-800 font-bold"
+                onClick={() => window.location.href = "/signup"}
+              >
+                Create Account
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Amazing Features Grid */}

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
 import NotFound from "@/pages/not-found";
@@ -27,12 +29,16 @@ function Router() {
 
   return (
     <Switch>
-      {/* Kids routes - accessible without authentication for child play */}
+      {/* Authentication routes */}
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      
+      {/* Kids routes - accessible with child login */}
       <Route path="/kids" component={Home} />
       <Route path="/kids/play" component={Home} />
       
-      {/* Parent/Auth required routes */}
-      <Route path="/parent" component={isAuthenticated ? ParentDashboard : Landing} />
+      {/* Parent routes - requires parent authentication */}
+      <Route path="/parent" component={isAuthenticated ? ParentDashboard : Login} />
       
       {/* Main routes */}
       {!isAuthenticated ? (
