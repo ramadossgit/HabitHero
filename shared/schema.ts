@@ -1,0 +1,244 @@
+import { sql, relations } from 'drizzle-orm';
+import {
+  index,
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  integer,
+  text,
+  boolean,
+  date,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Session storage table (required for Replit Auth)
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table (required for Replit Auth - parents)
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Children managed by parents
+export const children = pgTable("children", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  avatarType: varchar("avatar_type").notNull().default("robot"), // robot, princess, ninja, animal
+  avatarUrl: varchar("avatar_url"),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  totalXp: integer("total_xp").notNull().default(0),
+  unlockedGear: jsonb("unlocked_gear").default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Habits that children can complete
+export const habits = pgTable("habits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  icon: varchar("icon").notNull(),
+  xpReward: integer("xp_reward").notNull().default(50),
+  color: varchar("color").notNull().default("mint"),
+  isActive: boolean("is_active").notNull().default(true),
+  frequency: varchar("frequency").notNull().default("daily"), // daily, weekly
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Daily habit completions
+export const habitCompletions = pgTable("habit_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  habitId: varchar("habit_id").notNull().references(() => habits.id, { onDelete: "cascade" }),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  xpEarned: integer("xp_earned").notNull(),
+  streakCount: integer("streak_count").notNull().default(1),
+  completedAt: timestamp("completed_at").defaultNow(),
+});
+
+// Rewards that can be earned
+export const rewards = pgTable("rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type").notNull(), // screen_time, treat, outing, gear
+  value: varchar("value"), // e.g., "30_minutes", "ice_cream", "park_visit"
+  cost: integer("cost").notNull(), // XP or habits required
+  costType: varchar("cost_type").notNull().default("habits"), // habits, xp, streak
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Claimed rewards
+export const rewardClaims = pgTable("reward_claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rewardId: varchar("reward_id").notNull().references(() => rewards.id, { onDelete: "cascade" }),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  claimedAt: timestamp("claimed_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  isApproved: boolean("is_approved").notNull().default(false),
+});
+
+// Mini-games and their unlock requirements
+export const miniGames = pgTable("mini_games", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  icon: varchar("icon").notNull(),
+  unlockRequirement: integer("unlock_requirement").notNull().default(2), // habits needed
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+// Parental control settings
+export const parentalControls = pgTable("parental_controls", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  dailyScreenTime: integer("daily_screen_time").notNull().default(60), // minutes
+  bonusTimePerHabit: integer("bonus_time_per_habit").notNull().default(10), // minutes
+  weekendBonus: integer("weekend_bonus").notNull().default(30), // minutes
+  gameUnlockRequirement: integer("game_unlock_requirement").notNull().default(2), // habits
+  maxGameTimePerDay: integer("max_game_time_per_day").notNull().default(20), // minutes
+  bedtimeMode: boolean("bedtime_mode").notNull().default(true),
+  bedtimeStart: varchar("bedtime_start").notNull().default("20:00"),
+  bedtimeEnd: varchar("bedtime_end").notNull().default("07:00"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  children: many(children),
+}));
+
+export const childrenRelations = relations(children, ({ one, many }) => ({
+  parent: one(users, {
+    fields: [children.parentId],
+    references: [users.id],
+  }),
+  habits: many(habits),
+  habitCompletions: many(habitCompletions),
+  rewards: many(rewards),
+  rewardClaims: many(rewardClaims),
+  parentalControls: one(parentalControls),
+}));
+
+export const habitsRelations = relations(habits, ({ one, many }) => ({
+  child: one(children, {
+    fields: [habits.childId],
+    references: [children.id],
+  }),
+  completions: many(habitCompletions),
+}));
+
+export const habitCompletionsRelations = relations(habitCompletions, ({ one }) => ({
+  habit: one(habits, {
+    fields: [habitCompletions.habitId],
+    references: [habits.id],
+  }),
+  child: one(children, {
+    fields: [habitCompletions.childId],
+    references: [children.id],
+  }),
+}));
+
+export const rewardsRelations = relations(rewards, ({ one, many }) => ({
+  child: one(children, {
+    fields: [rewards.childId],
+    references: [children.id],
+  }),
+  claims: many(rewardClaims),
+}));
+
+export const rewardClaimsRelations = relations(rewardClaims, ({ one }) => ({
+  reward: one(rewards, {
+    fields: [rewardClaims.rewardId],
+    references: [rewards.id],
+  }),
+  child: one(children, {
+    fields: [rewardClaims.childId],
+    references: [children.id],
+  }),
+}));
+
+export const parentalControlsRelations = relations(parentalControls, ({ one }) => ({
+  child: one(children, {
+    fields: [parentalControls.childId],
+    references: [children.id],
+  }),
+}));
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertChildSchema = createInsertSchema(children).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertHabitSchema = createInsertSchema(habits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).omit({
+  id: true,
+  completedAt: true,
+});
+
+export const insertRewardSchema = createInsertSchema(rewards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRewardClaimSchema = createInsertSchema(rewardClaims).omit({
+  id: true,
+  claimedAt: true,
+});
+
+export const insertParentalControlsSchema = createInsertSchema(parentalControls).omit({
+  id: true,
+  updatedAt: true,
+});
+
+// Types
+export type UpsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+export type Child = typeof children.$inferSelect;
+export type InsertChild = z.infer<typeof insertChildSchema>;
+export type Habit = typeof habits.$inferSelect;
+export type InsertHabit = z.infer<typeof insertHabitSchema>;
+export type HabitCompletion = typeof habitCompletions.$inferSelect;
+export type InsertHabitCompletion = z.infer<typeof insertHabitCompletionSchema>;
+export type Reward = typeof rewards.$inferSelect;
+export type InsertReward = z.infer<typeof insertRewardSchema>;
+export type RewardClaim = typeof rewardClaims.$inferSelect;
+export type InsertRewardClaim = z.infer<typeof insertRewardClaimSchema>;
+export type MiniGame = typeof miniGames.$inferSelect;
+export type ParentalControls = typeof parentalControls.$inferSelect;
+export type InsertParentalControls = z.infer<typeof insertParentalControlsSchema>;

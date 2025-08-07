@@ -1,0 +1,358 @@
+import {
+  users,
+  children,
+  habits,
+  habitCompletions,
+  rewards,
+  rewardClaims,
+  miniGames,
+  parentalControls,
+  type User,
+  type UpsertUser,
+  type Child,
+  type InsertChild,
+  type Habit,
+  type InsertHabit,
+  type HabitCompletion,
+  type InsertHabitCompletion,
+  type Reward,
+  type InsertReward,
+  type RewardClaim,
+  type InsertRewardClaim,
+  type MiniGame,
+  type ParentalControls,
+  type InsertParentalControls,
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, gte, desc, sql } from "drizzle-orm";
+
+export interface IStorage {
+  // User operations (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Child operations
+  getChildrenByParent(parentId: string): Promise<Child[]>;
+  getChild(id: string): Promise<Child | undefined>;
+  createChild(child: InsertChild): Promise<Child>;
+  updateChild(id: string, updates: Partial<InsertChild>): Promise<Child>;
+  updateChildXP(childId: string, xpGained: number): Promise<Child>;
+  
+  // Habit operations
+  getHabitsByChild(childId: string): Promise<Habit[]>;
+  getHabit(id: string): Promise<Habit | undefined>;
+  createHabit(habit: InsertHabit): Promise<Habit>;
+  updateHabit(id: string, updates: Partial<InsertHabit>): Promise<Habit>;
+  deleteHabit(id: string): Promise<void>;
+  
+  // Habit completion operations
+  getHabitCompletions(childId: string, startDate?: string, endDate?: string): Promise<HabitCompletion[]>;
+  createHabitCompletion(completion: InsertHabitCompletion): Promise<HabitCompletion>;
+  getHabitStreak(habitId: string, childId: string): Promise<number>;
+  getTodaysCompletions(childId: string): Promise<HabitCompletion[]>;
+  
+  // Reward operations
+  getRewardsByChild(childId: string): Promise<Reward[]>;
+  createReward(reward: InsertReward): Promise<Reward>;
+  updateReward(id: string, updates: Partial<InsertReward>): Promise<Reward>;
+  deleteReward(id: string): Promise<void>;
+  
+  // Reward claim operations
+  createRewardClaim(claim: InsertRewardClaim): Promise<RewardClaim>;
+  getRewardClaims(childId: string): Promise<RewardClaim[]>;
+  approveRewardClaim(claimId: string): Promise<RewardClaim>;
+  
+  // Mini-game operations
+  getAllMiniGames(): Promise<MiniGame[]>;
+  
+  // Parental controls operations
+  getParentalControls(childId: string): Promise<ParentalControls | undefined>;
+  upsertParentalControls(controls: InsertParentalControls): Promise<ParentalControls>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // User operations (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Child operations
+  async getChildrenByParent(parentId: string): Promise<Child[]> {
+    return await db.select().from(children).where(eq(children.parentId, parentId));
+  }
+
+  async getChild(id: string): Promise<Child | undefined> {
+    const [child] = await db.select().from(children).where(eq(children.id, id));
+    return child;
+  }
+
+  async createChild(child: InsertChild): Promise<Child> {
+    const [newChild] = await db.insert(children).values(child).returning();
+    
+    // Create default habits for new child
+    const defaultHabits = [
+      { name: "Brush Teeth", description: "Keep your smile sparkling bright!", icon: "tooth", xpReward: 50, color: "mint" },
+      { name: "Make Bed", description: "Start the day organized!", icon: "bed", xpReward: 40, color: "sky" },
+      { name: "Help Parents", description: "Be a helpful family hero!", icon: "heart", xpReward: 60, color: "turquoise" },
+      { name: "Reading Time", description: "Unlock new adventures!", icon: "book", xpReward: 70, color: "coral" },
+      { name: "Drink Water", description: "Stay hydrated like a hero!", icon: "tint", xpReward: 30, color: "sky" },
+    ];
+
+    for (const habit of defaultHabits) {
+      await db.insert(habits).values({
+        childId: newChild.id,
+        ...habit,
+      });
+    }
+
+    // Create default parental controls
+    await db.insert(parentalControls).values({
+      childId: newChild.id,
+    });
+
+    // Create default rewards
+    const defaultRewards = [
+      { name: "Extra Screen Time (30 min)", description: "Bonus screen time for good habits", type: "screen_time", value: "30_minutes", cost: 3, costType: "habits" },
+      { name: "Special Treat", description: "Choose a special snack", type: "treat", value: "special_snack", cost: 5, costType: "habits" },
+      { name: "Choose Dinner Menu", description: "Pick what the family has for dinner", type: "privilege", value: "dinner_choice", cost: 5, costType: "streak" },
+    ];
+
+    for (const reward of defaultRewards) {
+      await db.insert(rewards).values({
+        childId: newChild.id,
+        ...reward,
+      });
+    }
+
+    return newChild;
+  }
+
+  async updateChild(id: string, updates: Partial<InsertChild>): Promise<Child> {
+    const [updatedChild] = await db
+      .update(children)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(children.id, id))
+      .returning();
+    return updatedChild;
+  }
+
+  async updateChildXP(childId: string, xpGained: number): Promise<Child> {
+    const [child] = await db.select().from(children).where(eq(children.id, childId));
+    if (!child) throw new Error("Child not found");
+
+    const newXP = child.xp + xpGained;
+    const newTotalXP = child.totalXp + xpGained;
+    const newLevel = Math.floor(newTotalXP / 1000) + 1;
+
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        xp: newXP >= 1000 ? newXP - 1000 : newXP,
+        totalXp: newTotalXP,
+        level: newLevel,
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+
+    return updatedChild;
+  }
+
+  // Habit operations
+  async getHabitsByChild(childId: string): Promise<Habit[]> {
+    return await db.select().from(habits).where(eq(habits.childId, childId));
+  }
+
+  async getHabit(id: string): Promise<Habit | undefined> {
+    const [habit] = await db.select().from(habits).where(eq(habits.id, id));
+    return habit;
+  }
+
+  async createHabit(habit: InsertHabit): Promise<Habit> {
+    const [newHabit] = await db.insert(habits).values(habit).returning();
+    return newHabit;
+  }
+
+  async updateHabit(id: string, updates: Partial<InsertHabit>): Promise<Habit> {
+    const [updatedHabit] = await db
+      .update(habits)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(habits.id, id))
+      .returning();
+    return updatedHabit;
+  }
+
+  async deleteHabit(id: string): Promise<void> {
+    await db.delete(habits).where(eq(habits.id, id));
+  }
+
+  // Habit completion operations
+  async getHabitCompletions(childId: string, startDate?: string, endDate?: string): Promise<HabitCompletion[]> {
+    let query = db.select().from(habitCompletions).where(eq(habitCompletions.childId, childId));
+
+    if (startDate && endDate) {
+      query = query.where(
+        and(
+          eq(habitCompletions.childId, childId),
+          gte(habitCompletions.date, startDate),
+          sql`${habitCompletions.date} <= ${endDate}`
+        )
+      );
+    }
+
+    return await query.orderBy(desc(habitCompletions.completedAt));
+  }
+
+  async createHabitCompletion(completion: InsertHabitCompletion): Promise<HabitCompletion> {
+    // Calculate streak
+    const streak = await this.getHabitStreak(completion.habitId, completion.childId);
+    
+    const [newCompletion] = await db
+      .insert(habitCompletions)
+      .values({
+        ...completion,
+        streakCount: streak + 1,
+      })
+      .returning();
+
+    // Update child XP
+    await this.updateChildXP(completion.childId, completion.xpEarned);
+
+    return newCompletion;
+  }
+
+  async getHabitStreak(habitId: string, childId: string): Promise<number> {
+    const completions = await db
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.habitId, habitId),
+          eq(habitCompletions.childId, childId)
+        )
+      )
+      .orderBy(desc(habitCompletions.date))
+      .limit(30);
+
+    let streak = 0;
+    const today = new Date();
+    let currentDate = new Date(today);
+
+    for (const completion of completions) {
+      const completionDate = new Date(completion.date);
+      const daysDiff = Math.floor((currentDate.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === streak) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  async getTodaysCompletions(childId: string): Promise<HabitCompletion[]> {
+    const today = new Date().toISOString().split('T')[0];
+    return await db
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          eq(habitCompletions.date, today)
+        )
+      );
+  }
+
+  // Reward operations
+  async getRewardsByChild(childId: string): Promise<Reward[]> {
+    return await db.select().from(rewards).where(eq(rewards.childId, childId));
+  }
+
+  async createReward(reward: InsertReward): Promise<Reward> {
+    const [newReward] = await db.insert(rewards).values(reward).returning();
+    return newReward;
+  }
+
+  async updateReward(id: string, updates: Partial<InsertReward>): Promise<Reward> {
+    const [updatedReward] = await db
+      .update(rewards)
+      .set(updates)
+      .where(eq(rewards.id, id))
+      .returning();
+    return updatedReward;
+  }
+
+  async deleteReward(id: string): Promise<void> {
+    await db.delete(rewards).where(eq(rewards.id, id));
+  }
+
+  // Reward claim operations
+  async createRewardClaim(claim: InsertRewardClaim): Promise<RewardClaim> {
+    const [newClaim] = await db.insert(rewardClaims).values(claim).returning();
+    return newClaim;
+  }
+
+  async getRewardClaims(childId: string): Promise<RewardClaim[]> {
+    return await db.select().from(rewardClaims).where(eq(rewardClaims.childId, childId));
+  }
+
+  async approveRewardClaim(claimId: string): Promise<RewardClaim> {
+    const [approvedClaim] = await db
+      .update(rewardClaims)
+      .set({
+        isApproved: true,
+        approvedAt: new Date(),
+      })
+      .where(eq(rewardClaims.id, claimId))
+      .returning();
+    return approvedClaim;
+  }
+
+  // Mini-game operations
+  async getAllMiniGames(): Promise<MiniGame[]> {
+    return await db.select().from(miniGames).where(eq(miniGames.isActive, true));
+  }
+
+  // Parental controls operations
+  async getParentalControls(childId: string): Promise<ParentalControls | undefined> {
+    const [controls] = await db.select().from(parentalControls).where(eq(parentalControls.childId, childId));
+    return controls;
+  }
+
+  async upsertParentalControls(controls: InsertParentalControls): Promise<ParentalControls> {
+    const existing = await this.getParentalControls(controls.childId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(parentalControls)
+        .set({ ...controls, updatedAt: new Date() })
+        .where(eq(parentalControls.childId, controls.childId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(parentalControls).values(controls).returning();
+      return created;
+    }
+  }
+}
+
+export const storage = new DatabaseStorage();
