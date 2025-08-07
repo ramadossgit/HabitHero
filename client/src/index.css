@@ -53,13 +53,26 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Custom colors for Habit Heroes */
-  --coral: hsl(5, 95%, 64%); /* #FF6B6B - more vibrant coral */
-  --turquoise: hsl(174, 61%, 57%); /* #4ECDC4 - signature turquoise */
-  --sky: hsl(200, 67%, 61%); /* #45B7D1 - bright sky blue */
-  --mint: hsl(150, 40%, 70%);
-  --sunshine: hsl(45, 93%, 75%);
-  --light-bg: hsl(210, 20%, 98%);
+  /* Custom colors for Habit Heroes - Kid-friendly and vibrant */
+  --coral: #FF6B6B; /* Bright coral for primary actions */
+  --turquoise: #4ECDC4; /* Fun turquoise for secondary elements */
+  --sky: #45B7D1; /* Bright sky blue for info */
+  --mint: #96CEB4; /* Soft mint for success */
+  --sunshine: #FFEAA7; /* Bright yellow for warnings/highlights */
+  --purple: #A29BFE; /* Magical purple for special elements */
+  --orange: #FD79A8; /* Playful pink-orange */
+  --lime: #00D2D3; /* Electric lime for energy */
+  --lavender: #DDA0DD; /* Soft lavender for calm elements */
+  
+  /* Fun gradients */
+  --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #A29BFE);
+  --hero-gradient: linear-gradient(135deg, #FF6B6B 0%, #FD79A8 25%, #A29BFE 50%, #4ECDC4 75%, #45B7D1 100%);
+  --magic-gradient: radial-gradient(circle, #A29BFE 0%, #DDA0DD 50%, #FF6B6B 100%);
+  
+  /* Background patterns */
+  --light-bg: #F8F9FA;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --glass-bg: rgba(255, 255, 255, 0.1);
 }
 
 .dark {
@@ -121,107 +134,188 @@
   }
 }
 
-/* Custom utility classes for Habit Heroes */
+/* Custom utility classes for Habit Heroes - Fun and kid-friendly */
 @layer utilities {
   .font-fredoka {
     font-family: var(--font-fredoka);
   }
   
-  .text-coral {
-    color: var(--coral);
+  /* Color utilities with new vibrant colors */
+  .text-coral { color: var(--coral); }
+  .bg-coral { background-color: var(--coral); }
+  .border-coral { border-color: var(--coral); }
+  
+  .text-turquoise { color: var(--turquoise); }
+  .bg-turquoise { background-color: var(--turquoise); }
+  .border-turquoise { border-color: var(--turquoise); }
+  
+  .text-sky { color: var(--sky); }
+  .bg-sky { background-color: var(--sky); }
+  .border-sky { border-color: var(--sky); }
+  
+  .text-mint { color: var(--mint); }
+  .bg-mint { background-color: var(--mint); }
+  .border-mint { border-color: var(--mint); }
+  
+  .text-sunshine { color: var(--sunshine); }
+  .bg-sunshine { background-color: var(--sunshine); }
+  .border-sunshine { border-color: var(--sunshine); }
+  
+  .text-purple { color: var(--purple); }
+  .bg-purple { background-color: var(--purple); }
+  .border-purple { border-color: var(--purple); }
+  
+  .text-orange { color: var(--orange); }
+  .bg-orange { background-color: var(--orange); }
+  .border-orange { border-color: var(--orange); }
+  
+  /* Amazing gradient backgrounds */
+  .rainbow-gradient { background: var(--rainbow-gradient); }
+  .hero-gradient { background: var(--hero-gradient); }
+  .magic-gradient { background: var(--magic-gradient); }
+  
+  /* Glass morphism effects */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
   
-  .bg-coral {
-    background-color: var(--coral);
+  /* Fun card effects */
+  .fun-card {
+    background: var(--card-bg);
+    border: 3px solid var(--coral);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(255, 107, 107, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
   }
   
-  .border-coral {
-    border-color: var(--coral);
+  .fun-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(255, 107, 107, 0.3);
+    border-color: var(--purple);
   }
   
-  .text-turquoise {
-    color: var(--turquoise);
-  }
-  
-  .bg-turquoise {
-    background-color: var(--turquoise);
-  }
-  
-  .border-turquoise {
-    border-color: var(--turquoise);
-  }
-  
-  .text-sky {
-    color: var(--sky);
-  }
-  
-  .bg-sky {
-    background-color: var(--sky);
-  }
-  
-  .border-sky {
-    border-color: var(--sky);
-  }
-  
-  .text-mint {
-    color: var(--mint);
-  }
-  
-  .bg-mint {
-    background-color: var(--mint);
-  }
-  
-  .border-mint {
-    border-color: var(--mint);
-  }
-  
-  .text-sunshine {
-    color: var(--sunshine);
-  }
-  
-  .bg-sunshine {
-    background-color: var(--sunshine);
-  }
-  
-  .border-sunshine {
-    border-color: var(--sunshine);
-  }
-  
-  .hero-gradient {
-    background: linear-gradient(135deg, var(--coral) 0%, var(--turquoise) 100%);
-  }
-  
-  .xp-gradient {
-    background: linear-gradient(90deg, var(--sky) 0%, var(--mint) 100%);
-  }
-  
-  .mission-card {
-    transition: transform 0.3s ease, border-color 0.3s ease;
-  }
-  
-  .mission-card:hover {
-    transform: translateY(-4px);
-  }
-  
-  .avatar-glow {
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
-  }
-  
-  .animate-bounce-slow {
-    animation: bounce 3s infinite;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse 2s infinite;
-  }
-  
+  /* Exciting title styling */
   .hero-title {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.5);
-    font-weight: 400;
+    background: var(--hero-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
     letter-spacing: 0.05em;
+    text-shadow: none;
+    position: relative;
   }
   
-  .text-drop-shadow {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  .hero-title::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    -webkit-text-stroke: 2px var(--coral);
+    -webkit-text-fill-color: transparent;
+    z-index: -1;
+  }
+  
+  /* Magical glow effects */
+  .magic-glow {
+    box-shadow: 0 0 30px var(--purple), 0 0 60px var(--purple);
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes glow {
+    from { box-shadow: 0 0 20px var(--purple), 0 0 40px var(--purple); }
+    to { box-shadow: 0 0 30px var(--coral), 0 0 60px var(--coral); }
+  }
+  
+  /* Bouncy animations */
+  .bounce-in {
+    animation: bounceIn 1s ease-out;
+  }
+  
+  @keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Floating animation for avatars */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  /* Wiggle animation for interactive elements */
+  .wiggle {
+    animation: wiggle 1s ease-in-out infinite;
+  }
+  
+  @keyframes wiggle {
+    0%, 7%, 14%, 21%, 28%, 35%, 42%, 49%, 56%, 63%, 70%, 77%, 84%, 91%, 98%, 100% { transform: rotate(0deg); }
+    3.5% { transform: rotate(2deg); }
+    10.5%, 24.5%, 38.5% { transform: rotate(-2deg); }
+    17.5%, 31.5%, 45.5% { transform: rotate(2deg); }
+  }
+  
+  /* Rainbow text for special elements */
+  .rainbow-text {
+    background: var(--rainbow-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: rainbow-shift 3s ease-in-out infinite;
+  }
+  
+  @keyframes rainbow-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  
+  /* Super cool button styles */
+  .super-button {
+    background: var(--hero-gradient);
+    border: none;
+    border-radius: 25px;
+    padding: 15px 30px;
+    font-weight: 700;
+    font-size: 18px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .super-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+  }
+  
+  .super-button:hover::before {
+    left: 100%;
+  }
+  
+  .super-button:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  
+  .super-button:active {
+    transform: translateY(-1px) scale(1.02);
   }
 }

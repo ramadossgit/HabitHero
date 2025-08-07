@@ -11,143 +11,162 @@ import {
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-coral via-turquoise to-sky">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="font-fredoka text-6xl text-white mb-4 hero-title">
-            Habit Heroes
-          </h1>
-          <p className="text-xl text-white/90 mb-8">
-            Transform daily habits into epic adventures for kids!
-          </p>
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-sunshine rounded-full float"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 bg-purple rounded-full float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-32 w-20 h-20 bg-mint rounded-full float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange rounded-full float" style={{ animationDelay: '0.5s' }}></div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Header with amazing title */}
+        <div className="text-center mb-16">
+          <div className="bounce-in">
+            <h1 className="font-fredoka text-8xl mb-6 hero-title" data-text="Habit Heroes">
+              Habit Heroes
+            </h1>
+            <div className="inline-block p-4 magic-gradient rounded-full mb-8">
+              <p className="text-2xl text-white font-bold px-4">
+                🚀 Transform daily habits into EPIC adventures! 🌟
+              </p>
+            </div>
+          </div>
           <Button 
-            size="lg" 
-            className="bg-white text-coral hover:bg-white/90 text-xl px-8 py-4 rounded-full shadow-lg"
+            className="super-button text-2xl px-12 py-6 wiggle"
             onClick={() => window.location.href = "/api/login"}
           >
-            Start Your Hero Journey
+            🎮 Start Your Hero Journey! ⚡
           </Button>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+        {/* Amazing Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <div className="fun-card bounce-in">
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-coral/20 rounded-full flex items-center justify-center mb-4">
-                <Star className="w-8 h-8 text-coral" />
+              <div className="mx-auto w-20 h-20 bg-coral rounded-full flex items-center justify-center mb-4 magic-glow float">
+                <Star className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                Hero Avatars
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                🦸 Hero Avatars
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Create and customize amazing hero characters - robots, princesses, ninjas, and magical animals!
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Create AMAZING hero characters - robots, princesses, ninjas, and magical animals! 🤖👸🥷🦄
               </p>
             </CardContent>
-          </Card>
+          </div>
 
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+          <div className="fun-card bounce-in" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-turquoise/20 rounded-full flex items-center justify-center mb-4">
-                <Trophy className="w-8 h-8 text-turquoise" />
+              <div className="mx-auto w-20 h-20 bg-turquoise rounded-full flex items-center justify-center mb-4 magic-glow float" style={{ animationDelay: '1s' }}>
+                <Trophy className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                XP & Rewards
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                🏆 XP & Rewards
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Earn experience points, level up, and unlock amazing rewards for completing daily habits!
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Earn XP, level up, and unlock AMAZING rewards! Level 100 heroes get the coolest gear! ⚡💎
               </p>
             </CardContent>
-          </Card>
+          </div>
 
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+          <div className="fun-card bounce-in" style={{ animationDelay: '0.4s' }}>
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-sky/20 rounded-full flex items-center justify-center mb-4">
-                <Heart className="w-8 h-8 text-sky" />
+              <div className="mx-auto w-20 h-20 bg-sky rounded-full flex items-center justify-center mb-4 magic-glow float" style={{ animationDelay: '2s' }}>
+                <Heart className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                Daily Missions
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                🎯 Daily Missions
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Turn everyday tasks like brushing teeth and reading into exciting hero missions!
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Turn boring tasks into EPIC hero missions! Brush teeth = Defeat Cavity Dragon! 🐉✨
               </p>
             </CardContent>
-          </Card>
+          </div>
 
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+          <div className="fun-card bounce-in" style={{ animationDelay: '0.6s' }}>
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-mint/20 rounded-full flex items-center justify-center mb-4">
-                <Gamepad2 className="w-8 h-8 text-mint" />
+              <div className="mx-auto w-20 h-20 bg-mint rounded-full flex items-center justify-center mb-4 magic-glow float">
+                <Gamepad2 className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                Mini-Games
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                🎮 Mini-Games
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Unlock fun educational games as rewards for completing habits and maintaining streaks!
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Unlock super fun games as rewards! Racing, puzzles, adventures - all yours to play! 🚀🎨
               </p>
             </CardContent>
-          </Card>
+          </div>
 
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+          <div className="fun-card bounce-in" style={{ animationDelay: '0.8s' }}>
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-sunshine/20 rounded-full flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-orange-500" />
+              <div className="mx-auto w-20 h-20 bg-orange rounded-full flex items-center justify-center mb-4 magic-glow float" style={{ animationDelay: '0.5s' }}>
+                <Users className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                Parent Dashboard
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                👨‍👩‍👧‍👦 Parent Dashboard
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Track progress, set custom habits, manage rewards, and celebrate your child's achievements!
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Parents can track progress, set rewards, and celebrate victories together! 📊🎉
               </p>
             </CardContent>
-          </Card>
+          </div>
 
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+          <div className="fun-card bounce-in" style={{ animationDelay: '1s' }}>
             <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-purple-200 rounded-full flex items-center justify-center mb-4">
-                <Shield className="w-8 h-8 text-purple-600" />
+              <div className="mx-auto w-20 h-20 bg-purple rounded-full flex items-center justify-center mb-4 magic-glow float" style={{ animationDelay: '1.5s' }}>
+                <Shield className="w-10 h-10 text-white" />
               </div>
-              <CardTitle className="font-fredoka text-2xl text-gray-800">
-                Safe & Secure
+              <CardTitle className="font-fredoka text-3xl rainbow-text">
+                🛡️ Safe & Secure
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 text-center">
-                Child-safe design with parental controls, screen time management, and secure data protection.
+              <p className="text-gray-700 text-center text-lg font-semibold">
+                Super safe for kids with parental controls and secure data protection! 🔒👨‍👩‍👧‍👦
               </p>
             </CardContent>
-          </Card>
+          </div>
         </div>
 
-        {/* Call to Action */}
+        {/* Epic Call to Action */}
         <div className="text-center">
-          <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl max-w-2xl mx-auto">
-            <CardContent className="p-8">
-              <h2 className="font-fredoka text-3xl text-gray-800 mb-4">
-                Ready to Start the Adventure?
+          <div className="fun-card max-w-4xl mx-auto bounce-in" style={{ animationDelay: '1.2s' }}>
+            <CardContent className="p-12">
+              <h2 className="font-fredoka text-5xl rainbow-text mb-6">
+                🎉 Ready for the ULTIMATE Adventure? 🎉
               </h2>
-              <p className="text-gray-600 mb-6">
-                Join thousands of families who are making daily habits fun and rewarding!
+              <p className="text-gray-700 mb-8 text-xl font-bold">
+                Join thousands of young heroes making habits FUN! 🌟 
+                <br />
+                Your epic journey starts NOW! 💫
               </p>
               <Button 
-                size="lg"
-                className="bg-coral hover:bg-coral/80 text-white text-xl px-8 py-4 rounded-full shadow-lg"
+                className="super-button text-3xl px-16 py-8 mb-4 wiggle"
                 onClick={() => window.location.href = "/api/login"}
               >
-                Create Your Hero Account
+                🚀 CREATE YOUR HERO! 🦸‍♀️
               </Button>
+              <div className="mt-6 flex justify-center space-x-4 text-4xl">
+                <span className="float">🤖</span>
+                <span className="float" style={{ animationDelay: '0.5s' }}>👸</span>
+                <span className="float" style={{ animationDelay: '1s' }}>🥷</span>
+                <span className="float" style={{ animationDelay: '1.5s' }}>🦄</span>
+                <span className="float" style={{ animationDelay: '2s' }}>🐉</span>
+              </div>
             </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

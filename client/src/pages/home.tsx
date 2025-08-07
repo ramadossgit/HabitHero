@@ -22,10 +22,12 @@ export default function Home() {
 
   if (childrenLoading) {
     return (
-      <div className="min-h-screen bg-light-bg flex items-center justify-center">
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coral mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your heroes...</p>
+          <div className="w-20 h-20 magic-gradient rounded-full mx-auto mb-6 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+          </div>
+          <p className="text-white text-xl font-bold">✨ Loading your heroes... ✨</p>
         </div>
       </div>
     );
@@ -33,21 +35,23 @@ export default function Home() {
 
   if (!children || children.length === 0) {
     return (
-      <div className="min-h-screen bg-light-bg">
+      <div className="min-h-screen hero-gradient">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="font-fredoka text-4xl text-gray-800 mb-8 hero-title">Welcome to Habit Heroes!</h1>
-            <Card className="max-w-md mx-auto p-6">
-              <h2 className="font-fredoka text-2xl text-gray-800 mb-4">Create Your First Hero</h2>
-              <p className="text-gray-600 mb-6">
-                Let's start by creating a hero character for your child!
-              </p>
-              <Link href="/parent">
-                <Button className="bg-coral hover:bg-coral/80 text-white">
-                  Go to Parent Dashboard
-                </Button>
-              </Link>
-            </Card>
+            <h1 className="font-fredoka text-6xl mb-8 hero-title bounce-in">🎉 Welcome to Habit Heroes! 🎉</h1>
+            <div className="fun-card max-w-md mx-auto">
+              <CardContent className="p-8">
+                <h2 className="font-fredoka text-3xl rainbow-text mb-4">🦸 Create Your First Hero!</h2>
+                <p className="text-gray-700 mb-6 text-lg font-semibold">
+                  Let's start your EPIC adventure by creating an amazing hero character! 🚀
+                </p>
+                <Link href="/parent">
+                  <Button className="super-button text-xl px-8 py-4">
+                    🎮 Go to Parent Dashboard ⚡
+                  </Button>
+                </Link>
+              </CardContent>
+            </div>
           </div>
         </div>
       </div>
@@ -55,46 +59,67 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-light-bg">
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-10 left-10 w-16 h-16 bg-sunshine rounded-full float"></div>
+        <div className="absolute top-32 right-16 w-12 h-12 bg-purple rounded-full float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-32 left-16 w-10 h-10 bg-mint rounded-full float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-10 right-10 w-14 h-14 bg-orange rounded-full float" style={{ animationDelay: '0.5s' }}></div>
+      </div>
+      
       {/* Navigation Toggle */}
       <div className="fixed top-4 right-4 z-50 flex space-x-2">
         {children && children.length > 1 && (
-          <div className="bg-white rounded-full p-2 shadow-lg border-2 border-coral">
+          <div className="fun-card p-3">
             <select
               value={selectedChildId || children[0]?.id}
               onChange={(e) => setSelectedChildId(e.target.value)}
-              className="bg-transparent border-none outline-none text-coral font-bold"
+              className="bg-transparent border-none outline-none text-gray-800 font-bold text-lg"
             >
               {children.map((child: Child) => (
                 <option key={child.id} value={child.id}>
-                  {child.name}
+                  🦸 {child.name}
                 </option>
               ))}
             </select>
           </div>
         )}
         <Link href="/parent">
-          <Button className="bg-white rounded-full p-3 shadow-lg border-2 border-coral hover:bg-coral hover:text-white">
-            <UserCog className="w-5 h-5" />
-          </Button>
+          <div className="fun-card p-3">
+            <Button variant="ghost" className="text-gray-800 hover:bg-purple/20 font-bold">
+              <UserCog className="w-5 h-5 mr-2" />
+              👨‍👩‍👧‍👦 Parent
+            </Button>
+          </div>
         </Link>
       </div>
 
       {selectedChild && (
-        <>
-          <HeroHeader child={selectedChild} />
+        <div className="relative z-10">
+          <div className="bounce-in">
+            <HeroHeader child={selectedChild} />
+          </div>
           
-          <main className="max-w-6xl mx-auto p-6">
-            <DailyMissions childId={selectedChild.id} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              <HeroCustomization child={selectedChild} />
-              <RewardsSection childId={selectedChild.id} />
+          <main className="max-w-6xl mx-auto p-6 space-y-8">
+            <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
+              <DailyMissions childId={selectedChild.id} />
             </div>
             
-            <WeeklyProgress childId={selectedChild.id} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
+                <HeroCustomization child={selectedChild} />
+              </div>
+              <div className="bounce-in" style={{ animationDelay: '0.6s' }}>
+                <RewardsSection childId={selectedChild.id} />
+              </div>
+            </div>
+            
+            <div className="bounce-in" style={{ animationDelay: '0.8s' }}>
+              <WeeklyProgress childId={selectedChild.id} />
+            </div>
           </main>
-        </>
+        </div>
       )}
     </div>
   );
