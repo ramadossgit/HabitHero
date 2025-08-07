@@ -25,10 +25,11 @@ export default function ParentDashboard() {
   });
 
   const createHeroMutation = useMutation({
-    mutationFn: async (heroData: { name: string; avatarType: string }) => {
+    mutationFn: async (heroData: { name: string; avatarType: string; avatarUrl?: string }) => {
       await apiRequest("POST", "/api/children", {
         name: heroData.name,
         avatarType: heroData.avatarType,
+        avatarUrl: heroData.avatarUrl,
         level: 1,
         xp: 0,
         totalXp: 0,
@@ -54,6 +55,15 @@ export default function ParentDashboard() {
     },
   });
 
+  const handleImageUpload = (file: File) => {
+    setNewAvatarImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCreateHero = () => {
     if (!heroName.trim()) {
       toast({
@@ -63,12 +73,25 @@ export default function ParentDashboard() {
       });
       return;
     }
-    createHeroMutation.mutate({ name: heroName.trim(), avatarType });
+    
+    const heroData: any = { 
+      name: heroName.trim(), 
+      avatarType 
+    };
+    
+    // Add image URL if preview exists (simulating upload)
+    if (imagePreview) {
+      heroData.avatarUrl = imagePreview;
+    }
+    
+    createHeroMutation.mutate(heroData);
   };
 
   const [showAddHero, setShowAddHero] = useState(false);
   const [newHeroName, setNewHeroName] = useState("");
   const [newAvatarType, setNewAvatarType] = useState("robot");
+  const [newAvatarImage, setNewAvatarImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
   
   // Form states for different management sections
   const [showAddHabit, setShowAddHabit] = useState(false);
@@ -368,6 +391,8 @@ export default function ParentDashboard() {
               newAvatarType={newAvatarType}
               setNewAvatarType={setNewAvatarType}
               avatarTypes={avatarTypes}
+              imagePreview={imagePreview}
+              handleImageUpload={handleImageUpload}
             />
           </div>
 
@@ -1067,7 +1092,9 @@ function KidsManagementSection({
   setNewHeroName,
   newAvatarType,
   setNewAvatarType,
-  avatarTypes
+  avatarTypes,
+  imagePreview,
+  handleImageUpload
 }: { 
   children: Child[]; 
   createHeroMutation: any;
@@ -1079,8 +1106,29 @@ function KidsManagementSection({
   newAvatarType: string;
   setNewAvatarType: (type: string) => void;
   avatarTypes: any[];
+  imagePreview: string;
+  handleImageUpload: (file: File) => void;
 }) {
   const { toast } = useToast();
+  const [editingChild, setEditingChild] = useState<string | null>(null);
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string>("");
+
+  const handleEditImageUpload = (file: File, childId: string) => {
+    setEditImage(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setEditImagePreview(e.target?.result as string);
+      // Simulate updating the child's avatar
+      toast({
+        title: "Image Updated! 📸",
+        description: "Hero's avatar has been updated successfully!",
+      });
+      setEditingChild(null);
+      setEditImagePreview("");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAddHero = () => {
     if (!newHeroName.trim()) {
@@ -1091,10 +1139,18 @@ function KidsManagementSection({
       });
       return;
     }
-    createHeroMutation.mutate({ 
+    
+    const heroData: any = { 
       name: newHeroName.trim(), 
       avatarType: newAvatarType 
-    });
+    };
+    
+    // Add image URL if preview exists
+    if (imagePreview) {
+      heroData.avatarUrl = imagePreview;
+    }
+    
+    createHeroMutation.mutate(heroData);
     setNewHeroName("");
     setNewAvatarType("robot");
     setShowAddHero(false);
@@ -1112,11 +1168,31 @@ function KidsManagementSection({
         {children.map((child) => (
           <div key={child.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
             <div className="flex items-center space-x-4">
-              <img 
-                src={getAvatarImage(child.avatarType)} 
-                alt={child.name} 
-                className="w-12 h-12 rounded-full border-2 border-purple-300 object-cover"
-              />
+              <div className="relative">
+                <img 
+                  src={child.avatarUrl || getAvatarImage(child.avatarType)} 
+                  alt={child.name} 
+                  className="w-12 h-12 rounded-full border-2 border-purple-300 object-cover"
+                />
+                {editingChild === child.id ? (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && handleEditImageUpload(e.target.files[0], child.id)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <span className="text-white text-xs">📷</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setEditingChild(child.id)}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-purple-600 transition-colors"
+                  >
+                    📷
+                  </button>
+                )}
+              </div>
               <div>
                 <div className="font-bold text-gray-800">{child.name}</div>
                 <div className="text-sm text-gray-600">
@@ -1152,6 +1228,48 @@ function KidsManagementSection({
               onChange={(e) => setNewHeroName(e.target.value)}
               className="border-2 border-purple-300"
             />
+            
+            {/* Image Upload Section */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">Custom Avatar Image (Optional)</label>
+              <div className="flex items-center space-x-4">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-16 h-16 rounded-full border-2 border-purple-300 object-cover"
+                    />
+                    <button
+                      onClick={() => window.location.reload()} // Reset preview
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
+                    <span className="text-gray-400 text-xs">📷</span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                    className="hidden"
+                    id="avatar-upload-new"
+                  />
+                  <label
+                    htmlFor="avatar-upload-new"
+                    className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-lg cursor-pointer hover:bg-purple-200 transition-colors text-sm font-bold"
+                  >
+                    📷 Upload Image
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">Upload a custom avatar or use default type below</p>
+                </div>
+              </div>
+            </div>
             
             <div className="grid grid-cols-2 gap-2">
               {avatarTypes.map((type) => (

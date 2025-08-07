@@ -70,6 +70,14 @@ export default function Home() {
       
       {/* Navigation Toggle */}
       <div className="fixed top-4 right-4 z-50 flex space-x-2">
+        {/* Logout Button */}
+        <Button 
+          onClick={() => window.location.href = "/api/logout"}
+          className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg"
+        >
+          🚪 Sign Out
+        </Button>
+        
         {children && children.length > 1 && (
           <div className="fun-card p-3">
             <select
