@@ -24,7 +24,7 @@ export default function Landing() {
         {/* Header with amazing title */}
         <div className="text-center mb-16">
           <div className="bounce-in">
-            <h1 className="font-fredoka text-8xl mb-6 hero-title" data-text="Habit Heroes">
+            <h1 className="font-fredoka text-8xl mb-6 hero-title">
               Habit Heroes
             </h1>
             <div className="inline-block p-4 magic-gradient rounded-full mb-8">
