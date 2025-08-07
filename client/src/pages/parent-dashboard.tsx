@@ -11,13 +11,13 @@ import HabitManagement from "@/components/parent/habit-management";
 import RewardSettings from "@/components/parent/reward-settings";
 import ProgressReports from "@/components/parent/progress-reports";
 import ParentalControls from "@/components/parent/parental-controls";
-import type { Child } from "@shared/schema";
+import type { Child, User } from "@shared/schema";
 
 export default function ParentDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  const { data: children, isLoading: childrenLoading } = useQuery({
+  const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
     enabled: isAuthenticated,
   });
@@ -55,12 +55,12 @@ export default function ParentDashboard() {
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="font-fredoka text-3xl">Parent Dashboard</h1>
+                <h1 className="font-fredoka text-3xl hero-title">Parent Dashboard</h1>
                 <p className="text-gray-300">Habit Heroes - Welcome!</p>
               </div>
               <div className="flex items-center space-x-4">
                 <img 
-                  src={user?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
+                  src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
                   alt="Parent Profile" 
                   className="w-12 h-12 rounded-full border-2 border-white object-cover"
                 />
@@ -111,7 +111,7 @@ export default function ParentDashboard() {
                 </Button>
               </Link>
               <div>
-                <h1 className="font-fredoka text-3xl">Parent Dashboard</h1>
+                <h1 className="font-fredoka text-3xl hero-title">Parent Dashboard</h1>
                 <p className="text-gray-300">Habit Heroes - Managing {child.name}'s Progress</p>
               </div>
             </div>
@@ -121,7 +121,7 @@ export default function ParentDashboard() {
                 <div className="font-bold text-xl">{child.totalXp.toLocaleString()} XP</div>
               </div>
               <img 
-                src={user?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
+                src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
                 alt="Parent Profile" 
                 className="w-12 h-12 rounded-full border-2 border-white object-cover"
               />

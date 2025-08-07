@@ -14,7 +14,7 @@ import type { Child } from "@shared/schema";
 export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
-  const { data: children, isLoading: childrenLoading } = useQuery({
+  const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
   });
 
@@ -36,7 +36,7 @@ export default function Home() {
       <div className="min-h-screen bg-light-bg">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="font-fredoka text-4xl text-gray-800 mb-8">Welcome to Habit Heroes!</h1>
+            <h1 className="font-fredoka text-4xl text-gray-800 mb-8 hero-title">Welcome to Habit Heroes!</h1>
             <Card className="max-w-md mx-auto p-6">
               <h2 className="font-fredoka text-2xl text-gray-800 mb-4">Create Your First Hero</h2>
               <p className="text-gray-600 mb-6">

@@ -15,7 +15,7 @@ export default function Landing() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="font-fredoka text-6xl text-white mb-4 drop-shadow-lg">
+          <h1 className="font-fredoka text-6xl text-white mb-4 hero-title">
             Habit Heroes
           </h1>
           <p className="text-xl text-white/90 mb-8">
