@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Child, User, InsertChild } from "@shared/schema";
+import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
   const { toast } = useToast();
@@ -267,39 +267,76 @@ export default function ParentDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto p-6 relative z-10">
-        {/* Hero Overview */}
-        <div className="bounce-in mb-8">
-          <Card className="fun-card p-6 border-4 border-coral">
-            <div className="flex items-center space-x-6">
-              <img 
-                src={getAvatarImage(child.avatarType)} 
-                alt={`${child.name}'s Hero`} 
-                className="w-24 h-24 rounded-full border-4 border-coral avatar-glow object-cover"
-              />
-              <div className="flex-1">
-                <h2 className="font-fredoka text-3xl text-gray-800 mb-2">{child.name}</h2>
-                <p className="text-gray-600 text-lg mb-3">
-                  Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
-                </p>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-5 h-5 text-sunshine" />
-                    <span className="font-bold text-gray-800">{child.totalXp.toLocaleString()} XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                    <span className="font-bold text-gray-800">{child.streakCount} day streak</span>
+        {/* Top Achiever & Kids Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Top Achiever Card */}
+          <div className="lg:col-span-2">
+            <div className="bounce-in">
+              <Card className="fun-card p-6 border-4 border-coral">
+                <h3 className="font-fredoka text-2xl text-gray-800 mb-4 flex items-center">
+                  <Trophy className="w-8 h-8 text-sunshine mr-3" />
+                  Top Achiever This Week
+                </h3>
+                <div className="flex items-center space-x-6">
+                  <img 
+                    src={getAvatarImage(child.avatarType)} 
+                    alt={`${child.name}'s Hero`} 
+                    className="w-20 h-20 rounded-full border-4 border-coral avatar-glow object-cover"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-fredoka text-2xl text-gray-800 mb-1">{child.name}</h4>
+                    <p className="text-gray-600 text-lg mb-2">
+                      Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
+                    </p>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-5 h-5 text-sunshine" />
+                        <span className="font-bold text-gray-800">{child.totalXp.toLocaleString()} XP</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Flame className="w-5 h-5 text-orange-500" />
+                        <span className="font-bold text-gray-800">{(child as any).streakCount || 0} day streak</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Button 
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Another Hero
-              </Button>
+              </Card>
             </div>
-          </Card>
+          </div>
+
+          {/* Kids Management Card */}
+          <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
+            <Card className="fun-card p-6 border-4 border-purple-500 h-full">
+              <h3 className="font-fredoka text-xl text-gray-800 mb-4 flex items-center">
+                <UserRound className="w-6 h-6 text-purple-500 mr-2" />
+                Kids Management
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <img 
+                      src={getAvatarImage(child.avatarType)} 
+                      alt={child.name} 
+                      className="w-10 h-10 rounded-full border-2 border-purple-300 object-cover"
+                    />
+                    <div>
+                      <div className="font-bold text-gray-800">{child.name}</div>
+                      <div className="text-sm text-gray-600">Level {child.level}</div>
+                    </div>
+                  </div>
+                  <div className="text-sm font-bold text-purple-600">{child.totalXp} XP</div>
+                </div>
+                <Button 
+                  onClick={() => createHeroMutation.mutate({ name: "New Hero", avatarType: "robot" })}
+                  disabled={createHeroMutation.isPending}
+                  className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another Hero
+                </Button>
+              </div>
+            </Card>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -335,56 +372,183 @@ export default function ParentDashboard() {
         </div>
 
         {/* Management Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
-            <Card className="fun-card p-8 border-4 border-turquoise">
-              <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-                📋 Habit Management
-              </h3>
-              <p className="text-gray-600 mb-4">Manage daily habits and track progress</p>
-              <Button className="w-full bg-turquoise hover:bg-turquoise/80 text-white font-bold">
-                Configure Habits
-              </Button>
-            </Card>
+        <div className="space-y-8">
+          {/* Habit Management Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
+            <HabitManagementSection childId={child.id} />
           </div>
-          <div className="bounce-in" style={{ animationDelay: '0.6s' }}>
-            <Card className="fun-card p-8 border-4 border-purple-500">
-              <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-                🎁 Reward Settings
-              </h3>
-              <p className="text-gray-600 mb-4">Set up rewards and incentives</p>
-              <Button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold">
-                Manage Rewards
-              </Button>
-            </Card>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bounce-in" style={{ animationDelay: '0.7s' }}>
-            <Card className="fun-card p-8 border-4 border-sky">
-              <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-                📊 Progress Reports
-              </h3>
-              <p className="text-gray-600 mb-4">View detailed analytics and progress</p>
-              <Button className="w-full bg-sky hover:bg-sky/80 text-white font-bold">
-                View Reports
-              </Button>
-            </Card>
+          {/* Reward Settings Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
+            <RewardSettingsSection childId={child.id} />
           </div>
-          <div className="bounce-in" style={{ animationDelay: '0.8s' }}>
-            <Card className="fun-card p-8 border-4 border-orange-500">
-              <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-                🔐 Parental Controls
-              </h3>
-              <p className="text-gray-600 mb-4">Configure safety and time limits</p>
-              <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold">
-                Manage Controls
-              </Button>
-            </Card>
+
+          {/* Progress Reports Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
+            <ProgressReportsSection childId={child.id} />
+          </div>
+
+          {/* Parental Controls Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
+            <ParentalControlsSection childId={child.id} />
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+// Habit Management Section Component
+function HabitManagementSection({ childId }: { childId: string }) {
+  const { data: habits, isLoading } = useQuery<Habit[]>({
+    queryKey: [`/api/children/${childId}/habits`],
+  });
+
+  return (
+    <Card className="fun-card p-8 border-4 border-turquoise">
+      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
+        <Settings className="w-8 h-8 text-turquoise mr-3" />
+        📋 Habit Management
+      </h3>
+      <p className="text-gray-600 mb-6">Manage daily habits and track progress</p>
+      
+      {isLoading ? (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-turquoise border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {habits?.map((habit) => (
+            <div key={habit.id} className="flex items-center justify-between p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: habit.color }}></div>
+                <div>
+                  <div className="font-bold text-gray-800">{habit.name}</div>
+                  <div className="text-sm text-gray-600">{habit.description}</div>
+                </div>
+              </div>
+              <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
+            </div>
+          ))}
+          <Button className="w-full bg-turquoise hover:bg-turquoise/80 text-white font-bold">
+            + Add New Habit
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// Reward Settings Section Component
+function RewardSettingsSection({ childId }: { childId: string }) {
+  const { data: rewards, isLoading } = useQuery<Reward[]>({
+    queryKey: [`/api/children/${childId}/rewards`],
+  });
+
+  return (
+    <Card className="fun-card p-8 border-4 border-purple-500">
+      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
+        <Gift className="w-8 h-8 text-purple-500 mr-3" />
+        🎁 Reward Settings
+      </h3>
+      <p className="text-gray-600 mb-6">Set up rewards and incentives</p>
+      
+      {isLoading ? (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {rewards?.map((reward) => (
+            <div key={reward.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+              <div>
+                <div className="font-bold text-gray-800">{reward.name}</div>
+                <div className="text-sm text-gray-600">{reward.description}</div>
+              </div>
+              <div className="text-sm font-bold text-purple-600">
+                {reward.cost} {reward.costType === 'habits' ? 'habits' : 'streak days'}
+              </div>
+            </div>
+          ))}
+          <Button className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold">
+            + Add New Reward
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// Progress Reports Section Component
+function ProgressReportsSection({ childId }: { childId: string }) {
+  const { data: completions } = useQuery<any[]>({
+    queryKey: [`/api/children/${childId}/completions`],
+  });
+
+  const completionRate = completions ? Math.round((completions.length / 7) * 100) : 0;
+
+  return (
+    <Card className="fun-card p-8 border-4 border-sky">
+      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
+        <BarChart3 className="w-8 h-8 text-sky mr-3" />
+        📊 Progress Reports
+      </h3>
+      <p className="text-gray-600 mb-6">View detailed analytics and progress</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="text-center p-4 bg-sky/10 rounded-lg border-2 border-sky/30">
+          <div className="font-bold text-2xl text-gray-800">{completionRate}%</div>
+          <div className="text-sm text-gray-600">This Week</div>
+        </div>
+        <div className="text-center p-4 bg-green-50 rounded-lg border-2 border-green-200">
+          <div className="font-bold text-2xl text-gray-800">{completions?.length || 0}</div>
+          <div className="text-sm text-gray-600">Total Completions</div>
+        </div>
+        <div className="text-center p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="font-bold text-2xl text-gray-800">7</div>
+          <div className="text-sm text-gray-600">Days Tracked</div>
+        </div>
+      </div>
+      
+      <Button className="w-full bg-sky hover:bg-sky/80 text-white font-bold">
+        📈 View Detailed Reports
+      </Button>
+    </Card>
+  );
+}
+
+// Parental Controls Section Component
+function ParentalControlsSection({ childId }: { childId: string }) {
+  return (
+    <Card className="fun-card p-8 border-4 border-orange-500">
+      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
+        <Shield className="w-8 h-8 text-orange-500 mr-3" />
+        🔐 Parental Controls
+      </h3>
+      <p className="text-gray-600 mb-6">Configure safety and time limits</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="font-bold text-gray-800 mb-2">Screen Time Limit</div>
+          <div className="text-sm text-gray-600">2 hours daily</div>
+        </div>
+        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="font-bold text-gray-800 mb-2">Bedtime Mode</div>
+          <div className="text-sm text-gray-600">8:00 PM - 7:00 AM</div>
+        </div>
+        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="font-bold text-gray-800 mb-2">Game Access</div>
+          <div className="text-sm text-gray-600">Habit completion required</div>
+        </div>
+        <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+          <div className="font-bold text-gray-800 mb-2">Safety Features</div>
+          <div className="text-sm text-gray-600">Content filtering enabled</div>
+        </div>
+      </div>
+      
+      <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold">
+        ⚙️ Configure Controls
+      </Button>
+    </Card>
   );
 }
