@@ -26,7 +26,7 @@ export default function Home() {
 
   // If child is logged in, use their data; otherwise use parent's children
   const selectedChild = isChildAuthenticated 
-    ? loggedInChild
+    ? (loggedInChild as Child)
     : children?.find((child: Child) => child.id === selectedChildId) || children?.[0];
   
   const isLoading = childAuthLoading || childrenLoading;
@@ -44,8 +44,8 @@ export default function Home() {
     );
   }
 
-  // If there's an error (like 401 Unauthorized), show the kids-only demo version
-  if (error || (!childrenLoading && (!children || children.length === 0))) {
+  // If there's an error (like 401 Unauthorized) and no child is logged in, show the welcome screen
+  if (!isChildAuthenticated && (error || (!childrenLoading && (!children || children.length === 0)))) {
     return (
       <div className="min-h-screen hero-gradient">
         <div className="container mx-auto px-4 py-8">
@@ -60,12 +60,12 @@ export default function Home() {
                 <div className="space-y-4">
                   <Button 
                     className="super-button text-xl px-8 py-4 w-full"
-                    onClick={() => window.location.href = "/api/login"}
+                    onClick={() => window.location.href = "/login"}
                   >
-                    🎮 Parent Login ⚡
+                    🎮 Get Started ⚡
                   </Button>
                   <div className="text-sm text-gray-600">
-                    Parents need to log in first to create hero profiles for their kids!
+                    Parents can create accounts and set up hero profiles. Kids can login with their username and PIN!
                   </div>
                 </div>
               </CardContent>

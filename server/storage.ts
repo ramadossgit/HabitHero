@@ -210,19 +210,25 @@ export class DatabaseStorage implements IStorage {
 
   // Habit completion operations
   async getHabitCompletions(childId: string, startDate?: string, endDate?: string): Promise<HabitCompletion[]> {
-    let query = db.select().from(habitCompletions).where(eq(habitCompletions.childId, childId));
-
     if (startDate && endDate) {
-      query = query.where(
-        and(
-          eq(habitCompletions.childId, childId),
-          gte(habitCompletions.date, startDate),
-          sql`${habitCompletions.date} <= ${endDate}`
+      return await db
+        .select()
+        .from(habitCompletions)
+        .where(
+          and(
+            eq(habitCompletions.childId, childId),
+            gte(habitCompletions.date, startDate),
+            sql`${habitCompletions.date} <= ${endDate}`
+          )
         )
-      );
+        .orderBy(desc(habitCompletions.completedAt));
     }
 
-    return await query.orderBy(desc(habitCompletions.completedAt));
+    return await db
+      .select()
+      .from(habitCompletions)
+      .where(eq(habitCompletions.childId, childId))
+      .orderBy(desc(habitCompletions.completedAt));
   }
 
   async createHabitCompletion(completion: InsertHabitCompletion): Promise<HabitCompletion> {

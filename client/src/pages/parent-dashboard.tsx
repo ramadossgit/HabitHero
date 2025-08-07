@@ -1474,9 +1474,13 @@ function KidsManagementSection({
   handleImageUpload: (file: File) => void;
 }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [editingChild, setEditingChild] = useState<string | null>(null);
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>("");
+  const [editingCredentials, setEditingCredentials] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
+  const [pin, setPin] = useState("");
 
   const handleEditImageUpload = (file: File, childId: string) => {
     setEditImage(file);
@@ -1492,6 +1496,52 @@ function KidsManagementSection({
       setEditImagePreview("");
     };
     reader.readAsDataURL(file);
+  };
+
+  const updateCredentialsMutation = useMutation({
+    mutationFn: async (data: { childId: string; username: string; pin: string }) => {
+      await apiRequest("PATCH", `/api/children/${data.childId}`, {
+        username: data.username,
+        pin: data.pin
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Login Credentials Updated! 🔐",
+        description: "Child can now log in with their username and PIN!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      setEditingCredentials(null);
+      setUsername("");
+      setPin("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update credentials. Username might already be taken.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateCredentials = (childId: string) => {
+    if (!username.trim()) {
+      toast({
+        title: "Username required",
+        description: "Please enter a username for the child!",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!pin.trim() || pin.length !== 4) {
+      toast({
+        title: "PIN required",
+        description: "Please enter a 4-digit PIN!",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateCredentialsMutation.mutate({ childId, username: username.trim(), pin: pin.trim() });
   };
 
   const handleAddHero = () => {
@@ -1578,6 +1628,16 @@ function KidsManagementSection({
                 </Button>
                 <Button
                   onClick={() => {
+                    setEditingCredentials(editingCredentials === child.id ? null : child.id);
+                    setUsername(child.username || "");
+                    setPin("");
+                  }}
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-xs"
+                >
+                  🔐 {child.username ? "Edit Login" : "Setup Login"}
+                </Button>
+                <Button
+                  onClick={() => {
                     if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
                       toast({
                         title: "Hero Deleted",
@@ -1592,6 +1652,70 @@ function KidsManagementSection({
                 </Button>
               </div>
             </div>
+            
+            {/* Login Credentials Setup */}
+            {editingCredentials === child.id && (
+              <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                <h4 className="font-bold text-gray-800 mb-3">🔐 Setup Child Login</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Create a username and 4-digit PIN so {child.name} can log in independently!
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Username</label>
+                    <Input
+                      type="text"
+                      placeholder="Choose a fun username..."
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="border-2 border-green-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">4-Digit PIN</label>
+                    <Input
+                      type="password"
+                      placeholder="Enter 4-digit PIN (e.g. 1234)"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.slice(0, 4))}
+                      maxLength={4}
+                      className="border-2 border-green-300"
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleUpdateCredentials(child.id)}
+                      disabled={updateCredentialsMutation.isPending}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      {updateCredentialsMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>🔐 Save Login</>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setEditingCredentials(null);
+                        setUsername("");
+                        setPin("");
+                      }}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  {child.username && (
+                    <div className="text-sm text-green-600 bg-green-100 p-2 rounded">
+                      ✅ {child.name} can log in with username: <strong>{child.username}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
