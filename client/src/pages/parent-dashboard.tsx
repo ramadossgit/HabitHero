@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
@@ -16,6 +16,7 @@ import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 export default function ParentDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [, setLocation] = useLocation();
   const [heroName, setHeroName] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
 
@@ -156,7 +157,7 @@ export default function ParentDashboard() {
                 <Button 
                   variant="ghost" 
                   className="text-white hover:bg-white/20 font-bold cursor-pointer"
-                  onClick={() => window.location.href = "/"}
+                  onClick={() => setLocation("/")}
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back to Kids View
@@ -283,7 +284,7 @@ export default function ParentDashboard() {
               <Button 
                 variant="ghost" 
                 className="text-white hover:bg-white/20 font-bold cursor-pointer"
-                onClick={() => window.location.href = "/"}
+                onClick={() => setLocation("/")}
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Kids View
