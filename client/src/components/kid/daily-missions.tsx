@@ -176,10 +176,10 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
             </div>
           </div>
           
-          <h3 className="font-nunito font-extrabold text-lg mb-2 text-white">Weekend Bonus!</h3>
-          <p className="text-white/90 mb-4">Clean up toys before dinner</p>
+          <h3 className="font-nunito font-extrabold text-lg mb-2 text-black">Weekend Bonus!</h3>
+          <p className="text-black/90 mb-4">Clean up toys before dinner</p>
           
-          <Button className="bg-white text-yellow-600 px-4 py-2 rounded-full font-bold hover:bg-white/90 transition-colors w-full">
+          <Button className="bg-white text-black px-4 py-2 rounded-full font-bold hover:bg-white/90 transition-colors w-full">
             Accept Challenge!
           </Button>
         </Card>
