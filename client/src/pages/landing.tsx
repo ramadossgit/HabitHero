@@ -35,7 +35,8 @@ export default function Landing() {
           </div>
           <div className="space-y-4">
             <Button 
-              className="super-button text-2xl px-12 py-6 wiggle w-full"
+              className="super-button text-2xl px-12 py-6 wiggle w-full text-white font-bold"
+              style={{ color: 'white' }}
               onClick={() => window.location.href = "/login"}
             >
               🎮 Start Your Hero Journey! ⚡
