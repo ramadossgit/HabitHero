@@ -125,7 +125,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <IconComponent className={`${iconColor} text-2xl w-6 h-6`} />
                 </div>
                 <div className="text-right">
-                  <div className={`${buttonColor.replace('hover:', '')} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
+                  <div className="bg-white text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-gray-200">
                     +{habit.xpReward} XP
                   </div>
                 </div>
