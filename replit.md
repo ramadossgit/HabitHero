@@ -52,3 +52,11 @@ Preferred communication style: Simple, everyday language.
 - **Progress Tracking**: Visual progress reports and analytics for both children and parents
 - **Parental Controls**: Screen time limits, bedtime modes, and game access restrictions
 - **Mini-Games Integration**: Planned educational game components for enhanced engagement
+- **Mobile Apps**: React Native + Expo implementation for iOS and Android deployment
+
+### Mobile Platform Architecture
+- **Framework**: React Native with Expo for cross-platform development
+- **API Integration**: Same Express.js backend with RESTful API endpoints
+- **Authentication**: Integrated Replit Auth + child username/PIN system
+- **Deployment**: Expo Application Services (EAS) for app store deployment
+- **Mobile Features**: Push notifications, camera integration, offline sync, biometric authentication
