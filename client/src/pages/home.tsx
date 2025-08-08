@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, UserCog } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import ParentVerification from "@/components/ParentVerification";
 import HeroHeader from "@/components/kid/hero-header";
 import DailyMissions from "@/components/kid/daily-missions";
 import HeroCustomization from "@/components/kid/hero-customization";
@@ -14,6 +15,8 @@ import type { Child } from "@shared/schema";
 
 export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [showParentVerification, setShowParentVerification] = useState(false);
+  const [, setLocation] = useLocation();
   
   // Check if this is a child user accessing their own account
   const { child: loggedInChild, isChildAuthenticated, isLoading: childAuthLoading } = useChildAuth();
@@ -111,14 +114,22 @@ export default function Home() {
             </select>
           </div>
         )}
-        <Link href="/parent">
-          <div className="fun-card p-3">
-            <Button variant="ghost" className="text-gray-800 hover:bg-purple/20 font-bold">
-              <UserCog className="w-5 h-5 mr-2" />
-              👨‍👩‍👧‍👦 Parent
-            </Button>
-          </div>
-        </Link>
+        <div className="fun-card p-3">
+          <Button 
+            variant="ghost" 
+            className="text-gray-800 hover:bg-purple/20 font-bold"
+            onClick={() => {
+              if (isChildAuthenticated) {
+                setShowParentVerification(true);
+              } else {
+                setLocation("/parent");
+              }
+            }}
+          >
+            <UserCog className="w-5 h-5 mr-2" />
+            👨‍👩‍👧‍👦 Parent
+          </Button>
+        </div>
       </div>
 
       {selectedChild && (
@@ -146,6 +157,19 @@ export default function Home() {
             </div>
           </main>
         </div>
+      )}
+
+      {/* Parent Verification Modal */}
+      {showParentVerification && (
+        <ParentVerification
+          onVerified={() => {
+            setShowParentVerification(false);
+            setLocation("/parent");
+          }}
+          onCancel={() => {
+            setShowParentVerification(false);
+          }}
+        />
       )}
     </div>
   );
