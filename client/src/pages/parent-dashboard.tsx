@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
@@ -16,7 +16,6 @@ import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 export default function ParentDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [, setLocation] = useLocation();
   const [heroName, setHeroName] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
 
@@ -154,14 +153,12 @@ export default function ParentDashboard() {
                 <p className="text-white/90 text-lg">✨ Welcome to Habit Heroes! ✨</p>
               </div>
               <div className="flex items-center space-x-4">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20 font-bold cursor-pointer"
-                  onClick={() => setLocation("/")}
-                >
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to Kids View
-                </Button>
+                <Link href="/">
+                  <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Back to Home
+                  </Button>
+                </Link>
                 <img 
                   src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
                   alt="Parent Profile" 
@@ -281,14 +278,12 @@ export default function ParentDashboard() {
               <p className="text-white/90 text-lg">🎯 Managing {child.name}'s Hero Journey</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 font-bold cursor-pointer"
-                onClick={() => setLocation("/")}
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Back to Kids View
-              </Button>
+              <Link href="/">
+                <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Back to Home
+                </Button>
+              </Link>
               <Button 
                 variant="ghost" 
                 className="text-white hover:bg-white/20 font-bold"
