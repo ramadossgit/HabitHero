@@ -153,12 +153,14 @@ export default function ParentDashboard() {
                 <p className="text-white/90 text-lg">✨ Welcome to Habit Heroes! ✨</p>
               </div>
               <div className="flex items-center space-x-4">
-                <Link href="/">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Back to Kids View
-                  </Button>
-                </Link>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 font-bold cursor-pointer"
+                  onClick={() => window.location.href = "/"}
+                >
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Back to Kids View
+                </Button>
                 <img 
                   src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
                   alt="Parent Profile" 
@@ -278,12 +280,14 @@ export default function ParentDashboard() {
               <p className="text-white/90 text-lg">🎯 Managing {child.name}'s Hero Journey</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to Kids View
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                className="text-white hover:bg-white/20 font-bold cursor-pointer"
+                onClick={() => window.location.href = "/"}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Kids View
+              </Button>
               <Button 
                 variant="ghost" 
                 className="text-white hover:bg-white/20 font-bold"
