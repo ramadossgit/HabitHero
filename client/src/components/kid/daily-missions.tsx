@@ -125,21 +125,21 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <IconComponent className={`${iconColor} text-2xl w-6 h-6`} />
                 </div>
                 <div className="text-right">
-                  <div className={`${buttonColor.replace('hover:', '')} text-white px-3 py-1 rounded-full text-sm font-bold`}>
+                  <div className={`${buttonColor.replace('hover:', '')} text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg`}>
                     +{habit.xpReward} XP
                   </div>
                 </div>
               </div>
               
-              <h3 className="font-nunito font-extrabold text-lg mb-2">{habit.name}</h3>
-              <p className="text-gray-600 mb-4">{habit.description}</p>
+              <h3 className="font-nunito font-extrabold text-lg mb-2 text-black">{habit.name}</h3>
+              <p className="text-black/90 mb-4">{habit.description}</p>
               
               <div className="flex items-center justify-between">
                 {isCompleted ? (
                   <>
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="w-5 h-5 text-mint" />
-                      <span className="text-sm font-semibold">Completed!</span>
+                      <span className="text-sm font-semibold text-black">Completed!</span>
                     </div>
                     <div className="text-mint font-bold">✓ Done</div>
                   </>
@@ -147,10 +147,11 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <>
                     <div className="flex items-center space-x-2">
                       <Flame className="w-5 h-5 text-orange-500" />
-                      <span className="text-sm font-semibold">Ready</span>
+                      <span className="text-sm font-semibold text-black">Ready</span>
                     </div>
                     <Button 
-                      className={`${buttonColor} text-white px-4 py-2 rounded-full font-bold ${hoverButtonColor} transition-colors`}
+                      className={`${buttonColor} text-white px-4 py-2 rounded-full font-bold ${hoverButtonColor} transition-colors shadow-lg`}
+                      style={{ color: 'white' }}
                       onClick={() => completeMissionMutation.mutate(habit.id)}
                       disabled={completeMissionMutation.isPending}
                     >
