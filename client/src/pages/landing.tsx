@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import { 
   Star, 
   Trophy, 
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
   return (
     <div className="min-h-screen hero-gradient relative overflow-hidden">
       {/* Animated background elements */}
@@ -34,21 +36,30 @@ export default function Landing() {
             </div>
           </div>
           <div className="space-y-4">
-            <Button 
-              className="super-button text-2xl px-12 py-6 wiggle w-full text-white font-bold"
-              style={{ color: 'white' }}
-              onClick={() => window.location.href = "/login"}
-            >
-              🎮 Start Your Hero Journey! ⚡
-            </Button>
-            <div className="text-white text-lg">
-              <span>New to Habit Heroes? </span>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                className="super-button text-2xl px-12 py-6 wiggle text-white font-bold"
+                style={{ color: 'white' }}
+                onClick={() => setLocation("/kids-login")}
+              >
+                🎮 Kids Play Here! ⚡
+              </Button>
+              <Button 
+                className="super-button text-2xl px-12 py-6 wiggle text-white font-bold"
+                style={{ color: 'white' }}
+                onClick={() => setLocation("/parent")}
+              >
+                👨‍👩‍👧‍👦 Parents Manage Here! 
+              </Button>
+            </div>
+            <div className="text-white text-lg text-center">
+              <span>New family? </span>
               <Button 
                 variant="outline" 
                 className="text-white border-white hover:bg-white hover:text-gray-800 font-bold"
-                onClick={() => window.location.href = "/signup"}
+                onClick={() => setLocation("/parent/signup")}
               >
-                Create Account
+                Sign Up Here
               </Button>
             </div>
           </div>

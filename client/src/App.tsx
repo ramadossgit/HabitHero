@@ -1,27 +1,23 @@
-import { useState } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useChildAuth } from "@/hooks/useChildAuth";
-import ParentVerification from "@/components/ParentVerification";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
+import KidsLogin from "@/pages/kids-login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { childUser } = useChildAuth();
-  const [location, setLocation] = useLocation();
-  const [showParentVerification, setShowParentVerification] = useState(false);
-  const [isParentVerified, setIsParentVerified] = useState(false);
+  const { childUser, isLoading: childLoading } = useChildAuth();
 
-  if (isLoading) {
+  if (isLoading || childLoading) {
     return (
       <div className="min-h-screen hero-gradient flex items-center justify-center">
         <div className="text-center">
@@ -34,66 +30,28 @@ function Router() {
     );
   }
 
-  // Handle parent verification for accessing parent dashboard from kids view
-  const handleParentAccess = () => {
-    if (childUser && !isParentVerified) {
-      setShowParentVerification(true);
-      return;
-    }
-    setLocation("/parent");
-  };
-
-  const handleVerificationSuccess = () => {
-    setShowParentVerification(false);
-    setIsParentVerified(true);
-    setLocation("/parent");
-  };
-
-  const handleVerificationCancel = () => {
-    setShowParentVerification(false);
-    setLocation("/kids");
-  };
-
   return (
-    <>
-      <Switch>
-        {/* Authentication routes */}
-        <Route path="/login" component={Login} />
-        <Route path="/signup" component={Signup} />
-        
-        {/* Kids routes - accessible with child login */}
-        <Route path="/kids" component={Home} />
-        <Route path="/kids/play" component={Home} />
-        
-        {/* Parent routes - requires parent authentication or verification */}
-        <Route path="/parent">
-          {isAuthenticated || isParentVerified ? (
-            <ParentDashboard />
-          ) : (
-            <Login />
-          )}
-        </Route>
-        
-
-        
-        {/* Main routes */}
-        {!isAuthenticated && !childUser ? (
-          <Route path="/" component={Landing} />
-        ) : (
-          <Route path="/" component={childUser ? Home : (isAuthenticated ? ParentDashboard : Home)} />
-        )}
-        
-        <Route component={NotFound} />
-      </Switch>
-
-      {/* Parent Verification Modal */}
-      {showParentVerification && (
-        <ParentVerification
-          onVerified={handleVerificationSuccess}
-          onCancel={handleVerificationCancel}
-        />
-      )}
-    </>
+    <Switch>
+      {/* Kids Routes */}
+      <Route path="/kids-login" component={KidsLogin} />
+      <Route path="/kids">
+        {childUser ? <Home /> : <KidsLogin />}
+      </Route>
+      
+      {/* Parent Authentication Routes */}
+      <Route path="/parent/login" component={Login} />
+      <Route path="/parent/signup" component={Signup} />
+      
+      {/* Parent Dashboard - Full Management Interface */}
+      <Route path="/parent">
+        {isAuthenticated ? <ParentDashboard /> : <Login />}
+      </Route>
+      
+      {/* Default Route */}
+      <Route path="/" component={Landing} />
+      
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
