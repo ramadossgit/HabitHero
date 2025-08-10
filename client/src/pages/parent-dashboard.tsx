@@ -55,6 +55,27 @@ export default function ParentDashboard() {
     },
   });
 
+  const deleteChildMutation = useMutation({
+    mutationFn: async (childId: string) => {
+      await apiRequest("DELETE", `/api/children/${childId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Hero Deleted",
+        description: "Hero profile has been removed.",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete hero profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleImageUpload = (file: File) => {
     setNewAvatarImage(file);
     const reader = new FileReader();
@@ -397,7 +418,8 @@ export default function ParentDashboard() {
           <div className="bounce-in" style={{ animationDelay: '0.25s' }}>
             <KidsManagementSection 
               children={children} 
-              createHeroMutation={createHeroMutation} 
+              createHeroMutation={createHeroMutation}
+              deleteChildMutation={deleteChildMutation}
               getAvatarImage={getAvatarImage}
               showAddHero={showAddHero}
               setShowAddHero={setShowAddHero}
@@ -456,7 +478,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
 
   const createHabitMutation = useMutation({
     mutationFn: async (habitData: any) => {
-      await apiRequest("POST", "/api/habits", habitData);
+      await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
     },
     onSuccess: () => {
       toast({
@@ -1448,7 +1470,8 @@ function ParentalControlsSection({ childId, showControls, setShowControls }: {
 // Kids Management Section Component
 function KidsManagementSection({ 
   children, 
-  createHeroMutation, 
+  createHeroMutation,
+  deleteChildMutation,
   getAvatarImage,
   showAddHero,
   setShowAddHero,
@@ -1462,6 +1485,7 @@ function KidsManagementSection({
 }: { 
   children: Child[]; 
   createHeroMutation: any;
+  deleteChildMutation: any;
   getAvatarImage: (type: string) => string;
   showAddHero: boolean;
   setShowAddHero: (show: boolean) => void;
@@ -1639,16 +1663,13 @@ function KidsManagementSection({
                 <Button
                   onClick={() => {
                     if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
-                      toast({
-                        title: "Hero Deleted",
-                        description: `${child.name}'s profile has been removed.`,
-                        variant: "destructive",
-                      });
+                      deleteChildMutation.mutate(child.id);
                     }
                   }}
+                  disabled={deleteChildMutation.isPending}
                   className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
                 >
-                  🗑️
+                  {deleteChildMutation.isPending ? "..." : "🗑️"}
                 </Button>
               </div>
             </div>

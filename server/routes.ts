@@ -158,6 +158,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/children/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteChild(req.params.id);
+      res.json({ message: "Child deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting child:", error);
+      res.status(500).json({ message: "Failed to delete child" });
+    }
+  });
+
   // Habits routes
   app.get('/api/children/:childId/habits', isAuthenticated, async (req, res) => {
     try {

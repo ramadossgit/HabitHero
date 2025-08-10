@@ -37,6 +37,7 @@ export interface IStorage {
   getChildByUsername(username: string): Promise<Child | undefined>;
   createChild(child: InsertChild): Promise<Child>;
   updateChild(id: string, updates: Partial<InsertChild>): Promise<Child>;
+  deleteChild(id: string): Promise<void>;
   updateChildXP(childId: string, xpGained: number): Promise<Child>;
   
   // Habit operations
@@ -156,6 +157,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(children.id, id))
       .returning();
     return updatedChild;
+  }
+
+  async deleteChild(id: string): Promise<void> {
+    // Delete related data first (cascade delete)
+    await db.delete(habitCompletions).where(eq(habitCompletions.childId, id));
+    await db.delete(rewardClaims).where(eq(rewardClaims.childId, id));
+    await db.delete(habits).where(eq(habits.childId, id));
+    await db.delete(rewards).where(eq(rewards.childId, id));
+    await db.delete(parentalControls).where(eq(parentalControls.childId, id));
+    
+    // Delete the child record
+    await db.delete(children).where(eq(children.id, id));
   }
 
   async updateChildXP(childId: string, xpGained: number): Promise<Child> {
