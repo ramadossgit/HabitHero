@@ -26,37 +26,37 @@ export default function Landing() {
         {/* Header with amazing title */}
         <div className="text-center mb-16">
           <div className="bounce-in">
-            <h1 className="font-fredoka text-8xl mb-6 hero-title">
+            <h1 className="font-fredoka text-4xl sm:text-6xl md:text-8xl mb-6 hero-title">
               Habit Heroes
             </h1>
-            <div className="inline-block p-4 magic-gradient rounded-full mb-8">
-              <p className="text-2xl text-white font-bold px-4">
+            <div className="inline-block p-3 sm:p-4 magic-gradient rounded-full mb-6 sm:mb-8">
+              <p className="text-lg sm:text-xl md:text-2xl text-white font-bold px-2 sm:px-4">
                 🚀 Transform daily habits into EPIC adventures! 🌟
               </p>
             </div>
           </div>
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Button 
-                className="super-button text-2xl px-12 py-6 wiggle text-white font-bold"
+                className="super-button text-lg sm:text-xl md:text-2xl px-6 sm:px-8 md:px-12 py-4 sm:py-5 md:py-6 wiggle text-white font-bold"
                 style={{ color: 'white' }}
                 onClick={() => setLocation("/kids-login")}
               >
                 🎮 Kids Play Here! ⚡
               </Button>
               <Button 
-                className="super-button text-2xl px-12 py-6 wiggle text-white font-bold"
+                className="super-button text-lg sm:text-xl md:text-2xl px-6 sm:px-8 md:px-12 py-4 sm:py-5 md:py-6 wiggle text-white font-bold"
                 style={{ color: 'white' }}
                 onClick={() => setLocation("/parent")}
               >
                 👨‍👩‍👧‍👦 Parents Manage Here! 
               </Button>
             </div>
-            <div className="text-white text-lg text-center">
+            <div className="text-white text-lg text-center mt-4">
               <span>New family? </span>
               <Button 
                 variant="outline" 
-                className="text-white border-white hover:bg-white hover:text-gray-800 font-bold"
+                className="text-gray-800 bg-white border-white hover:bg-gray-100 hover:text-gray-900 font-bold ml-2"
                 onClick={() => setLocation("/parent/signup")}
               >
                 Sign Up Here

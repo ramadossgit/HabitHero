@@ -291,42 +291,46 @@ export default function ParentDashboard() {
 
   return (
     <div className="min-h-screen hero-gradient">
-      <header className="text-white p-6">
+      <header className="text-white p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-fredoka text-4xl hero-title">Parent Dashboard</h1>
-              <p className="text-white/90 text-lg">🎯 Managing {child.name}'s Hero Journey</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Parent Dashboard</h1>
+              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {child.name}'s Hero Journey</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to Home
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+              <div className="flex gap-2">
+                <Link href="/">
+                  <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4">
+                    <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Back to Home</span>
+                  </Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
+                  onClick={() => window.location.href = "/api/logout"}
+                >
+                  Sign Out
                 </Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 font-bold"
-                onClick={() => window.location.href = "/api/logout"}
-              >
-                Sign Out
-              </Button>
-              <div className="text-right">
-                <div className="text-sm text-white/80">Total Family XP This Week</div>
-                <div className="font-bold text-2xl">{child.totalXp.toLocaleString()} XP ⭐</div>
               </div>
-              <img 
-                src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
-                alt="Parent Profile" 
-                className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover"
-              />
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="text-xs sm:text-sm text-white/80">Total Family XP</div>
+                  <div className="font-bold text-lg sm:text-2xl">{child.totalXp.toLocaleString()} XP ⭐</div>
+                </div>
+                <img 
+                  src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
+                  alt="Parent Profile" 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white avatar-glow object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6 relative z-10">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 relative z-10">
         {/* Top Achiever */}
         <div className="bounce-in mb-8">
           <Card className="fun-card p-6 border-4 border-coral">
@@ -376,33 +380,33 @@ export default function ParentDashboard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
           <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
-            <Card className="fun-card p-6 text-center border-4 border-mint">
-              <TrendingUp className="w-12 h-12 text-mint mx-auto mb-3" />
-              <div className="font-bold text-3xl text-gray-800">{completionRate}%</div>
-              <div className="text-gray-600 font-bold">Completion Rate</div>
+            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-mint">
+              <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-mint mx-auto mb-2 sm:mb-3" />
+              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{completionRate}%</div>
+              <div className="text-gray-600 font-bold text-xs sm:text-base">Completion Rate</div>
             </Card>
           </div>
           <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <Card className="fun-card p-6 text-center border-4 border-orange-500">
-              <Flame className="w-12 h-12 text-orange-500 mx-auto mb-3" />
-              <div className="font-bold text-3xl text-gray-800">{currentStreak}</div>
-              <div className="text-gray-600 font-bold">Current Streak</div>
+            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-orange-500">
+              <Flame className="w-8 h-8 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-2 sm:mb-3" />
+              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{currentStreak}</div>
+              <div className="text-gray-600 font-bold text-xs sm:text-base">Current Streak</div>
             </Card>
           </div>
           <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-            <Card className="fun-card p-6 text-center border-4 border-sunshine">
-              <Trophy className="w-12 h-12 text-sunshine mx-auto mb-3" />
-              <div className="font-bold text-3xl text-gray-800">{badgesEarned}</div>
-              <div className="text-gray-600 font-bold">Badges Earned</div>
+            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-sunshine">
+              <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-sunshine mx-auto mb-2 sm:mb-3" />
+              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{badgesEarned}</div>
+              <div className="text-gray-600 font-bold text-xs sm:text-base">Badges Earned</div>
             </Card>
           </div>
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-            <Card className="fun-card p-6 text-center border-4 border-coral">
-              <Star className="w-12 h-12 text-coral mx-auto mb-3" />
-              <div className="font-bold text-3xl text-gray-800">{child.level}</div>
-              <div className="text-gray-600 font-bold">Current Level</div>
+            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-coral">
+              <Star className="w-8 h-8 sm:w-12 sm:h-12 text-coral mx-auto mb-2 sm:mb-3" />
+              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child.level}</div>
+              <div className="text-gray-600 font-bold text-xs sm:text-base">Current Level</div>
             </Card>
           </div>
         </div>
@@ -566,12 +570,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
   };
 
   return (
-    <Card className="fun-card p-8 border-4 border-turquoise">
-      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-        <Settings className="w-8 h-8 text-turquoise mr-3" />
+    <Card className="fun-card p-4 sm:p-8 border-4 border-turquoise">
+      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
+        <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
         📋 Habit Management
       </h3>
-      <p className="text-gray-600 mb-6">Manage daily habits and track progress</p>
+      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage daily habits and track progress</p>
       
       {isLoading ? (
         <div className="flex justify-center">
@@ -1595,82 +1599,83 @@ function KidsManagementSection({
   };
 
   return (
-    <Card className="fun-card p-8 border-4 border-purple-500">
-      <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-        <UserRound className="w-8 h-8 text-purple-500 mr-3" />
+    <Card className="fun-card p-4 sm:p-8 border-4 border-purple-500">
+      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
+        <UserRound className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 mr-2 sm:mr-3" />
         👨‍👩‍👧‍👦 Kids Management
       </h3>
-      <p className="text-gray-600 mb-6">Manage all your children's hero accounts</p>
+      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage all your children's hero accounts</p>
       
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 sm:space-y-4 mb-6">
         {children.map((child) => (
-          <div key={child.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <img 
-                  src={child.avatarUrl || getAvatarImage(child.avatarType)} 
-                  alt={child.name} 
-                  className="w-12 h-12 rounded-full border-2 border-purple-300 object-cover"
-                />
-                {editingChild === child.id ? (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => e.target.files?.[0] && handleEditImageUpload(e.target.files[0], child.id)}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                    <span className="text-white text-xs">📷</span>
+          <div key={child.id} className="p-3 sm:p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="relative flex-shrink-0">
+                  <img 
+                    src={child.avatarUrl || getAvatarImage(child.avatarType)} 
+                    alt={child.name} 
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-purple-300 object-cover"
+                  />
+                  {editingChild === child.id ? (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && handleEditImageUpload(e.target.files[0], child.id)}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <span className="text-white text-xs">📷</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEditingChild(child.id)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-purple-600 transition-colors"
+                    >
+                      📷
+                    </button>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-gray-800 text-sm sm:text-base truncate">{child.name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setEditingChild(child.id)}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-purple-600 transition-colors"
-                  >
-                    📷
-                  </button>
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-gray-800">{child.name}</div>
-                <div className="text-sm text-gray-600">
-                  Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
                 </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
-                <div className="text-xs text-gray-500">Total Earned</div>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  onClick={() => setEditingChild(editingChild === child.id ? null : child.id)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
-                >
-                  ✏️ Edit
-                </Button>
-                <Button
-                  onClick={() => {
-                    setEditingCredentials(editingCredentials === child.id ? null : child.id);
-                    setUsername(child.username || "");
-                    setPin("");
-                  }}
-                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-xs"
-                >
-                  🔐 {child.username ? "Edit Login" : "Setup Login"}
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
-                      deleteChildMutation.mutate(child.id);
-                    }
-                  }}
-                  disabled={deleteChildMutation.isPending}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
-                >
-                  {deleteChildMutation.isPending ? "..." : "🗑️"}
-                </Button>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                <div className="text-left sm:text-right">
+                  <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
+                  <div className="text-xs text-gray-500">Total Earned</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => setEditingChild(editingChild === child.id ? null : child.id)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 text-xs"
+                  >
+                    ✏️ Edit
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setEditingCredentials(editingCredentials === child.id ? null : child.id);
+                      setUsername(child.username || "");
+                      setPin("");
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-1 text-xs"
+                  >
+                    🔐 Setup Login
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
+                        deleteChildMutation.mutate(child.id);
+                      }
+                    }}
+                    disabled={deleteChildMutation.isPending}
+                    className="bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-1 text-xs"
+                  >
+                    {deleteChildMutation.isPending ? "..." : "🗑️"}
+                  </Button>
               </div>
             </div>
             
