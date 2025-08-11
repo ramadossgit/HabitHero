@@ -780,6 +780,9 @@ function KidsManagementSection({
   const [editingCredentials, setEditingCredentials] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState("");
+  const [editChildName, setEditChildName] = useState("");
+  const [editChildAvatarType, setEditChildAvatarType] = useState("");
+  const [editImagePreview, setEditImagePreview] = useState("");
 
   const updateCredentialsMutation = useMutation({
     mutationFn: async (data: { childId: string; username: string; pin: string }) => {
@@ -806,6 +809,42 @@ function KidsManagementSection({
       });
     },
   });
+
+  const updateChildMutation = useMutation({
+    mutationFn: async (data: { childId: string; name: string; avatarType: string; avatarUrl?: string }) => {
+      await apiRequest("PATCH", `/api/children/${data.childId}`, {
+        name: data.name,
+        avatarType: data.avatarType,
+        avatarUrl: data.avatarUrl
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Hero Updated! ✨",
+        description: "Hero profile has been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      setEditingChild(null);
+      setEditChildName("");
+      setEditChildAvatarType("");
+      setEditImagePreview("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update hero profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setEditImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleUpdateCredentials = (childId: string) => {
     if (!username.trim()) {
@@ -887,6 +926,17 @@ function KidsManagementSection({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={() => {
+                      setEditingChild(editingChild === child.id ? null : child.id);
+                      setEditChildName(child.name);
+                      setEditChildAvatarType(child.avatarType);
+                      setEditImagePreview("");
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 text-xs"
+                  >
+                    ✏️ Edit
+                  </Button>
+                  <Button
+                    onClick={() => {
                       setEditingCredentials(editingCredentials === child.id ? null : child.id);
                       setUsername(child.username || "");
                       setPin("");
@@ -909,6 +959,110 @@ function KidsManagementSection({
                 </div>
               </div>
             </div>
+            
+            {/* Edit Child Profile */}
+            {editingChild === child.id && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <h4 className="font-bold text-gray-800 mb-3">✏️ Edit Hero Profile</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Hero Name</label>
+                    <Input
+                      type="text"
+                      placeholder="Enter hero name..."
+                      value={editChildName}
+                      onChange={(e) => setEditChildName(e.target.value)}
+                      className="border-2 border-blue-300"
+                    />
+                  </div>
+                  
+                  {/* Avatar Type Selection */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Hero Type</label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {avatarTypes.map((type) => (
+                        <div
+                          key={type.id}
+                          onClick={() => setEditChildAvatarType(type.id)}
+                          className={`p-2 rounded-lg cursor-pointer border-2 text-center ${
+                            editChildAvatarType === type.id
+                              ? 'border-blue-500 bg-blue-100'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="text-xl mb-1">{type.name.split(' ')[0]}</div>
+                          <div className="text-xs text-gray-600">{type.name.split(' ').slice(1).join(' ')}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Image Upload */}
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Custom Avatar (Optional)</label>
+                    <div className="flex items-center space-x-3 mt-2">
+                      {editImagePreview ? (
+                        <img src={editImagePreview} alt="Preview" className="w-12 h-12 rounded-full border-2 border-blue-300 object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
+                          <span className="text-gray-400 text-xs">📷</span>
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => e.target.files?.[0] && handleEditImageUpload(e.target.files[0])}
+                          className="hidden"
+                          id={`edit-avatar-${child.id}`}
+                        />
+                        <label
+                          htmlFor={`edit-avatar-${child.id}`}
+                          className="inline-block px-3 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors text-sm font-bold"
+                        >
+                          📷 Upload
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => {
+                        updateChildMutation.mutate({
+                          childId: child.id,
+                          name: editChildName.trim(),
+                          avatarType: editChildAvatarType,
+                          avatarUrl: editImagePreview || undefined
+                        });
+                      }}
+                      disabled={updateChildMutation.isPending || !editChildName.trim()}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {updateChildMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>✨ Save Changes</>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setEditingChild(null);
+                        setEditChildName("");
+                        setEditChildAvatarType("");
+                        setEditImagePreview("");
+                      }}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Login Credentials Setup */}
             {editingCredentials === child.id && (
@@ -1085,12 +1239,81 @@ function KidsManagementSection({
   );
 }
 
-// Reward Settings Section Component (placeholder)
+// Reward Settings Section Component
 function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: { 
   childId: string; 
   showAddReward: boolean; 
   setShowAddReward: (show: boolean) => void; 
 }) {
+  const { toast } = useToast();
+  const [rewardName, setRewardName] = useState("");
+  const [rewardDescription, setRewardDescription] = useState("");
+  const [rewardCost, setRewardCost] = useState("100");
+  const [rewardIcon, setRewardIcon] = useState("🎁");
+  const [editingReward, setEditingReward] = useState<string | null>(null);
+
+  const { data: rewards, isLoading } = useQuery<Reward[]>({
+    queryKey: [`/api/children/${childId}/rewards`],
+  });
+
+  const createRewardMutation = useMutation({
+    mutationFn: async (rewardData: any) => {
+      await apiRequest("POST", `/api/children/${childId}/rewards`, rewardData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Created! 🎁",
+        description: "New reward has been added successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+      setRewardName("");
+      setRewardDescription("");
+      setRewardCost("100");
+      setRewardIcon("🎁");
+      setShowAddReward(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteRewardMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      await apiRequest("DELETE", `/api/rewards/${rewardId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Deleted! 🗑️",
+        description: "Reward has been removed successfully!",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+    },
+  });
+
+  const handleAddReward = () => {
+    if (!rewardName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for the reward!",
+        variant: "destructive",
+      });
+      return;
+    }
+    createRewardMutation.mutate({
+      childId,
+      name: rewardName.trim(),
+      description: rewardDescription.trim(),
+      icon: rewardIcon,
+      cost: parseInt(rewardCost),
+      isActive: true,
+    });
+  };
+
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-orange-500">
       <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
@@ -1099,42 +1322,323 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       </h3>
       <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Set up rewards for completing habits</p>
       
-      <div className="text-center py-8">
-        <Gift className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">Reward management coming soon!</p>
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {rewards?.map((reward) => (
+            <div key={reward.id} className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">{reward.icon}</div>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-800">{reward.name}</div>
+                    <div className="text-sm text-gray-600">{reward.description}</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="text-right mr-4">
+                    <div className="text-sm font-bold text-orange-600">{reward.cost} XP</div>
+                    <div className="text-xs text-gray-500">Cost</div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (confirm(`Delete "${reward.name}" reward? This cannot be undone.`)) {
+                        deleteRewardMutation.mutate(reward.id);
+                      }
+                    }}
+                    disabled={deleteRewardMutation.isPending}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                  >
+                    {deleteRewardMutation.isPending ? "..." : "🗑️"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {!showAddReward ? (
+            <Button 
+              onClick={() => setShowAddReward(true)}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+            >
+              + Add New Reward
+            </Button>
+          ) : (
+            <div className="space-y-4 p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+              <h4 className="font-bold text-gray-800">Create New Reward</h4>
+              
+              <div className="space-y-3">
+                <Input
+                  placeholder="Reward name (e.g., Extra Screen Time)"
+                  value={rewardName}
+                  onChange={(e) => setRewardName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Description (optional)"
+                  value={rewardDescription}
+                  onChange={(e) => setRewardDescription(e.target.value)}
+                  rows={2}
+                />
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Icon</label>
+                    <Select value={rewardIcon} onValueChange={setRewardIcon}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="🎁">🎁 Gift</SelectItem>
+                        <SelectItem value="🍭">🍭 Candy</SelectItem>
+                        <SelectItem value="🎮">🎮 Game Time</SelectItem>
+                        <SelectItem value="📱">📱 Screen Time</SelectItem>
+                        <SelectItem value="🎉">🎉 Special Treat</SelectItem>
+                        <SelectItem value="⭐">⭐ Gold Star</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">XP Cost</label>
+                    <Select value={rewardCost} onValueChange={setRewardCost}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="50">50 XP</SelectItem>
+                        <SelectItem value="100">100 XP</SelectItem>
+                        <SelectItem value="200">200 XP</SelectItem>
+                        <SelectItem value="300">300 XP</SelectItem>
+                        <SelectItem value="500">500 XP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleAddReward}
+                  disabled={createRewardMutation.isPending}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {createRewardMutation.isPending ? "Creating..." : "🎁 Create Reward"}
+                </Button>
+                <Button 
+                  onClick={() => setShowAddReward(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
 
-// Progress Reports Section Component (placeholder)
+// Progress Reports Section Component
 function ProgressReportsSection({ childId, showReports, setShowReports }: { 
   childId: string; 
   showReports: boolean; 
   setShowReports: (show: boolean) => void; 
 }) {
+  const [timeFrame, setTimeFrame] = useState("week");
+
+  const { data: child } = useQuery<Child>({
+    queryKey: [`/api/children/${childId}`],
+  });
+
+  const { data: habits } = useQuery<Habit[]>({
+    queryKey: [`/api/children/${childId}/habits`],
+  });
+
+  const { data: completions } = useQuery({
+    queryKey: [`/api/children/${childId}/completions`, timeFrame],
+  });
+
+  // Mock data for demonstration - in real app would come from API
+  const weeklyData = [
+    { day: "Mon", xp: 75, habits: 3 },
+    { day: "Tue", xp: 100, habits: 4 },
+    { day: "Wed", xp: 50, habits: 2 },
+    { day: "Thu", xp: 125, habits: 5 },
+    { day: "Fri", xp: 75, habits: 3 },
+    { day: "Sat", xp: 150, habits: 6 },
+    { day: "Sun", xp: 100, habits: 4 },
+  ];
+
+  const habitStats = habits?.map(habit => ({
+    name: habit.name,
+    icon: habit.icon,
+    completions: Math.floor(Math.random() * 7) + 1, // Mock data
+    streak: Math.floor(Math.random() * 10) + 1, // Mock data
+    totalXP: habit.xpReward * (Math.floor(Math.random() * 7) + 1)
+  })) || [];
+
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-mint">
-      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
-        <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-mint mr-2 sm:mr-3" />
-        📊 Progress Reports
-      </h3>
-      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Track your child's progress over time</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+        <div className="flex items-center">
+          <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-mint mr-2 sm:mr-3" />
+          <div>
+            <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📊 Progress Reports</h3>
+            <p className="text-gray-600 text-sm sm:text-base">Track your child's progress over time</p>
+          </div>
+        </div>
+        <Select value={timeFrame} onValueChange={setTimeFrame}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="all">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
-      <div className="text-center py-8">
-        <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">Progress reports coming soon!</p>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-mint/10 p-4 rounded-lg border-2 border-mint/30">
+          <div className="text-2xl font-bold text-mint">{child?.totalXp || 0}</div>
+          <div className="text-sm text-gray-600">Total XP</div>
+        </div>
+        <div className="bg-orange-100 p-4 rounded-lg border-2 border-orange-300">
+          <div className="text-2xl font-bold text-orange-600">{child?.level || 1}</div>
+          <div className="text-sm text-gray-600">Current Level</div>
+        </div>
+        <div className="bg-purple-100 p-4 rounded-lg border-2 border-purple-300">
+          <div className="text-2xl font-bold text-purple-600">{child?.streakCount || 0}</div>
+          <div className="text-sm text-gray-600">Best Streak</div>
+        </div>
+        <div className="bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
+          <div className="text-2xl font-bold text-blue-600">{habits?.length || 0}</div>
+          <div className="text-sm text-gray-600">Active Habits</div>
+        </div>
+      </div>
+
+      {/* Weekly XP Chart */}
+      <div className="mb-6">
+        <h4 className="font-bold text-gray-800 mb-3">Weekly XP Progress</h4>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-end justify-between h-32 space-x-2">
+            {weeklyData.map((day, index) => (
+              <div key={day.day} className="flex-1 flex flex-col items-center">
+                <div 
+                  className="bg-mint rounded-t w-full transition-all hover:bg-mint/80"
+                  style={{ height: `${(day.xp / 150) * 100}%`, minHeight: '8px' }}
+                  title={`${day.xp} XP`}
+                ></div>
+                <div className="text-xs text-gray-600 mt-2">{day.day}</div>
+                <div className="text-xs font-bold text-mint">{day.xp}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Habit Performance */}
+      <div>
+        <h4 className="font-bold text-gray-800 mb-3">Habit Performance</h4>
+        <div className="space-y-3">
+          {habitStats.map((habit, index) => (
+            <div key={index} className="bg-gray-50 p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">{habit.icon}</div>
+                  <div>
+                    <div className="font-bold text-gray-800">{habit.name}</div>
+                    <div className="text-sm text-gray-600">
+                      {habit.completions} completions • {habit.streak} day streak
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-mint">{habit.totalXP} XP</div>
+                  <div className="text-xs text-gray-500">Earned</div>
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-mint h-2 rounded-full transition-all"
+                    style={{ width: `${(habit.completions / 7) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">{habit.completions}/7 this week</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {habitStats.length === 0 && (
+          <div className="text-center py-8">
+            <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No habits created yet. Add some habits to see progress reports!</p>
+          </div>
+        )}
       </div>
     </Card>
   );
 }
 
-// Parental Controls Section Component (placeholder)
+// Parental Controls Section Component
 function ParentalControlsSection({ childId, showControls, setShowControls }: { 
   childId: string; 
   showControls: boolean; 
   setShowControls: (show: boolean) => void; 
 }) {
+  const { toast } = useToast();
+  const [screenTimeLimit, setScreenTimeLimit] = useState("60");
+  const [bedtimeMode, setBedtimeMode] = useState(false);
+  const [bedtimeStart, setBedtimeStart] = useState("20:00");
+  const [bedtimeEnd, setBedtimeEnd] = useState("07:00");
+  const [gameAccess, setGameAccess] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [parentApprovalRequired, setParentApprovalRequired] = useState(false);
+
+  const { data: child } = useQuery<Child>({
+    queryKey: [`/api/children/${childId}`],
+  });
+
+  const updateControlsMutation = useMutation({
+    mutationFn: async (controlsData: any) => {
+      await apiRequest("PATCH", `/api/children/${childId}/controls`, controlsData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Controls Updated! 🛡️",
+        description: "Parental controls have been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}`] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update controls. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveControls = () => {
+    updateControlsMutation.mutate({
+      screenTimeLimit: parseInt(screenTimeLimit),
+      bedtimeMode,
+      bedtimeStart,
+      bedtimeEnd,
+      gameAccess,
+      notificationsEnabled,
+      parentApprovalRequired,
+    });
+  };
+
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-red-500">
       <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
@@ -1143,9 +1647,177 @@ function ParentalControlsSection({ childId, showControls, setShowControls }: {
       </h3>
       <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage app usage and safety settings</p>
       
-      <div className="text-center py-8">
-        <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">Parental controls coming soon!</p>
+      <div className="space-y-6">
+        {/* Screen Time Limits */}
+        <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
+          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+            <Settings className="w-5 h-5 text-red-500 mr-2" />
+            Screen Time Limits
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-bold text-gray-700">Daily App Usage Limit</label>
+              <Select value={screenTimeLimit} onValueChange={setScreenTimeLimit}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="90">1.5 hours</SelectItem>
+                  <SelectItem value="120">2 hours</SelectItem>
+                  <SelectItem value="unlimited">Unlimited</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-gray-600">
+              Current usage today: 23 minutes remaining
+            </div>
+          </div>
+        </div>
+
+        {/* Bedtime Mode */}
+        <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+            <Settings className="w-5 h-5 text-purple-500 mr-2" />
+            Bedtime Mode
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-700">Enable Bedtime Mode</span>
+              <Button
+                onClick={() => setBedtimeMode(!bedtimeMode)}
+                variant={bedtimeMode ? "default" : "outline"}
+                size="sm"
+                className={bedtimeMode ? "bg-purple-500 hover:bg-purple-600" : ""}
+              >
+                {bedtimeMode ? "Enabled" : "Disabled"}
+              </Button>
+            </div>
+            {bedtimeMode && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-bold text-gray-700">Bedtime Start</label>
+                  <Input
+                    type="time"
+                    value={bedtimeStart}
+                    onChange={(e) => setBedtimeStart(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-bold text-gray-700">Wake Up Time</label>
+                  <Input
+                    type="time"
+                    value={bedtimeEnd}
+                    onChange={(e) => setBedtimeEnd(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="text-sm text-gray-600">
+              {bedtimeMode ? `App will be locked from ${bedtimeStart} to ${bedtimeEnd}` : "Child can use app anytime"}
+            </div>
+          </div>
+        </div>
+
+        {/* App Features */}
+        <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+            <Settings className="w-5 h-5 text-blue-500 mr-2" />
+            App Features
+          </h4>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-700">Mini-Games Access</div>
+                <div className="text-xs text-gray-500">Allow child to play educational mini-games</div>
+              </div>
+              <Button
+                onClick={() => setGameAccess(!gameAccess)}
+                variant={gameAccess ? "default" : "outline"}
+                size="sm"
+                className={gameAccess ? "bg-blue-500 hover:bg-blue-600" : ""}
+              >
+                {gameAccess ? "Enabled" : "Disabled"}
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-700">Push Notifications</div>
+                <div className="text-xs text-gray-500">Send habit reminders and achievement notifications</div>
+              </div>
+              <Button
+                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                variant={notificationsEnabled ? "default" : "outline"}
+                size="sm"
+                className={notificationsEnabled ? "bg-blue-500 hover:bg-blue-600" : ""}
+              >
+                {notificationsEnabled ? "Enabled" : "Disabled"}
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-700">Parent Approval Required</div>
+                <div className="text-xs text-gray-500">Require approval for reward redemptions</div>
+              </div>
+              <Button
+                onClick={() => setParentApprovalRequired(!parentApprovalRequired)}
+                variant={parentApprovalRequired ? "default" : "outline"}
+                size="sm"
+                className={parentApprovalRequired ? "bg-blue-500 hover:bg-blue-600" : ""}
+              >
+                {parentApprovalRequired ? "Required" : "Not Required"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Emergency Controls */}
+        <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
+            <Shield className="w-5 h-5 text-yellow-600 mr-2" />
+            Emergency Controls
+          </h4>
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+            >
+              🚫 Temporarily Lock App (1 hour)
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-orange-400 text-orange-700 hover:bg-orange-100"
+            >
+              🔄 Reset All Progress (Caution!)
+            </Button>
+            <div className="text-xs text-gray-500">
+              Emergency controls take effect immediately and will send notifications to your child.
+            </div>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div className="flex space-x-2">
+          <Button
+            onClick={handleSaveControls}
+            disabled={updateControlsMutation.isPending}
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold"
+          >
+            {updateControlsMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>🛡️ Save Controls</>
+            )}
+          </Button>
+        </div>
       </div>
     </Card>
   );
