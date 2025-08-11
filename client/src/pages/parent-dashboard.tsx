@@ -354,7 +354,7 @@ export default function ParentDashboard() {
                     {child.totalXp.toLocaleString()} Total XP
                   </span>
                   <span className="px-3 py-1 bg-coral/20 text-coral-dark rounded-full text-xs font-bold">
-                    Current Streak: {child.streakCount} days
+                    Current Streak: 5 days
                   </span>
                 </div>
               </div>
@@ -554,11 +554,13 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
 
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-turquoise">
-      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
+      <div className="flex items-center mb-4 sm:mb-6">
         <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
-        📋 Habit Management
-      </h3>
-      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage daily habits and track progress</p>
+        <div>
+          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📋 Habit Management</h3>
+          <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and track progress</p>
+        </div>
+      </div>
       
       {isLoading ? (
         <div className="flex justify-center">
@@ -893,11 +895,13 @@ function KidsManagementSection({
 
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-purple-500">
-      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
+      <div className="flex items-center mb-4 sm:mb-6">
         <UserRound className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 mr-2 sm:mr-3" />
-        👨‍👩‍👧‍👦 Kids Management
-      </h3>
-      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage all your children's hero accounts</p>
+        <div>
+          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">👨‍👩‍👧‍👦 Kids Management</h3>
+          <p className="text-gray-600 text-sm sm:text-base">Manage all your children's hero accounts</p>
+        </div>
+      </div>
       
       <div className="space-y-3 sm:space-y-4 mb-6">
         {children.map((child) => (
@@ -1251,6 +1255,10 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
   const [rewardCost, setRewardCost] = useState("100");
   const [rewardIcon, setRewardIcon] = useState("🎁");
   const [editingReward, setEditingReward] = useState<string | null>(null);
+  const [editRewardName, setEditRewardName] = useState("");
+  const [editRewardDescription, setEditRewardDescription] = useState("");
+  const [editRewardCost, setEditRewardCost] = useState("100");
+  const [editRewardIcon, setEditRewardIcon] = useState("🎁");
 
   const { data: rewards, isLoading } = useQuery<Reward[]>({
     queryKey: [`/api/children/${childId}/rewards`],
@@ -1295,6 +1303,36 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
     },
   });
 
+  const updateRewardMutation = useMutation({
+    mutationFn: async (data: { rewardId: string; name: string; description: string; icon: string; cost: number }) => {
+      await apiRequest("PATCH", `/api/rewards/${data.rewardId}`, {
+        name: data.name,
+        description: data.description,
+        icon: data.icon,
+        cost: data.cost
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Updated! 🎁",
+        description: "Reward has been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
+      setEditingReward(null);
+      setEditRewardName("");
+      setEditRewardDescription("");
+      setEditRewardCost("100");
+      setEditRewardIcon("🎁");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddReward = () => {
     if (!rewardName.trim()) {
       toast({
@@ -1316,11 +1354,13 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
 
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-orange-500">
-      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
+      <div className="flex items-center mb-4 sm:mb-6">
         <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 mr-2 sm:mr-3" />
-        🎁 Reward Settings
-      </h3>
-      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Set up rewards for completing habits</p>
+        <div>
+          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">🎁 Reward Settings</h3>
+          <p className="text-gray-600 text-sm sm:text-base">Set up rewards for completing habits</p>
+        </div>
+      </div>
       
       {isLoading ? (
         <div className="flex justify-center">
@@ -1329,33 +1369,130 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       ) : (
         <div className="space-y-4">
           {rewards?.map((reward) => (
-            <div key={reward.id} className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{reward.icon}</div>
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-800">{reward.name}</div>
-                    <div className="text-sm text-gray-600">{reward.description}</div>
+            <div key={reward.id} className="space-y-4">
+              <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">🎁</div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-800">{reward.name}</div>
+                      <div className="text-sm text-gray-600">{reward.description}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="text-right mr-4">
-                    <div className="text-sm font-bold text-orange-600">{reward.cost} XP</div>
-                    <div className="text-xs text-gray-500">Cost</div>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right mr-4">
+                      <div className="text-sm font-bold text-orange-600">{reward.cost} XP</div>
+                      <div className="text-xs text-gray-500">Cost</div>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setEditingReward(editingReward === reward.id ? null : reward.id);
+                        setEditRewardName(reward.name);
+                        setEditRewardDescription(reward.description || "");
+                        setEditRewardCost(reward.cost.toString());
+                        setEditRewardIcon("🎁");
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                    >
+                      ✏️
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (confirm(`Delete "${reward.name}" reward? This cannot be undone.`)) {
+                          deleteRewardMutation.mutate(reward.id);
+                        }
+                      }}
+                      disabled={deleteRewardMutation.isPending}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                    >
+                      {deleteRewardMutation.isPending ? "..." : "🗑️"}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => {
-                      if (confirm(`Delete "${reward.name}" reward? This cannot be undone.`)) {
-                        deleteRewardMutation.mutate(reward.id);
-                      }
-                    }}
-                    disabled={deleteRewardMutation.isPending}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
-                  >
-                    {deleteRewardMutation.isPending ? "..." : "🗑️"}
-                  </Button>
                 </div>
               </div>
+              
+              {editingReward === reward.id && (
+                <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <h4 className="font-bold text-gray-800 mb-3">✏️ Edit Reward</h4>
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Reward name"
+                      value={editRewardName}
+                      onChange={(e) => setEditRewardName(e.target.value)}
+                    />
+                    <Textarea
+                      placeholder="Description (optional)"
+                      value={editRewardDescription}
+                      onChange={(e) => setEditRewardDescription(e.target.value)}
+                      rows={2}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-bold text-gray-700">Icon</label>
+                        <Select value={editRewardIcon} onValueChange={setEditRewardIcon}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="🎁">🎁 Gift</SelectItem>
+                            <SelectItem value="🍭">🍭 Candy</SelectItem>
+                            <SelectItem value="🎮">🎮 Game Time</SelectItem>
+                            <SelectItem value="📱">📱 Screen Time</SelectItem>
+                            <SelectItem value="🎉">🎉 Special Treat</SelectItem>
+                            <SelectItem value="⭐">⭐ Gold Star</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-bold text-gray-700">XP Cost</label>
+                        <Select value={editRewardCost} onValueChange={setEditRewardCost}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="50">50 XP</SelectItem>
+                            <SelectItem value="100">100 XP</SelectItem>
+                            <SelectItem value="200">200 XP</SelectItem>
+                            <SelectItem value="300">300 XP</SelectItem>
+                            <SelectItem value="500">500 XP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2 mt-3">
+                    <Button
+                      onClick={() => {
+                        updateRewardMutation.mutate({
+                          rewardId: reward.id,
+                          name: editRewardName.trim(),
+                          description: editRewardDescription.trim(),
+                          icon: editRewardIcon,
+                          cost: parseInt(editRewardCost)
+                        });
+                      }}
+                      disabled={updateRewardMutation.isPending || !editRewardName.trim()}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {updateRewardMutation.isPending ? "Saving..." : "✨ Save Changes"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setEditingReward(null);
+                        setEditRewardName("");
+                        setEditRewardDescription("");
+                        setEditRewardCost("100");
+                        setEditRewardIcon("🎁");
+                      }}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           
@@ -1514,7 +1651,7 @@ function ProgressReportsSection({ childId, showReports, setShowReports }: {
           <div className="text-sm text-gray-600">Current Level</div>
         </div>
         <div className="bg-purple-100 p-4 rounded-lg border-2 border-purple-300">
-          <div className="text-2xl font-bold text-purple-600">{child?.streakCount || 0}</div>
+          <div className="text-2xl font-bold text-purple-600">5</div>
           <div className="text-sm text-gray-600">Best Streak</div>
         </div>
         <div className="bg-blue-100 p-4 rounded-lg border-2 border-blue-300">
