@@ -139,7 +139,7 @@ export default function ProgressReportsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/parent-dashboard">
+              <Link href="/parent">
                 <Button variant="ghost" className="text-white hover:bg-white/20">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>

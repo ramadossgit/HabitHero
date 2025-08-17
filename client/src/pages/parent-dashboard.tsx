@@ -19,6 +19,7 @@ export default function ParentDashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [heroName, setHeroName] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
+  const [showParentProfile, setShowParentProfile] = useState(false);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -385,7 +386,7 @@ export default function ParentDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex-1">
               <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Parent Dashboard</h1>
-              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {child.name}'s Hero Journey</p>
+              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {children?.length === 1 ? `${child.name}'s` : 'Family'} Hero Journey</p>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <div className="flex gap-2">
@@ -408,11 +409,17 @@ export default function ParentDashboard() {
                   <div className="text-xs sm:text-sm text-white/80">Total Family XP</div>
                   <div className="font-bold text-lg sm:text-2xl">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
                 </div>
-                <img 
-                  src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
-                  alt="Parent Profile" 
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white avatar-glow object-cover"
-                />
+                <div className="relative">
+                  <img 
+                    src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=48`} 
+                    alt="Parent Profile" 
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setShowParentProfile(!showParentProfile)}
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
+                    <Settings className="w-2 h-2 text-white" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -420,34 +427,81 @@ export default function ParentDashboard() {
       </header>
       
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
-        {/* Hero Profile Card */}
-        <div className="mb-8">
-          <Card className="fun-card p-4 sm:p-8 border-4 border-sunshine">
-            <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-              <div className="relative flex-shrink-0">
+        {/* Parent Profile Modal */}
+        {showParentProfile && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-fredoka text-xl text-gray-800">Parent Profile</h3>
+                <Button variant="ghost" onClick={() => setShowParentProfile(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="text-center mb-4">
                 <img 
-                  src={child.avatarUrl || getAvatarImage(child.avatarType)} 
-                  alt={`${child.name}'s Hero`} 
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-sunshine avatar-glow object-cover"
+                  src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=96`} 
+                  alt="Parent Profile" 
+                  className="w-24 h-24 rounded-full mx-auto mb-3 border-4 border-sunshine"
                 />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 sm:w-10 sm:h-10 bg-coral rounded-full flex items-center justify-center border-4 border-white">
-                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <h4 className="font-bold text-gray-800">{(user as User)?.email}</h4>
+                <p className="text-gray-600 text-sm">Managing {children?.length || 0} hero{children?.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Total Family XP</span>
+                  <span className="font-bold text-coral">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Active Heroes</span>
+                  <span className="font-bold text-mint">{children?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Account Type</span>
+                  <span className="font-bold text-sky">Parent</span>
                 </div>
               </div>
-              <div className="flex-1 text-center sm:text-left">
-                <h2 className="font-fredoka text-2xl sm:text-3xl text-gray-800 hero-title">{child.name}</h2>
-                <p className="text-gray-600 text-sm sm:text-base">Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero</p>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
-                  <span className="px-3 py-1 bg-sunshine/20 text-sunshine-dark rounded-full text-xs font-bold">
-                    {child.totalXp.toLocaleString()} Total XP
-                  </span>
-                  <span className="px-3 py-1 bg-coral/20 text-coral-dark rounded-full text-xs font-bold">
-                    Current Streak: {currentStreak} days
-                  </span>
+            </Card>
+          </div>
+        )}
+
+        {/* Hero Profile Cards */}
+        <div className="mb-8 space-y-4">
+          {children?.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0)).map((childData, index) => {
+            const isTopScorer = index === 0 && children.length > 1; // Top scorer only if multiple children
+            return (
+              <Card key={childData.id} className={`fun-card p-4 sm:p-6 border-4 ${isTopScorer ? 'border-sunshine bg-gradient-to-r from-sunshine/10 to-mint/10' : 'border-sky'}`}>
+                <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                  <div className="relative flex-shrink-0">
+                    <img 
+                      src={childData.avatarUrl || getAvatarImage(childData.avatarType)} 
+                      alt={`${childData.name}'s Hero`} 
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-sunshine avatar-glow object-cover"
+                    />
+                    {isTopScorer && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sunshine rounded-full flex items-center justify-center border-2 border-white">
+                        <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800">{childData.name}</h3>
+                      {isTopScorer && <span className="text-sunshine text-sm font-bold">🏆 Top Scorer</span>}
+                    </div>
+                    <p className="text-gray-600 text-sm">Level {childData.level} {childData.avatarType.charAt(0).toUpperCase() + childData.avatarType.slice(1)} Hero</p>
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                      <span className="px-2 py-1 bg-sunshine/20 text-sunshine-dark rounded-full text-xs font-bold">
+                        {childData.totalXp.toLocaleString()} XP
+                      </span>
+                      <span className="px-2 py-1 bg-coral/20 text-coral-dark rounded-full text-xs font-bold">
+                        {childData.rewardPoints} Points
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Quick Stats */}
