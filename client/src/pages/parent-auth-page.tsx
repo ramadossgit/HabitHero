@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, EyeOff, UserPlus, LogIn, Home, Star, Shield, Users } from "lucide-react";
+import { Eye, EyeOff, UserPlus, LogIn, Home, Star, Shield, Users, LogOut, Info } from "lucide-react";
 
 export default function ParentAuthPage() {
   const [, setLocation] = useLocation();
@@ -17,12 +18,17 @@ export default function ParentAuthPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  // If user is already authenticated, redirect to parent dashboard
+  // Only redirect to dashboard if user is authenticated AND this redirect is from a successful login/signup
+  // Don't redirect if user just visits the auth page while already logged in
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    // Only redirect if this is a fresh navigation and user is authenticated
+    if (!isLoading && isAuthenticated && shouldRedirect) {
       setLocation("/parent");
+      setShouldRedirect(false);
     }
-  }, [isAuthenticated, isLoading, setLocation]);
+  }, [isAuthenticated, isLoading, shouldRedirect, setLocation]);
   
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -51,10 +57,7 @@ export default function ParentAuthPage() {
         title: "Welcome back!",
         description: "Successfully logged into your parent account.",
       });
-      // Delay to ensure auth state is updated
-      setTimeout(() => {
-        setLocation("/parent");
-      }, 500);
+      setShouldRedirect(true);
     },
     onError: (error: any) => {
       toast({
@@ -82,15 +85,32 @@ export default function ParentAuthPage() {
         title: "Account created!",
         description: "Welcome to Habit Heroes! Let's set up your first child.",
       });
-      // Delay to ensure auth state is updated
-      setTimeout(() => {
-        setLocation("/parent");
-      }, 500);
+      setShouldRedirect(true);
     },
     onError: (error: any) => {
       toast({
         title: "Registration failed",
         description: error.message || "Failed to create account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/auth/logout");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Logged out",
+        description: "You can now sign up or log in with a different account.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Logout failed",
+        description: error.message || "Failed to log out",
         variant: "destructive",
       });
     },
@@ -203,6 +223,25 @@ export default function ParentAuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Show alert if user is already authenticated */}
+                {isAuthenticated && (
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                      <span>You're already logged in. </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => logoutMutation.mutate()}
+                        disabled={logoutMutation.isPending}
+                        className="ml-2"
+                      >
+                        <LogOut className="w-4 h-4 mr-1" />
+                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Tabs defaultValue="login" className="space-y-4">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login" className="flex items-center space-x-2">
