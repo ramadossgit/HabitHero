@@ -260,6 +260,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const today = new Date().toISOString().split('T')[0];
+      
+      // Check if there's already an approved completion for today
+      const existingApprovedCompletion = await storage.getTodaysCompletions(habit.childId);
+      const approvedForToday = existingApprovedCompletion.find(c => 
+        c.habitId === req.params.habitId && c.status === 'approved' && c.date === today
+      );
+      
+      if (approvedForToday) {
+        return res.status(400).json({ message: "Habit already completed today" });
+      }
+
       const completionData = insertHabitCompletionSchema.parse({
         habitId: req.params.habitId,
         childId: habit.childId,

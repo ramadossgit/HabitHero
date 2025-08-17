@@ -40,7 +40,8 @@ export default function GearShop({ child }: GearShopProps) {
         title: "Gear Purchased! ⚔️",
         description: "Your new gear has been equipped!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", child.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/child"] });
       queryClient.invalidateQueries({ queryKey: ["/api/gear-shop"] });
     },
     onError: (error) => {
@@ -123,7 +124,7 @@ export default function GearShop({ child }: GearShopProps) {
   ];
 
   const gearItemsArray = Array.isArray(gearItems) && gearItems.length > 0 ? gearItems : defaultGearItems;
-  const unlockedGear = child.unlockedGear as string[] || [];
+  const unlockedGear = (child.unlockedGear as string[]) || [];
 
   const filteredGear = selectedGearType === "all" 
     ? gearItemsArray 

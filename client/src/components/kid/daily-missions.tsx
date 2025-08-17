@@ -156,9 +156,22 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
   const todayCompletions = completionsArray.filter(c => c.date === today);
   
   const getHabitStatus = (habitId: string) => {
-    const completion = todayCompletions.find(c => c.habitId === habitId);
-    if (!completion) return 'available';
-    return completion.status; // pending, approved, rejected
+    const habitCompletions = todayCompletions.filter(c => c.habitId === habitId);
+    if (habitCompletions.length === 0) return 'available';
+    
+    // Check for approved first - if approved, habit is done
+    const approved = habitCompletions.find(c => c.status === 'approved');
+    if (approved) return 'approved';
+    
+    // Check for pending - if there's a pending, show pending
+    const pending = habitCompletions.find(c => c.status === 'pending');
+    if (pending) return 'pending';
+    
+    // If only rejected, allow try again
+    const rejected = habitCompletions.find(c => c.status === 'rejected');
+    if (rejected) return 'rejected';
+    
+    return 'available';
   };
 
   return (
