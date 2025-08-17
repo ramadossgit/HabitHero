@@ -117,6 +117,29 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
+      // Generate unique family code
+      const generateFamilyCode = (): string => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let familyCode;
+      let attempts = 0;
+      do {
+        familyCode = generateFamilyCode();
+        const existingCode = await storage.getUserByFamilyCode(familyCode);
+        if (!existingCode) break;
+        attempts++;
+      } while (attempts < 10);
+
+      if (attempts >= 10) {
+        return res.status(500).json({ message: "Failed to generate unique family code" });
+      }
+
       // Create new user with hashed password
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
@@ -124,6 +147,7 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         firstName,
         lastName,
+        familyCode,
         phoneNumber: phoneNumber || null,
       });
 

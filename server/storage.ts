@@ -42,6 +42,7 @@ export interface IStorage {
   // User operations (custom authentication)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByFamilyCode(familyCode: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, updates: Partial<User>): Promise<User>;
   
@@ -49,6 +50,7 @@ export interface IStorage {
   getChildrenByParent(parentId: string): Promise<Child[]>;
   getChild(id: string): Promise<Child | undefined>;
   getChildByUsername(username: string): Promise<Child | undefined>;
+  getChildByUsernameAndPin(username: string, pin: string, parentId?: string): Promise<Child | undefined>;
   createChild(child: InsertChild): Promise<Child>;
   updateChild(id: string, updates: Partial<InsertChild>): Promise<Child>;
   deleteChild(id: string): Promise<void>;
@@ -123,6 +125,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByFamilyCode(familyCode: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.familyCode, familyCode));
+    return user;
+  }
+
   async createUser(userData: UpsertUser): Promise<User> {
     const [newUser] = await db
       .insert(users)
@@ -152,6 +159,20 @@ export class DatabaseStorage implements IStorage {
 
   async getChildByUsername(username: string): Promise<Child | undefined> {
     const [child] = await db.select().from(children).where(eq(children.username, username));
+    return child;
+  }
+
+  async getChildByUsernameAndPin(username: string, pin: string, parentId?: string): Promise<Child | undefined> {
+    const conditions = [
+      eq(children.username, username),
+      eq(children.pin, pin)
+    ];
+    
+    if (parentId) {
+      conditions.push(eq(children.parentId, parentId));
+    }
+    
+    const [child] = await db.select().from(children).where(and(...conditions));
     return child;
   }
 

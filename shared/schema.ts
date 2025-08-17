@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   password: varchar("password"), // Hashed password (nullable for migration)
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
+  familyCode: varchar("family_code", { length: 8 }).unique().notNull(),
   profileImageUrl: varchar("profile_image_url"),
   phoneNumber: varchar("phone_number"),
   voiceCommandsEnabled: boolean("voice_commands_enabled").default(false),

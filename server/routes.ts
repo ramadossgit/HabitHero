@@ -35,16 +35,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Child login route
   app.post('/api/auth/child-login', async (req, res) => {
     try {
-      const { username, pin } = req.body;
+      const { familyCode, username, pin } = req.body;
       
-      if (!username || !pin) {
-        return res.status(400).json({ message: "Username and PIN are required" });
+      if (!familyCode || !username || !pin) {
+        return res.status(400).json({ message: "Family code, username and PIN are required" });
       }
 
-      const child = await storage.getChildByUsername(username);
+      // Find parent by family code first
+      const parent = await storage.getUserByFamilyCode(familyCode);
+      if (!parent) {
+        return res.status(401).json({ message: "Invalid family code" });
+      }
+
+      // Get child by username/pin within this family
+      const child = await storage.getChildByUsernameAndPin(username, pin, parent.id);
       
-      if (!child || child.pin !== pin) {
-        return res.status(401).json({ message: "Invalid username or PIN" });
+      if (!child) {
+        return res.status(401).json({ message: "Invalid username or PIN for this family" });
       }
 
       // Check for emergency mode before allowing login
@@ -67,6 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a simple session for the child
       req.session.childId = child.id;
       req.session.isChildUser = true;
+      req.session.parentId = parent.id;
       
       res.json({
         id: child.id,

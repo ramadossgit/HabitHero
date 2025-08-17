@@ -10,12 +10,13 @@ import { ArrowLeft, Star, Gamepad2 } from "lucide-react";
 
 export default function KidsLogin() {
   const [, setLocation] = useLocation();
+  const [familyCode, setFamilyCode] = useState("");
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState("");
   const { toast } = useToast();
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { username: string; pin: string }) => {
+    mutationFn: async (credentials: { familyCode: string; username: string; pin: string }) => {
       return await apiRequest("POST", "/api/auth/child-login", credentials);
     },
     onSuccess: () => {
@@ -57,15 +58,19 @@ export default function KidsLogin() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !pin.trim()) {
+    if (!familyCode.trim() || !username.trim() || !pin.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please enter both username and PIN",
+        title: "Missing Information", 
+        description: "Please enter family code, username and PIN",
         variant: "destructive",
       });
       return;
     }
-    loginMutation.mutate({ username: username.trim(), pin: pin.trim() });
+    loginMutation.mutate({ 
+      familyCode: familyCode.trim().toUpperCase(), 
+      username: username.trim(), 
+      pin: pin.trim() 
+    });
   };
 
   return (
@@ -101,18 +106,31 @@ export default function KidsLogin() {
               <h2 className="font-fredoka text-3xl text-gray-800 mb-2">Hero Login</h2>
               <p className="text-gray-600">Enter your hero credentials to start your adventure!</p>
               
-              {/* Available Heroes Hint */}
+              {/* Family Code Instructions */}
               <div className="mt-4 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-                <p className="text-blue-800 font-bold text-sm mb-1">Available Heroes:</p>
+                <p className="text-blue-800 font-bold text-sm mb-1">Need Help?</p>
                 <div className="text-blue-700 text-xs space-y-1">
-                  <div>• Loshini (username: loshini, PIN: 1234)</div>
-                  <div>• Jinisha (username: jinisha, PIN: 1111)</div>
-                  <div>• Aathiran (username: aathiran, PIN: 2222)</div>
+                  <div>• Ask your parent for the family code</div>
+                  <div>• Use your hero username and PIN</div>
+                  <div>• Family codes are 6 letters/numbers</div>
                 </div>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-gray-700 font-bold mb-2">Family Code</label>
+                <Input
+                  type="text"
+                  placeholder="Enter family code (e.g., FAM123)"
+                  value={familyCode}
+                  onChange={(e) => setFamilyCode(e.target.value.toUpperCase())}
+                  maxLength={8}
+                  className="w-full text-center text-lg py-3 border-2 border-coral font-bold rounded-xl uppercase"
+                  data-testid="input-family-code"
+                />
+              </div>
+
               <div>
                 <label className="block text-gray-700 font-bold mb-2">Hero Username</label>
                 <Input
