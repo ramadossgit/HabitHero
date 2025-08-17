@@ -120,9 +120,21 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-4xl h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white">
-          <div>
-            <h2 className="font-fredoka text-2xl">Parent Controls</h2>
-            <p className="text-white/90">Manage screen time, features, and safety settings</p>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={onClose} 
+              className="text-white hover:bg-white/20 p-2"
+              data-testid="button-back"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Button>
+            <div>
+              <h2 className="font-fredoka text-3xl hero-title">🛡️ Parent Controls</h2>
+              <p className="text-white/90 font-medium">Manage screen time, bedtime, app features & emergency controls</p>
+            </div>
           </div>
           <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20">
             <X className="w-6 h-6" />
@@ -131,8 +143,8 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
 
         <div className="flex h-full">
           {/* Child Selector Sidebar */}
-          <div className="w-64 border-r bg-gray-50 p-4">
-            <h3 className="font-bold text-gray-800 mb-4">Select Child</h3>
+          <div className="w-64 border-r bg-gradient-to-b from-gray-50 to-white p-4">
+            <h3 className="font-fredoka text-xl text-gray-800 mb-4 hero-title">👶 Select Child</h3>
             <div className="space-y-2">
               {children.map((child) => (
                 <div
@@ -201,8 +213,8 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
             ) : selectedChild && controls ? (
               <div className="p-6">
                 <div className="mb-6">
-                  <h3 className="font-fredoka text-xl text-gray-800 mb-2">
-                    {selectedChild.name}'s Settings
+                  <h3 className="font-fredoka text-2xl text-gray-800 mb-2 hero-title">
+                    ⚙️ {selectedChild.name}'s Settings
                   </h3>
                   {controls.emergencyMode && (
                     <Badge variant="destructive" className="mb-4">
@@ -291,8 +303,8 @@ function ScreenTimeControls({ controls, onSave }: { controls: ParentalControls, 
   };
 
   return (
-    <Card className="p-6">
-      <h4 className="font-bold text-lg mb-4">Daily Screen Time Limits</h4>
+    <Card className="p-6 fun-card">
+      <h4 className="font-fredoka text-xl mb-4 hero-title">⏰ Daily Screen Time Limits</h4>
       <div className="grid grid-cols-2 gap-6">
         <div>
           <Label htmlFor="screen-time">Daily Screen Time (minutes)</Label>
@@ -335,8 +347,8 @@ function ScreenTimeControls({ controls, onSave }: { controls: ParentalControls, 
           />
         </div>
       </div>
-      <Button onClick={handleSave} className="mt-4" data-testid="button-save-screen-time">
-        Save Screen Time Settings
+      <Button onClick={handleSave} className="mt-4 super-button" data-testid="button-save-screen-time">
+        💾 Save Screen Time Settings
       </Button>
     </Card>
   );
@@ -364,8 +376,8 @@ function BedtimeControls({ controls, onSave }: { controls: ParentalControls, onS
   };
 
   return (
-    <Card className="p-6">
-      <h4 className="font-bold text-lg mb-4">Bedtime Settings</h4>
+    <Card className="p-6 fun-card">
+      <h4 className="font-fredoka text-xl mb-4 hero-title">🌙 Bedtime Settings</h4>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Label htmlFor="bedtime-mode">Enable Bedtime Mode</Label>
@@ -401,8 +413,8 @@ function BedtimeControls({ controls, onSave }: { controls: ParentalControls, onS
           </div>
         )}
       </div>
-      <Button onClick={handleSave} className="mt-4" data-testid="button-save-bedtime">
-        Save Bedtime Settings
+      <Button onClick={handleSave} className="mt-4 super-button" data-testid="button-save-bedtime">
+        💾 Save Bedtime Settings
       </Button>
     </Card>
   );
@@ -433,8 +445,8 @@ function FeatureControls({ controls, onSave }: { controls: ParentalControls, onS
   };
 
   return (
-    <Card className="p-6">
-      <h4 className="font-bold text-lg mb-4">App Features</h4>
+    <Card className="p-6 fun-card">
+      <h4 className="font-fredoka text-xl mb-4 hero-title">🎮 App Features</h4>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -488,8 +500,8 @@ function FeatureControls({ controls, onSave }: { controls: ParentalControls, onS
           />
         </div>
       </div>
-      <Button onClick={handleSave} className="mt-4" data-testid="button-save-features">
-        Save Feature Settings
+      <Button onClick={handleSave} className="mt-4 super-button" data-testid="button-save-features">
+        💾 Save Feature Settings
       </Button>
     </Card>
   );
@@ -509,10 +521,9 @@ function EmergencyControls({
 }) {
   return (
     <div className="space-y-6">
-      <Card className="p-6 border-red-200">
-        <h4 className="font-bold text-lg mb-4 flex items-center gap-2 text-red-600">
-          <AlertTriangle className="w-5 h-5" />
-          Emergency Mode
+      <Card className="p-6 fun-card border-red-200">
+        <h4 className="font-fredoka text-xl mb-4 flex items-center gap-2 text-red-600 hero-title">
+          🚨 Emergency Mode
         </h4>
         <p className="text-gray-600 mb-4">
           Emergency mode will immediately block all apps and restrict access for {childName}. 
@@ -559,8 +570,8 @@ function EmergencyControls({
         </Button>
       </Card>
 
-      <Card className="p-6">
-        <h4 className="font-bold text-lg mb-4">Current Emergency Settings</h4>
+      <Card className="p-6 fun-card">
+        <h4 className="font-fredoka text-xl mb-4 hero-title">📊 Current Emergency Settings</h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4" />
