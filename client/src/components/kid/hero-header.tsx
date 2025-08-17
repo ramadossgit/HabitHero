@@ -64,19 +64,11 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-4">
-              {/* Reward Points */}
-              <div className="flex items-center space-x-2 bg-white/20 rounded-full px-3 py-1">
-                <Coins className="w-5 h-5 text-yellow-300" />
-                <span className="font-nunito font-bold text-sm">{child.rewardPoints || 0}</span>
-              </div>
-              
-              {/* XP */}
-              <div className="flex items-center space-x-2">
-                <Star className="w-6 h-6 text-sunshine" />
-                <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
-                <span className="text-white/90">XP</span>
-              </div>
+            {/* XP Only */}
+            <div className="flex items-center space-x-2">
+              <Star className="w-6 h-6 text-sunshine" />
+              <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
+              <span className="text-white/90">XP</span>
             </div>
             
             {/* Logout Button */}

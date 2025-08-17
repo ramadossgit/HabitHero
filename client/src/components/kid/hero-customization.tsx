@@ -112,7 +112,7 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
 
             <div className="space-y-4">
               <div>
-                <h5 className="font-nunito font-bold mb-2">Choose Active Hero ({unlockedAvatars.length} unlocked):</h5>
+                <h5 className="font-nunito font-bold mb-2">Choose Active Hero ({unlockedAvatars.length} purchased):</h5>
                 <div className="grid grid-cols-3 gap-2">
                   {availableAvatarTypes.map((type) => {
                     const IconComponent = type.icon;
@@ -138,30 +138,29 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
                 </div>
                 {availableAvatarTypes.length <= 1 && (
                   <p className="text-sm text-gray-500 mt-2">
-                    💡 Visit the Avatar Shop to unlock more heroes!
+                    💡 Visit the Avatar Shop to purchase more heroes!
                   </p>
                 )}
               </div>
 
               <div>
-                <h5 className="font-nunito font-bold mb-2">Unlocked Gear:</h5>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="p-3 bg-mint/10 border border-mint rounded-lg text-center">
-                    <Shield className="w-6 h-6 text-mint mx-auto mb-1" />
-                    <div className="text-xs">Power Shield</div>
+                <h5 className="font-nunito font-bold mb-2">Purchased Gear:</h5>
+                {unlockedGear.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {unlockedGear.map((gear, index) => (
+                      <div key={index} className="p-3 bg-mint/10 border border-mint rounded-lg text-center">
+                        <Shield className="w-6 h-6 text-mint mx-auto mb-1" />
+                        <div className="text-xs">{gear}</div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="p-3 bg-sky/10 border border-sky rounded-lg text-center">
-                    <Zap className="w-6 h-6 text-sky mx-auto mb-1" />
-                    <div className="text-xs">Energy Boost</div>
+                ) : (
+                  <div className="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                    <ShoppingBag className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No gear purchased yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Visit the Gear Shop to buy equipment!</p>
                   </div>
-                  <div className="p-3 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg text-center opacity-50">
-                    <Lock className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                    <div className="text-xs">Locked</div>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Complete more habits to unlock new gear and abilities!
-                </p>
+                )}
               </div>
             </div>
           </Card>

@@ -32,9 +32,10 @@ export default function AvatarShop({ child }: AvatarShopProps) {
         title: "Avatar Purchased! 🎉",
         description: "Your new avatar has been unlocked!",
       });
-      // Invalidate relevant queries to refresh data
+      // Invalidate all relevant queries to refresh data across the app
       queryClient.invalidateQueries({ queryKey: ["/api/auth/child"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/avatar-shop"] });
     },
     onError: (error: any) => {
       toast({
