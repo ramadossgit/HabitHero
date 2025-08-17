@@ -1,5 +1,9 @@
 import { Progress } from "@/components/ui/progress";
-import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, LogOut, Coins } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Child } from "@shared/schema";
 
 interface HeroHeaderProps {
@@ -7,9 +11,30 @@ interface HeroHeaderProps {
 }
 
 export default function HeroHeader({ child }: HeroHeaderProps) {
+  const { toast } = useToast();
   const xpForCurrentLevel = child.xp || 0;
   const xpNeededForNextLevel = 1000;
   const progressPercentage = (xpForCurrentLevel / xpNeededForNextLevel) * 100;
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/auth/logout", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Logged out successfully!",
+        description: "See you next time, hero!",
+      });
+      window.location.href = "/";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Logout failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const getAvatarImage = (avatarType: string) => {
     const avatarImages = {
@@ -38,12 +63,34 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="flex items-center space-x-2">
-              <Star className="w-6 h-6 text-sunshine" />
-              <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
-              <span className="text-white/90">XP</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
+              {/* Reward Points */}
+              <div className="flex items-center space-x-2 bg-white/20 rounded-full px-3 py-1">
+                <Coins className="w-5 h-5 text-yellow-300" />
+                <span className="font-nunito font-bold text-sm">{child.rewardPoints || 0}</span>
+              </div>
+              
+              {/* XP */}
+              <div className="flex items-center space-x-2">
+                <Star className="w-6 h-6 text-sunshine" />
+                <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
+                <span className="text-white/90">XP</span>
+              </div>
             </div>
+            
+            {/* Logout Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {logoutMutation.isPending ? "Logging out..." : "Logout"}
+            </Button>
           </div>
         </div>
 
