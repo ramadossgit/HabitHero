@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import WeekendChallengesSection from "./weekend-challenges";
 import { 
   Zap, 
   Bed, 
@@ -164,26 +165,8 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
           );
         })}
         
-        {/* Bonus Mission Example */}
-        <Card className="mission-card bg-gradient-to-br from-sunshine to-orange-300 p-6 shadow-lg border-2 border-yellow-400 cursor-pointer">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-white/30 rounded-full p-3">
-              <Star className="w-6 h-6 text-white animate-pulse-slow" />
-            </div>
-            <div className="text-right">
-              <div className="bg-white text-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
-                BONUS +100 XP
-              </div>
-            </div>
-          </div>
-          
-          <h3 className="font-nunito font-extrabold text-lg mb-2 text-black">Weekend Bonus!</h3>
-          <p className="text-black/90 mb-4">Clean up toys before dinner</p>
-          
-          <Button className="bg-white text-black px-4 py-2 rounded-full font-bold hover:bg-white/90 transition-colors w-full">
-            Accept Challenge!
-          </Button>
-        </Card>
+        {/* Weekend Challenges Section */}
+        <WeekendChallengesSection childId={childId} />
       </div>
     </section>
   );

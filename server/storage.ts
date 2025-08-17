@@ -7,6 +7,8 @@ import {
   rewardClaims,
   miniGames,
   parentalControls,
+  avatarShopItems,
+  weekendChallenges,
   type User,
   type UpsertUser,
   type Child,
@@ -22,6 +24,10 @@ import {
   type MiniGame,
   type ParentalControls,
   type InsertParentalControls,
+  type AvatarShopItem,
+  type InsertAvatarShopItem,
+  type WeekendChallenge,
+  type InsertWeekendChallenge,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
@@ -70,6 +76,18 @@ export interface IStorage {
   // Parental controls operations
   getParentalControls(childId: string): Promise<ParentalControls | undefined>;
   upsertParentalControls(controls: InsertParentalControls): Promise<ParentalControls>;
+  
+  // Avatar shop operations
+  getAllAvatarShopItems(): Promise<AvatarShopItem[]>;
+  createAvatarShopItem(item: InsertAvatarShopItem): Promise<AvatarShopItem>;
+  purchaseAvatar(childId: string, avatarType: string, cost: number): Promise<Child>;
+  
+  // Weekend challenge operations
+  getWeekendChallenges(childId: string): Promise<WeekendChallenge[]>;
+  createWeekendChallenge(challenge: InsertWeekendChallenge): Promise<WeekendChallenge>;
+  acceptWeekendChallenge(challengeId: string): Promise<WeekendChallenge>;
+  completeWeekendChallenge(challengeId: string, pointsEarned: number): Promise<WeekendChallenge>;
+  updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -256,8 +274,12 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
 
-    // Update child XP
+    // Update child XP and reward points (1 point per 10 XP earned)
     await this.updateChildXP(completion.childId, completion.xpEarned);
+    const rewardPoints = Math.floor(completion.xpEarned / 10);
+    if (rewardPoints > 0) {
+      await this.updateChildRewardPoints(completion.childId, rewardPoints);
+    }
 
     return newCompletion;
   }
@@ -377,6 +399,102 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db.insert(parentalControls).values(controls).returning();
       return created;
     }
+  }
+
+  // Avatar shop operations
+  async getAllAvatarShopItems(): Promise<AvatarShopItem[]> {
+    return await db.select().from(avatarShopItems).where(eq(avatarShopItems.isActive, true));
+  }
+
+  async createAvatarShopItem(item: InsertAvatarShopItem): Promise<AvatarShopItem> {
+    const [newItem] = await db.insert(avatarShopItems).values(item).returning();
+    return newItem;
+  }
+
+  async purchaseAvatar(childId: string, avatarType: string, cost: number): Promise<Child> {
+    // First get the child to check they have enough points
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+    
+    if ((child.rewardPoints || 0) < cost) {
+      throw new Error("Not enough reward points");
+    }
+
+    // Check if avatar is already unlocked
+    const unlockedAvatars = child.unlockedAvatars as string[] || ["robot"];
+    if (unlockedAvatars.includes(avatarType)) {
+      throw new Error("Avatar already unlocked");
+    }
+
+    // Update child with new avatar and deduct points
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        rewardPoints: (child.rewardPoints || 0) - cost,
+        unlockedAvatars: [...unlockedAvatars, avatarType],
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+
+    return updatedChild;
+  }
+
+  // Weekend challenge operations
+  async getWeekendChallenges(childId: string): Promise<WeekendChallenge[]> {
+    return await db.select().from(weekendChallenges).where(eq(weekendChallenges.childId, childId));
+  }
+
+  async createWeekendChallenge(challenge: InsertWeekendChallenge): Promise<WeekendChallenge> {
+    const [newChallenge] = await db.insert(weekendChallenges).values(challenge).returning();
+    return newChallenge;
+  }
+
+  async acceptWeekendChallenge(challengeId: string): Promise<WeekendChallenge> {
+    const [updatedChallenge] = await db
+      .update(weekendChallenges)
+      .set({ isAccepted: true })
+      .where(eq(weekendChallenges.id, challengeId))
+      .returning();
+    return updatedChallenge;
+  }
+
+  async completeWeekendChallenge(challengeId: string, pointsEarned: number): Promise<WeekendChallenge> {
+    const [updatedChallenge] = await db
+      .update(weekendChallenges)
+      .set({ 
+        isCompleted: true, 
+        completedAt: new Date(),
+      })
+      .where(eq(weekendChallenges.id, challengeId))
+      .returning();
+
+    // Award points to the child
+    if (updatedChallenge) {
+      await this.updateChildRewardPoints(updatedChallenge.childId, pointsEarned);
+    }
+
+    return updatedChallenge;
+  }
+
+  async updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child> {
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        rewardPoints: (child.rewardPoints || 0) + pointsGained,
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+
+    return updatedChild;
   }
 }
 

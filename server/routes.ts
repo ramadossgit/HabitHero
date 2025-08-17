@@ -8,7 +8,9 @@ import {
   insertHabitCompletionSchema,
   insertRewardSchema,
   insertRewardClaimSchema,
-  insertParentalControlsSchema 
+  insertParentalControlsSchema,
+  insertAvatarShopItemSchema,
+  insertWeekendChallengeSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -395,6 +397,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating parental controls:", error);
       res.status(500).json({ message: "Failed to update parental controls" });
+    }
+  });
+
+  // Avatar shop routes
+  app.get('/api/avatar-shop', async (req, res) => {
+    try {
+      const items = await storage.getAllAvatarShopItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching avatar shop items:", error);
+      res.status(500).json({ message: "Failed to fetch avatar shop items" });
+    }
+  });
+
+  app.post('/api/avatar-shop', isAuthenticated, async (req, res) => {
+    try {
+      const itemData = insertAvatarShopItemSchema.parse(req.body);
+      const item = await storage.createAvatarShopItem(itemData);
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating avatar shop item:", error);
+      res.status(500).json({ message: "Failed to create avatar shop item" });
+    }
+  });
+
+  // Purchase avatar route
+  app.post('/api/children/:childId/purchase-avatar', async (req, res) => {
+    try {
+      const { avatarType, cost } = req.body;
+      
+      if (!avatarType || !cost) {
+        return res.status(400).json({ message: "Avatar type and cost are required" });
+      }
+
+      const updatedChild = await storage.purchaseAvatar(req.params.childId, avatarType, cost);
+      res.json(updatedChild);
+    } catch (error) {
+      console.error("Error purchasing avatar:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to purchase avatar" });
+      }
+    }
+  });
+
+  // Weekend challenge routes
+  app.get('/api/children/:childId/weekend-challenges', async (req, res) => {
+    try {
+      const challenges = await storage.getWeekendChallenges(req.params.childId);
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching weekend challenges:", error);
+      res.status(500).json({ message: "Failed to fetch weekend challenges" });
+    }
+  });
+
+  app.post('/api/children/:childId/weekend-challenges', async (req, res) => {
+    try {
+      const challengeData = insertWeekendChallengeSchema.parse({
+        ...req.body,
+        childId: req.params.childId,
+      });
+      const challenge = await storage.createWeekendChallenge(challengeData);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error creating weekend challenge:", error);
+      res.status(500).json({ message: "Failed to create weekend challenge" });
+    }
+  });
+
+  app.patch('/api/weekend-challenges/:challengeId/accept', async (req, res) => {
+    try {
+      const challenge = await storage.acceptWeekendChallenge(req.params.challengeId);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error accepting weekend challenge:", error);
+      res.status(500).json({ message: "Failed to accept weekend challenge" });
+    }
+  });
+
+  app.patch('/api/weekend-challenges/:challengeId/complete', async (req, res) => {
+    try {
+      const { pointsEarned } = req.body;
+      const challenge = await storage.completeWeekendChallenge(req.params.challengeId, pointsEarned || 20);
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error completing weekend challenge:", error);
+      res.status(500).json({ message: "Failed to complete weekend challenge" });
+    }
+  });
+
+  // Update child reward points route
+  app.patch('/api/children/:childId/reward-points', async (req, res) => {
+    try {
+      const { pointsGained } = req.body;
+      
+      if (typeof pointsGained !== 'number') {
+        return res.status(400).json({ message: "Points gained must be a number" });
+      }
+
+      const updatedChild = await storage.updateChildRewardPoints(req.params.childId, pointsGained);
+      res.json(updatedChild);
+    } catch (error) {
+      console.error("Error updating child reward points:", error);
+      res.status(500).json({ message: "Failed to update reward points" });
     }
   });
 

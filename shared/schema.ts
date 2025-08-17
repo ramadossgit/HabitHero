@@ -47,6 +47,8 @@ export const children = pgTable("children", {
   level: integer("level").notNull().default(1),
   xp: integer("xp").notNull().default(0),
   totalXp: integer("total_xp").notNull().default(0),
+  rewardPoints: integer("reward_points").notNull().default(0), // Points for purchasing avatars
+  unlockedAvatars: jsonb("unlocked_avatars").default(["robot"]), // Available avatars for user
   unlockedGear: jsonb("unlocked_gear").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -112,6 +114,33 @@ export const miniGames = pgTable("mini_games", {
   isActive: boolean("is_active").notNull().default(true),
 });
 
+// Avatar shop items that can be purchased with reward points
+export const avatarShopItems = pgTable("avatar_shop_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(), // "Ninja Warrior", "Space Princess", etc.
+  avatarType: varchar("avatar_type").notNull(), // ninja, princess, robot, animal, wizard, superhero
+  cost: integer("cost").notNull(), // reward points needed
+  description: text("description"),
+  rarity: varchar("rarity").notNull().default("common"), // common, rare, epic, legendary
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Weekend challenges for bonus points
+export const weekendChallenges = pgTable("weekend_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  pointsReward: integer("points_reward").notNull().default(20),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  isAccepted: boolean("is_accepted").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Parental control settings
 export const parentalControls = pgTable("parental_controls", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -141,6 +170,7 @@ export const childrenRelations = relations(children, ({ one, many }) => ({
   habitCompletions: many(habitCompletions),
   rewards: many(rewards),
   rewardClaims: many(rewardClaims),
+  weekendChallenges: many(weekendChallenges),
   parentalControls: one(parentalControls),
 }));
 
@@ -178,6 +208,13 @@ export const rewardClaimsRelations = relations(rewardClaims, ({ one }) => ({
   }),
   child: one(children, {
     fields: [rewardClaims.childId],
+    references: [children.id],
+  }),
+}));
+
+export const weekendChallengesRelations = relations(weekendChallenges, ({ one }) => ({
+  child: one(children, {
+    fields: [weekendChallenges.childId],
     references: [children.id],
   }),
 }));
@@ -228,6 +265,17 @@ export const insertParentalControlsSchema = createInsertSchema(parentalControls)
   updatedAt: true,
 });
 
+export const insertAvatarShopItemSchema = createInsertSchema(avatarShopItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWeekendChallengeSchema = createInsertSchema(weekendChallenges).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -244,3 +292,7 @@ export type InsertRewardClaim = z.infer<typeof insertRewardClaimSchema>;
 export type MiniGame = typeof miniGames.$inferSelect;
 export type ParentalControls = typeof parentalControls.$inferSelect;
 export type InsertParentalControls = z.infer<typeof insertParentalControlsSchema>;
+export type AvatarShopItem = typeof avatarShopItems.$inferSelect;
+export type InsertAvatarShopItem = z.infer<typeof insertAvatarShopItemSchema>;
+export type WeekendChallenge = typeof weekendChallenges.$inferSelect;
+export type InsertWeekendChallenge = z.infer<typeof insertWeekendChallengeSchema>;
