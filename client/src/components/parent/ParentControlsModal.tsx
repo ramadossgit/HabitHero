@@ -20,7 +20,8 @@ import {
   CheckCircle,
   Lock,
   Wifi,
-  Phone
+  Phone,
+  ArrowLeft
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Child, ParentalControls } from "@shared/schema";

@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
+import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
@@ -22,6 +23,8 @@ export default function ParentDashboard() {
   const [avatarType, setAvatarType] = useState("robot");
   const [showParentProfile, setShowParentProfile] = useState(false);
   const [showParentControls, setShowParentControls] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -175,6 +178,25 @@ export default function ParentDashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
+  // Check for first-time user and show onboarding
+  useEffect(() => {
+    const completed = localStorage.getItem('parent-onboarding-completed');
+    if (!completed && children && children.length === 0 && isAuthenticated) {
+      setShowOnboarding(true);
+    }
+    setHasCompletedOnboarding(!!completed);
+  }, [children, isAuthenticated]);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('parent-onboarding-completed', 'true');
+    setHasCompletedOnboarding(true);
+    setShowOnboarding(false);
+  };
+
+  const restartOnboarding = () => {
+    setShowOnboarding(true);
+  };
+
   if (isLoading || childrenLoading || !child) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -197,6 +219,15 @@ export default function ParentDashboard() {
                 <p className="text-white/90 text-lg">✨ Welcome to Habit Heroes! ✨</p>
               </div>
               <div className="flex items-center space-x-4">
+                {hasCompletedOnboarding && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={restartOnboarding}
+                    className="text-white hover:bg-white/20 font-bold"
+                  >
+                    📚 Tutorial
+                  </Button>
+                )}
                 <Link href="/">
                   <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
                     <ArrowLeft className="w-5 h-5 mr-2" />
@@ -392,6 +423,22 @@ export default function ParentDashboard() {
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
               <div className="flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
+                  onClick={restartOnboarding}
+                >
+                  <HelpCircle className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Tutorial</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
+                  onClick={() => setShowParentControls(true)}
+                >
+                  <Shield className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Controls</span>
+                </Button>
                 <Link href="/">
                   <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4">
                     <ArrowLeft className="w-4 h-4 sm:mr-2" />
@@ -646,6 +693,13 @@ export default function ParentDashboard() {
         isOpen={showParentControls}
         onClose={() => setShowParentControls(false)}
         children={children || []}
+      />
+      
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial 
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={handleOnboardingComplete}
       />
     </div>
   );
