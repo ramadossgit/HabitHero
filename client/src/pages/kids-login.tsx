@@ -30,11 +30,28 @@ export default function KidsLogin() {
       }, 100);
     },
     onError: (error: any) => {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Invalid username or PIN",
-        variant: "destructive",
-      });
+      // Handle different types of login errors
+      if (error.emergencyMode) {
+        toast({
+          title: "🚨 Emergency Mode Active",
+          description: "Your parent has temporarily restricted access to the app. Please contact your parent for assistance.",
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else if (error.featureDisabled) {
+        toast({
+          title: "🔒 Feature Disabled",
+          description: "Access to daily habits has been disabled by your parent. Please contact your parent for assistance.",
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Invalid username or PIN",
+          variant: "destructive",
+        });
+      }
     },
   });
 

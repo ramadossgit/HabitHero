@@ -55,6 +55,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid username or PIN" });
       }
 
+      // Check for emergency mode before allowing login
+      const parentalControls = await storage.getParentalControls(child.id);
+      if (parentalControls?.emergencyMode || parentalControls?.blockAllApps) {
+        return res.status(403).json({ 
+          message: "Emergency mode is active. Your parent has temporarily restricted access to the app. Please contact your parent for assistance.",
+          emergencyMode: true
+        });
+      }
+
+      // Check if daily habits feature is disabled
+      if (parentalControls && !parentalControls.enableHabits) {
+        return res.status(403).json({ 
+          message: "Daily habits access has been disabled by your parent. Please contact your parent for assistance.",
+          featureDisabled: 'habits'
+        });
+      }
+
       // Create a simple session for the child
       req.session.childId = child.id;
       req.session.isChildUser = true;

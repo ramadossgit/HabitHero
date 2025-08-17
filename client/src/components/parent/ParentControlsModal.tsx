@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -272,6 +273,14 @@ function ScreenTimeControls({ controls, onSave }: { controls: ParentalControls, 
   const [weekendBonus, setWeekendBonus] = useState(controls.weekendBonus);
   const [maxGameTime, setMaxGameTime] = useState(controls.maxGameTimePerDay);
 
+  // Update local state when controls change
+  React.useEffect(() => {
+    setScreenTime(controls.dailyScreenTime);
+    setBonusTime(controls.bonusTimePerHabit);
+    setWeekendBonus(controls.weekendBonus);
+    setMaxGameTime(controls.maxGameTimePerDay);
+  }, [controls.dailyScreenTime, controls.bonusTimePerHabit, controls.weekendBonus, controls.maxGameTimePerDay]);
+
   const handleSave = () => {
     onSave({
       dailyScreenTime: screenTime,
@@ -339,6 +348,13 @@ function BedtimeControls({ controls, onSave }: { controls: ParentalControls, onS
   const [bedtimeStart, setBedtimeStart] = useState(controls.bedtimeStart);
   const [bedtimeEnd, setBedtimeEnd] = useState(controls.bedtimeEnd);
 
+  // Update local state when controls change
+  React.useEffect(() => {
+    setBedtimeMode(controls.bedtimeMode);
+    setBedtimeStart(controls.bedtimeStart);
+    setBedtimeEnd(controls.bedtimeEnd);
+  }, [controls.bedtimeMode, controls.bedtimeStart, controls.bedtimeEnd]);
+
   const handleSave = () => {
     onSave({
       bedtimeMode,
@@ -398,6 +414,14 @@ function FeatureControls({ controls, onSave }: { controls: ParentalControls, onS
   const [enableGearShop, setEnableGearShop] = useState(controls.enableGearShop);
   const [enableMiniGames, setEnableMiniGames] = useState(controls.enableMiniGames);
   const [enableRewards, setEnableRewards] = useState(controls.enableRewards);
+
+  // Update local state when controls change (when different child is selected)
+  React.useEffect(() => {
+    setEnableHabits(controls.enableHabits);
+    setEnableGearShop(controls.enableGearShop);
+    setEnableMiniGames(controls.enableMiniGames);
+    setEnableRewards(controls.enableRewards);
+  }, [controls.enableHabits, controls.enableGearShop, controls.enableMiniGames, controls.enableRewards]);
 
   const handleSave = () => {
     onSave({

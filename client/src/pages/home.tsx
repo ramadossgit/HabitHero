@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useChildAuth } from "@/hooks/useChildAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import HeroHeader from "@/components/kid/hero-header";
 import DailyMissions from "@/components/kid/daily-missions";
 import HeroCustomization from "@/components/kid/hero-customization";
 import RewardsSection from "@/components/kid/rewards-section";
 import WeeklyProgress from "@/components/kid/weekly-progress";
-import { Gamepad2, Trophy, Star, Settings } from "lucide-react";
-import type { Child } from "@shared/schema";
+import { Gamepad2, Trophy, Star, Settings, Lock } from "lucide-react";
+import type { Child, ParentalControls } from "@shared/schema";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("missions");
@@ -77,6 +79,20 @@ export default function Home() {
 
   const currentChild = loggedInChild as Child;
 
+  // Fetch parental controls for the current child
+  const { data: parentalControls } = useQuery<ParentalControls>({
+    queryKey: ['/api/children', currentChild.id, 'parental-controls'],
+    enabled: !!currentChild.id,
+  });
+
+  // Check if specific features are enabled
+  const featuresEnabled = {
+    habits: parentalControls?.enableHabits !== false,
+    gearShop: parentalControls?.enableGearShop !== false,
+    miniGames: parentalControls?.enableMiniGames !== false,
+    rewards: parentalControls?.enableRewards !== false,
+  };
+
   return (
     <div className="min-h-screen hero-gradient">
       {/* Hero Header */}
@@ -86,16 +102,28 @@ export default function Home() {
       <div className="container mx-auto px-4 pb-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="missions" className="flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4" />
+            <TabsTrigger 
+              value="missions" 
+              className="flex items-center gap-2"
+              disabled={!featuresEnabled.habits}
+            >
+              {featuresEnabled.habits ? <Gamepad2 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
               Missions
             </TabsTrigger>
-            <TabsTrigger value="customize" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
+            <TabsTrigger 
+              value="customize" 
+              className="flex items-center gap-2"
+              disabled={!featuresEnabled.gearShop}
+            >
+              {featuresEnabled.gearShop ? <Settings className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
               Customize
             </TabsTrigger>
-            <TabsTrigger value="rewards" className="flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
+            <TabsTrigger 
+              value="rewards" 
+              className="flex items-center gap-2"
+              disabled={!featuresEnabled.rewards}
+            >
+              {featuresEnabled.rewards ? <Trophy className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
               Rewards
             </TabsTrigger>
             <TabsTrigger value="progress" className="flex items-center gap-2">
@@ -105,15 +133,42 @@ export default function Home() {
           </TabsList>
 
           <TabsContent value="missions" className="space-y-6">
-            <DailyMissions childId={currentChild.id} />
+            {featuresEnabled.habits ? (
+              <DailyMissions childId={currentChild.id} />
+            ) : (
+              <Alert>
+                <Lock className="h-4 w-4" />
+                <AlertDescription>
+                  Your parent has disabled daily habits. Contact your parent to enable this feature.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
 
           <TabsContent value="customize" className="space-y-6">
-            <HeroCustomization child={currentChild} />
+            {featuresEnabled.gearShop ? (
+              <HeroCustomization child={currentChild} />
+            ) : (
+              <Alert>
+                <Lock className="h-4 w-4" />
+                <AlertDescription>
+                  Your parent has disabled hero customization. Contact your parent to enable this feature.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
 
           <TabsContent value="rewards" className="space-y-6">
-            <RewardsSection childId={currentChild.id} />
+            {featuresEnabled.rewards ? (
+              <RewardsSection childId={currentChild.id} />
+            ) : (
+              <Alert>
+                <Lock className="h-4 w-4" />
+                <AlertDescription>
+                  Your parent has disabled rewards. Contact your parent to enable this feature.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-6">
