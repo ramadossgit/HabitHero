@@ -187,6 +187,17 @@ export const parentalControls = pgTable("parental_controls", {
   bedtimeMode: boolean("bedtime_mode").notNull().default(true),
   bedtimeStart: varchar("bedtime_start").notNull().default("20:00"),
   bedtimeEnd: varchar("bedtime_end").notNull().default("07:00"),
+  // App Features Control
+  enableHabits: boolean("enable_habits").notNull().default(true),
+  enableGearShop: boolean("enable_gear_shop").notNull().default(true),
+  enableMiniGames: boolean("enable_mini_games").notNull().default(true),
+  enableRewards: boolean("enable_rewards").notNull().default(true),
+  // Emergency Controls
+  emergencyMode: boolean("emergency_mode").notNull().default(false),
+  blockAllApps: boolean("block_all_apps").notNull().default(false),
+  limitInternet: boolean("limit_internet").notNull().default(false),
+  parentContactEnabled: boolean("parent_contact_enabled").notNull().default(true),
+  emergencyActivatedAt: timestamp("emergency_activated_at"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

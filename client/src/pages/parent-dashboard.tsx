@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
+import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
@@ -20,6 +21,7 @@ export default function ParentDashboard() {
   const [heroName, setHeroName] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
   const [showParentProfile, setShowParentProfile] = useState(false);
+  const [showParentControls, setShowParentControls] = useState(false);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -309,13 +311,13 @@ export default function ParentDashboard() {
 
   // Calculate real statistics
   const completionRate = weeklyProgress && child ? 
-    Math.round((weeklyProgress.completedHabits / Math.max(weeklyProgress.totalHabits, 1)) * 100) : 0;
+    Math.round(((weeklyProgress as any).completedHabits / Math.max((weeklyProgress as any).totalHabits, 1)) * 100) : 0;
 
   // Calculate current streak - consecutive days with at least one completed habit
   const calculateCurrentStreak = () => {
-    if (!completions || completions.length === 0) return 0;
+    if (!completions || (completions as any[]).length === 0) return 0;
     
-    const approvedCompletions = completions.filter((c: any) => c.status === 'approved');
+    const approvedCompletions = (completions as any[]).filter((c: any) => c.status === 'approved');
     if (approvedCompletions.length === 0) return 0;
 
     // Group completions by date
@@ -351,7 +353,7 @@ export default function ParentDashboard() {
     if (!completions || !habits) return 0;
     
     let badges = 0;
-    const approvedCompletions = completions.filter((c: any) => c.status === 'approved');
+    const approvedCompletions = (completions as any[]).filter((c: any) => c.status === 'approved');
     
     // Badge for first completion
     if (approvedCompletions.length > 0) badges++;
@@ -372,7 +374,7 @@ export default function ParentDashboard() {
     if (currentStreak >= 30) badges++;
     
     // Badge for having 5+ active habits
-    if (habits && habits.length >= 5) badges++;
+    if (habits && (habits as any[]).length >= 5) badges++;
     
     return badges;
   };
@@ -617,10 +619,34 @@ export default function ParentDashboard() {
 
           {/* Parental Controls Section */}
           <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
-            <ParentalControlsSection childId={child.id} showControls={showControls} setShowControls={setShowControls} />
+            <Card 
+              className="fun-card p-4 sm:p-8 border-4 border-red-500 cursor-pointer hover:scale-105 transition-transform"
+              onClick={() => setShowParentControls(true)}
+              data-testid="card-parental-controls"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title flex items-center">
+                    <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mr-2 sm:mr-3" />
+                    🛡️ Parent Controls
+                  </h3>
+                  <p className="text-gray-600 text-sm sm:text-base">Per-child screen time, bedtime, app features & emergency controls</p>
+                </div>
+                <div className="text-red-500">
+                  <Settings className="w-8 h-8" />
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </main>
+
+      {/* Parent Controls Modal */}
+      <ParentControlsModal 
+        isOpen={showParentControls}
+        onClose={() => setShowParentControls(false)}
+        children={children || []}
+      />
     </div>
   );
 }
@@ -1917,240 +1943,7 @@ function ProgressReportsSection({ childId, showReports, setShowReports }: {
   );
 }
 
-// Parental Controls Section Component
-function ParentalControlsSection({ childId, showControls, setShowControls }: { 
-  childId: string; 
-  showControls: boolean; 
-  setShowControls: (show: boolean) => void; 
-}) {
-  const { toast } = useToast();
-  const [screenTimeLimit, setScreenTimeLimit] = useState("60");
-  const [bedtimeMode, setBedtimeMode] = useState(false);
-  const [bedtimeStart, setBedtimeStart] = useState("20:00");
-  const [bedtimeEnd, setBedtimeEnd] = useState("07:00");
-  const [gameAccess, setGameAccess] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [parentApprovalRequired, setParentApprovalRequired] = useState(false);
 
-  const { data: child } = useQuery<Child>({
-    queryKey: [`/api/children/${childId}`],
-  });
-
-  const updateControlsMutation = useMutation({
-    mutationFn: async (controlsData: any) => {
-      await apiRequest("PATCH", `/api/children/${childId}/controls`, controlsData);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Controls Updated! 🛡️",
-        description: "Parental controls have been updated successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}`] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update controls. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSaveControls = () => {
-    updateControlsMutation.mutate({
-      screenTimeLimit: parseInt(screenTimeLimit),
-      bedtimeMode,
-      bedtimeStart,
-      bedtimeEnd,
-      gameAccess,
-      notificationsEnabled,
-      parentApprovalRequired,
-    });
-  };
-
-  return (
-    <Card className="fun-card p-4 sm:p-8 border-4 border-red-500">
-      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 mb-4 sm:mb-6 flex items-center">
-        <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mr-2 sm:mr-3" />
-        🛡️ Parental Controls
-      </h3>
-      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">Manage app usage and safety settings</p>
-      
-      <div className="space-y-6">
-        {/* Screen Time Limits */}
-        <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
-          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-            <Settings className="w-5 h-5 text-red-500 mr-2" />
-            Screen Time Limits
-          </h4>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-bold text-gray-700">Daily App Usage Limit</label>
-              <Select value={screenTimeLimit} onValueChange={setScreenTimeLimit}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 minutes</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                  <SelectItem value="90">1.5 hours</SelectItem>
-                  <SelectItem value="120">2 hours</SelectItem>
-                  <SelectItem value="unlimited">Unlimited</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="text-sm text-gray-600">
-              Current usage today: 23 minutes remaining
-            </div>
-          </div>
-        </div>
-
-        {/* Bedtime Mode */}
-        <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
-          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-            <Settings className="w-5 h-5 text-purple-500 mr-2" />
-            Bedtime Mode
-          </h4>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-gray-700">Enable Bedtime Mode</span>
-              <Button
-                onClick={() => setBedtimeMode(!bedtimeMode)}
-                variant={bedtimeMode ? "default" : "outline"}
-                size="sm"
-                className={bedtimeMode ? "bg-purple-500 hover:bg-purple-600" : ""}
-              >
-                {bedtimeMode ? "Enabled" : "Disabled"}
-              </Button>
-            </div>
-            {bedtimeMode && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-bold text-gray-700">Bedtime Start</label>
-                  <Input
-                    type="time"
-                    value={bedtimeStart}
-                    onChange={(e) => setBedtimeStart(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-bold text-gray-700">Wake Up Time</label>
-                  <Input
-                    type="time"
-                    value={bedtimeEnd}
-                    onChange={(e) => setBedtimeEnd(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="text-sm text-gray-600">
-              {bedtimeMode ? `App will be locked from ${bedtimeStart} to ${bedtimeEnd}` : "Child can use app anytime"}
-            </div>
-          </div>
-        </div>
-
-        {/* App Features */}
-        <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-            <Settings className="w-5 h-5 text-blue-500 mr-2" />
-            App Features
-          </h4>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-gray-700">Mini-Games Access</div>
-                <div className="text-xs text-gray-500">Allow child to play educational mini-games</div>
-              </div>
-              <Button
-                onClick={() => setGameAccess(!gameAccess)}
-                variant={gameAccess ? "default" : "outline"}
-                size="sm"
-                className={gameAccess ? "bg-blue-500 hover:bg-blue-600" : ""}
-              >
-                {gameAccess ? "Enabled" : "Disabled"}
-              </Button>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-gray-700">Push Notifications</div>
-                <div className="text-xs text-gray-500">Send habit reminders and achievement notifications</div>
-              </div>
-              <Button
-                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                variant={notificationsEnabled ? "default" : "outline"}
-                size="sm"
-                className={notificationsEnabled ? "bg-blue-500 hover:bg-blue-600" : ""}
-              >
-                {notificationsEnabled ? "Enabled" : "Disabled"}
-              </Button>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-gray-700">Parent Approval Required</div>
-                <div className="text-xs text-gray-500">Require approval for reward redemptions</div>
-              </div>
-              <Button
-                onClick={() => setParentApprovalRequired(!parentApprovalRequired)}
-                variant={parentApprovalRequired ? "default" : "outline"}
-                size="sm"
-                className={parentApprovalRequired ? "bg-blue-500 hover:bg-blue-600" : ""}
-              >
-                {parentApprovalRequired ? "Required" : "Not Required"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Emergency Controls */}
-        <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-          <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-            <Shield className="w-5 h-5 text-yellow-600 mr-2" />
-            Emergency Controls
-          </h4>
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full border-yellow-400 text-yellow-700 hover:bg-yellow-100"
-            >
-              🚫 Temporarily Lock App (1 hour)
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full border-orange-400 text-orange-700 hover:bg-orange-100"
-            >
-              🔄 Reset All Progress (Caution!)
-            </Button>
-            <div className="text-xs text-gray-500">
-              Emergency controls take effect immediately and will send notifications to your child.
-            </div>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex space-x-2">
-          <Button
-            onClick={handleSaveControls}
-            disabled={updateControlsMutation.isPending}
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold"
-          >
-            {updateControlsMutation.isPending ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                Saving...
-              </>
-            ) : (
-              <>🛡️ Save Controls</>
-            )}
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 // Reward Approval Section Component
 function RewardApprovalSection({ childId }: { childId: string }) {

@@ -422,6 +422,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/children/:childId/parental-controls', isAuthenticated, async (req, res) => {
     try {
       const controls = await storage.getParentalControls(req.params.childId);
+      
+      // Return default controls if none exist
+      if (!controls) {
+        return res.json({
+          childId: req.params.childId,
+          dailyScreenTime: 60,
+          bonusTimePerHabit: 10,
+          weekendBonus: 30,
+          gameUnlockRequirement: 2,
+          maxGameTimePerDay: 20,
+          bedtimeMode: true,
+          bedtimeStart: "20:00",
+          bedtimeEnd: "07:00",
+          enableHabits: true,
+          enableGearShop: true,
+          enableMiniGames: true,
+          enableRewards: true,
+          emergencyMode: false,
+          blockAllApps: false,
+          limitInternet: false,
+          parentContactEnabled: true,
+        });
+      }
+      
       res.json(controls);
     } catch (error) {
       console.error("Error fetching parental controls:", error);
@@ -440,6 +464,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating parental controls:", error);
       res.status(500).json({ message: "Failed to update parental controls" });
+    }
+  });
+
+  // Emergency controls
+  app.post('/api/children/:childId/emergency/activate', isAuthenticated, async (req, res) => {
+    try {
+      const controls = await storage.activateEmergencyMode(req.params.childId);
+      res.json(controls);
+    } catch (error) {
+      console.error("Error activating emergency mode:", error);
+      res.status(500).json({ message: "Failed to activate emergency mode" });
+    }
+  });
+
+  app.post('/api/children/:childId/emergency/deactivate', isAuthenticated, async (req, res) => {
+    try {
+      const controls = await storage.deactivateEmergencyMode(req.params.childId);
+      res.json(controls);
+    } catch (error) {
+      console.error("Error deactivating emergency mode:", error);
+      res.status(500).json({ message: "Failed to deactivate emergency mode" });
     }
   });
 

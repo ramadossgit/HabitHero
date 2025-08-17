@@ -82,6 +82,8 @@ export interface IStorage {
   // Parental controls operations
   getParentalControls(childId: string): Promise<ParentalControls | undefined>;
   upsertParentalControls(controls: InsertParentalControls): Promise<ParentalControls>;
+  activateEmergencyMode(childId: string): Promise<ParentalControls>;
+  deactivateEmergencyMode(childId: string): Promise<ParentalControls>;
   
   // Avatar shop operations
   getAllAvatarShopItems(): Promise<AvatarShopItem[]>;
@@ -527,6 +529,49 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db.insert(parentalControls).values(controls).returning();
       return created;
     }
+  }
+
+  async activateEmergencyMode(childId: string): Promise<ParentalControls> {
+    const existing = await this.getParentalControls(childId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(parentalControls)
+        .set({ 
+          emergencyMode: true, 
+          blockAllApps: true,
+          emergencyActivatedAt: new Date(),
+          updatedAt: new Date() 
+        })
+        .where(eq(parentalControls.childId, childId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(parentalControls)
+        .values({ 
+          childId, 
+          emergencyMode: true, 
+          blockAllApps: true,
+          emergencyActivatedAt: new Date()
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async deactivateEmergencyMode(childId: string): Promise<ParentalControls> {
+    const [updated] = await db
+      .update(parentalControls)
+      .set({ 
+        emergencyMode: false, 
+        blockAllApps: false,
+        emergencyActivatedAt: null,
+        updatedAt: new Date() 
+      })
+      .where(eq(parentalControls.childId, childId))
+      .returning();
+    return updated;
   }
 
   // Avatar shop operations
