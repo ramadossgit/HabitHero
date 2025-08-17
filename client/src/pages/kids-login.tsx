@@ -16,7 +16,7 @@ export default function KidsLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; pin: string }) => {
-      return await apiRequest("/api/auth/child-login", "POST", credentials);
+      return await apiRequest("POST", "/api/auth/child-login", credentials);
     },
     onSuccess: () => {
       toast({
