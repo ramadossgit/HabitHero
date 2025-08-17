@@ -47,7 +47,7 @@ export default function Landing() {
               <Button 
                 className="super-button text-lg sm:text-xl md:text-2xl px-6 sm:px-8 md:px-12 py-4 sm:py-5 md:py-6 wiggle text-white font-bold"
                 style={{ color: 'white' }}
-                onClick={() => setLocation("/parent")}
+                onClick={() => setLocation("/parent/auth")}
               >
                 👨‍👩‍👧‍👦 Parents Manage Here! 
               </Button>
@@ -57,7 +57,7 @@ export default function Landing() {
               <Button 
                 variant="outline" 
                 className="text-gray-800 bg-white border-white hover:bg-gray-100 hover:text-gray-900 font-bold ml-2"
-                onClick={() => setLocation("/parent")}
+                onClick={() => setLocation("/parent/auth")}
               >
                 Sign Up Here
               </Button>
@@ -178,7 +178,7 @@ export default function Landing() {
               </p>
               <Button 
                 className="super-button text-3xl px-16 py-8 mb-4 wiggle"
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => setLocation("/parent/auth")}
               >
                 🚀 CREATE YOUR HERO! 🦸‍♀️
               </Button>

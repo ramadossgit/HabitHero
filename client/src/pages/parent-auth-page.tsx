@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,21 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { Eye, EyeOff, UserPlus, LogIn, Home, Star, Shield, Users } from "lucide-react";
 
 export default function ParentAuthPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+
+  // If user is already authenticated, redirect to parent dashboard
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setLocation("/parent");
+    }
+  }, [isAuthenticated, isLoading, setLocation]);
   
   // Login form state
   const [loginData, setLoginData] = useState({

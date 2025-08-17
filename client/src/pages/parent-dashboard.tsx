@@ -167,20 +167,7 @@ export default function ParentDashboard() {
     return images[type as keyof typeof images] || images.robot;
   };
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
+  // This will be handled by the App.tsx routing logic
 
   // Check for first-time user and show onboarding
   useEffect(() => {
