@@ -34,7 +34,8 @@ async function hashPassword(password: string): Promise<string> {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+async function comparePasswords(supplied: string, stored: string | null): Promise<boolean> {
+  if (!stored) return false;
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
@@ -76,7 +77,16 @@ export function setupAuth(app: Express) {
       async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
-          if (!user || !(await comparePasswords(password, (user as any).password))) {
+          if (!user) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
+          
+          // Check if user has a password set
+          if (!(user as any).password) {
+            return done(null, false, { message: "Account needs password setup. Please contact support." });
+          }
+          
+          if (!(await comparePasswords(password, (user as any).password))) {
             return done(null, false, { message: "Invalid email or password" });
           }
           return done(null, user);
