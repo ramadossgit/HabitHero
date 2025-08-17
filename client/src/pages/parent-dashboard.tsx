@@ -920,6 +920,13 @@ function KidsManagementSection({
                   <div className="text-xs sm:text-sm text-gray-600">
                     Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
                   </div>
+                  <div className="text-xs mt-1">
+                    {child.username ? (
+                      <span className="text-green-600 font-medium">✅ Login: {child.username}</span>
+                    ) : (
+                      <span className="text-orange-600 font-medium">⚠️ No login set up</span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -945,9 +952,9 @@ function KidsManagementSection({
                       setUsername(child.username || "");
                       setPin("");
                     }}
-                    className="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-1 text-xs"
+                    className={`${child.username ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'} text-white px-2 sm:px-3 py-1 text-xs`}
                   >
-                    🔐 Setup Login
+                    {child.username ? '🔐 Edit Login' : '🔐 Setup Login'}
                   </Button>
                   <Button
                     onClick={() => {
