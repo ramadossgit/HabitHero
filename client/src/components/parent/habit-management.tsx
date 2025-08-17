@@ -401,7 +401,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       </div>
 
       <div className="space-y-4">
-        {habits?.map((habit: Habit) => {
+        {(habits || []).map((habit: Habit) => {
           const IconComponent = getIconComponent(habit.icon);
           const colorClass = getColorClasses(habit.color);
           

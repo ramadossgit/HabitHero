@@ -42,12 +42,23 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   const completeMissionMutation = useMutation({
     mutationFn: async (habitId: string) => {
+      // Get the habit to check time restrictions
+      const habit = habitsArray.find(h => h.id === habitId);
+      if (habit && habit.timeRangeStart && habit.timeRangeEnd) {
+        const now = new Date();
+        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        
+        if (currentTime < habit.timeRangeStart || currentTime > habit.timeRangeEnd) {
+          throw new Error(`This habit can only be completed between ${habit.timeRangeStart} and ${habit.timeRangeEnd}. Come back during the allowed time!`);
+        }
+      }
+      
       await apiRequest("POST", `/api/habits/${habitId}/complete`, {});
     },
     onSuccess: () => {
       toast({
         title: "Mission Complete! 🎉",
-        description: "Great job! You earned XP and continued your streak!",
+        description: "Great job! You earned XP and reward points!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId] });
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId, "completions"] });
@@ -205,15 +216,37 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                 <div className={`${bgColor} rounded-full p-3`}>
                   <IconComponent className={`${iconColor} text-2xl w-6 h-6`} />
                 </div>
-                <div className="text-right">
+                <div className="text-right space-y-1">
                   <div className="bg-white text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-gray-200">
                     +{habit.xpReward} XP
                   </div>
+                  {habit.rewardPoints && (
+                    <div className="bg-coral text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                      +{habit.rewardPoints} 🎁
+                    </div>
+                  )}
                 </div>
               </div>
               
               <h3 className="font-nunito font-extrabold text-lg mb-2 text-black">{habit.name}</h3>
-              <p className="text-black/90 mb-4">{habit.description}</p>
+              <p className="text-black/90 mb-2">{habit.description}</p>
+              
+              {/* Time range and reminder info */}
+              {(habit.timeRangeStart && habit.timeRangeEnd) && (
+                <div className="mb-3 p-2 bg-sky/10 rounded-lg">
+                  <p className="text-xs text-sky font-medium">
+                    ⏰ Available: {habit.timeRangeStart} - {habit.timeRangeEnd}
+                  </p>
+                </div>
+              )}
+              
+              {habit.reminderEnabled && habit.reminderTime && (
+                <div className="mb-3 p-2 bg-mint/10 rounded-lg">
+                  <p className="text-xs text-mint font-medium">
+                    🔔 Daily reminder at {habit.reminderTime}
+                  </p>
+                </div>
+              )}
               
               {/* Parent message for rejected habits */}
               {status === 'rejected' && parentMessage && (

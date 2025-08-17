@@ -74,10 +74,13 @@ export const habits = pgTable("habits", {
   color: varchar("color").notNull().default("mint"),
   isActive: boolean("is_active").notNull().default(true),
   frequency: varchar("frequency").notNull().default("daily"), // daily, weekly
+  rewardPoints: integer("reward_points").notNull().default(5), // Points awarded for completion
   reminderTime: varchar("reminder_time"), // HH:MM format for scheduled reminders
   reminderEnabled: boolean("reminder_enabled").notNull().default(false),
   voiceReminderEnabled: boolean("voice_reminder_enabled").notNull().default(false),
   customRingtone: varchar("custom_ringtone").default("default"),
+  timeRangeStart: varchar("time_range_start").default("07:00"), // Start time for habit completion
+  timeRangeEnd: varchar("time_range_end").default("20:00"), // End time for habit completion
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
