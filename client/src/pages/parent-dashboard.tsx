@@ -416,61 +416,75 @@ export default function ParentDashboard() {
     <div className="min-h-screen hero-gradient">
       <header className="text-white p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center justify-between mb-4">
+            {/* Left side - Title and description */}
             <div className="flex-1">
               <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Parent Dashboard</h1>
               <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {children?.length === 1 ? `${child.name}'s` : 'Family'} Hero Journey</p>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-              <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
-                  onClick={restartOnboarding}
-                >
-                  <HelpCircle className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Tutorial</span>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
-                  onClick={() => setShowParentControls(true)}
-                >
-                  <Shield className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Controls</span>
-                </Button>
-                <Link href="/">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4">
-                    <ArrowLeft className="w-4 h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Back to Home</span>
-                  </Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm px-2 sm:px-4"
-                  onClick={() => window.location.href = "/api/logout"}
-                >
-                  Sign Out
-                </Button>
+            
+            {/* Right side - Profile and XP display */}
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <div className="text-xs text-white/80">Total Family XP</div>
+                <div className="font-bold text-xl text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-xs sm:text-sm text-white/80">Total Family XP</div>
-                  <div className="font-bold text-lg sm:text-2xl">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
-                </div>
-                <div className="relative">
-                  <img 
-                    src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=48`} 
-                    alt="Parent Profile" 
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setShowParentProfile(!showParentProfile)}
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
-                    <Settings className="w-2 h-2 text-white" />
-                  </div>
+              <div className="relative">
+                <img 
+                  src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=48`} 
+                  alt="Parent Profile" 
+                  className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setShowParentProfile(!showParentProfile)}
+                />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
+                  <Settings className="w-2 h-2 text-white" />
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Navigation Bar */}
+          <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl p-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button 
+                variant="ghost" 
+                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
+                onClick={restartOnboarding}
+              >
+                <HelpCircle className="w-4 h-4" />
+                Tutorial
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
+                onClick={() => setShowParentControls(true)}
+              >
+                <Shield className="w-4 h-4" />
+                Controls
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Button>
+              </Link>
+              <Button 
+                variant="ghost" 
+                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl"
+                onClick={() => window.location.href = "/api/logout"}
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+          
+          {/* Mobile XP Display */}
+          <div className="sm:hidden mt-3 text-center">
+            <div className="text-xs text-white/80">Total Family XP</div>
+            <div className="font-bold text-lg text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
           </div>
         </div>
       </header>
