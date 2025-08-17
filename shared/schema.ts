@@ -414,21 +414,15 @@ export const insertSyncEventSchema = createInsertSchema(syncEvents).omit({
 
 // Export insert and select types for all tables
 export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
+export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type Child = typeof children.$inferSelect;
-export type InsertChild = typeof children.$inferInsert;
+export type InsertChild = z.infer<typeof insertChildSchema>;
 export type Device = typeof devices.$inferSelect;
 export type InsertDevice = typeof devices.$inferInsert;
 export type SyncLog = typeof syncLogs.$inferSelect;
 export type InsertSyncLog = typeof syncLogs.$inferInsert;
 export type SyncEvent = typeof syncEvents.$inferSelect;
 export type InsertSyncEvent = typeof syncEvents.$inferInsert;
-
-// Types
-export type UpsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type Child = typeof children.$inferSelect;
-export type InsertChild = z.infer<typeof insertChildSchema>;
 export type Habit = typeof habits.$inferSelect;
 export type InsertHabit = z.infer<typeof insertHabitSchema>;
 export type HabitCompletion = typeof habitCompletions.$inferSelect;

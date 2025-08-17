@@ -23,6 +23,7 @@ declare module 'express-session' {
   interface SessionData {
     childId: string;
     isChildUser: boolean;
+    parentId: string;
   }
 }
 
