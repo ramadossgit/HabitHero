@@ -788,7 +788,6 @@ function KidsManagementSection({
 
   const updateCredentialsMutation = useMutation({
     mutationFn: async (data: { childId: string; username: string; pin: string }) => {
-      console.log("Mutation called with data:", data);
       await apiRequest("PATCH", `/api/children/${data.childId}`, {
         username: data.username,
         pin: data.pin
@@ -850,7 +849,6 @@ function KidsManagementSection({
   };
 
   const handleUpdateCredentials = (childId: string) => {
-    console.log("Updating credentials for child:", childId, "username:", username, "pin:", pin);
     if (!username.trim()) {
       toast({
         title: "Username required",

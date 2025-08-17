@@ -7,7 +7,7 @@ interface HeroHeaderProps {
 }
 
 export default function HeroHeader({ child }: HeroHeaderProps) {
-  const xpForCurrentLevel = child.xp;
+  const xpForCurrentLevel = child.xp || 0;
   const xpNeededForNextLevel = 1000;
   const progressPercentage = (xpForCurrentLevel / xpNeededForNextLevel) * 100;
 
@@ -32,16 +32,16 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
               className="w-16 h-16 rounded-full border-4 border-white avatar-glow object-cover" 
             />
             <div>
-              <h1 className="font-fredoka text-2xl">{child.name}</h1>
+              <h1 className="font-fredoka text-2xl">{child.name || 'Hero'}</h1>
               <p className="text-white/90 font-nunito font-semibold">
-                Level {child.level} {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
+                Level {child.level || 1} {(child.avatarType || 'robot').charAt(0).toUpperCase() + (child.avatarType || 'robot').slice(1)} Hero
               </p>
             </div>
           </div>
           <div className="text-right">
             <div className="flex items-center space-x-2">
               <Star className="w-6 h-6 text-sunshine" />
-              <span className="font-nunito font-extrabold text-xl">{child.totalXp.toLocaleString()}</span>
+              <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
               <span className="text-white/90">XP</span>
             </div>
           </div>
