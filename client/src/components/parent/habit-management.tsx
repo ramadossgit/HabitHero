@@ -210,13 +210,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="name">Habit Name</Label>
                 <Input
