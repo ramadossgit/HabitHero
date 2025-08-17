@@ -219,6 +219,47 @@ export const parentalControls = pgTable("parental_controls", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Device registration and tracking for cross-device sync
+export const devices = pgTable("devices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deviceId: varchar("device_id").notNull(), // Unique device identifier
+  deviceName: varchar("device_name").notNull(), // User-friendly device name
+  deviceType: varchar("device_type").notNull(), // web, ios, android
+  lastSyncAt: timestamp("last_sync_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  pushToken: varchar("push_token"), // For push notifications
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Sync log to track what was synced when
+export const syncLogs = pgTable("sync_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deviceId: varchar("device_id").notNull().references(() => devices.id, { onDelete: "cascade" }),
+  syncType: varchar("sync_type").notNull(), // habit_completion, child_update, habit_crud, etc.
+  entityType: varchar("entity_type").notNull(), // habits, children, completions, rewards
+  entityId: varchar("entity_id").notNull(), // ID of the synced entity
+  operation: varchar("operation").notNull(), // create, update, delete
+  syncData: jsonb("sync_data"), // The actual synced data
+  timestamp: timestamp("timestamp").defaultNow(),
+  syncDirection: varchar("sync_direction").notNull(), // push, pull
+});
+
+// Real-time sync events for live updates
+export const syncEvents = pgTable("sync_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventType: varchar("event_type").notNull(), // habit_completed, child_created, reward_claimed
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id").notNull(),
+  eventData: jsonb("event_data"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  processed: boolean("processed").default(false),
+  deviceOrigin: varchar("device_origin"), // Which device triggered the event
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   children: many(children),
@@ -351,6 +392,36 @@ export const insertRewardTransactionSchema = createInsertSchema(rewardTransactio
   createdAt: true,
   approvedAt: true,
 });
+
+// Sync schemas
+export const insertDeviceSchema = createInsertSchema(devices).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSyncLogSchema = createInsertSchema(syncLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertSyncEventSchema = createInsertSchema(syncEvents).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Export insert and select types for all tables
+export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
+export type Child = typeof children.$inferSelect;
+export type InsertChild = typeof children.$inferInsert;
+export type Device = typeof devices.$inferSelect;
+export type InsertDevice = typeof devices.$inferInsert;
+export type SyncLog = typeof syncLogs.$inferSelect;
+export type InsertSyncLog = typeof syncLogs.$inferInsert;
+export type SyncEvent = typeof syncEvents.$inferSelect;
+export type InsertSyncEvent = typeof syncEvents.$inferInsert;
 
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;

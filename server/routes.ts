@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
+import { syncService } from "./sync-service";
 import { 
   insertChildSchema, 
   insertHabitSchema, 
@@ -12,7 +13,8 @@ import {
   insertAvatarShopItemSchema,
   insertWeekendChallengeSchema,
   insertGearShopItemSchema,
-  insertRewardTransactionSchema
+  insertRewardTransactionSchema,
+  insertDeviceSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -802,6 +804,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error updating habit:", error);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // =====================
+  // SYNC API ENDPOINTS
+  // =====================
+
+  // Register device for sync
+  app.post('/api/sync/register-device', isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertDeviceSchema.parse(req.body);
+      const device = await syncService.registerDevice(req.user!.id, validatedData);
+      
+      // Create sync event for device registration
+      await syncService.createSyncEvent({
+        userId: req.user!.id,
+        eventType: 'device_registered',
+        entityType: 'devices',
+        entityId: device.id,
+        eventData: { deviceName: device.deviceName, deviceType: device.deviceType },
+        deviceOrigin: validatedData.deviceId,
+      });
+      
+      res.json(device);
+    } catch (error: any) {
+      console.error('Register device error:', error);
+      res.status(400).json({ message: error.message || "Failed to register device" });
+    }
+  });
+
+  // Get user's devices
+  app.get('/api/sync/devices', isAuthenticated, async (req, res) => {
+    try {
+      const devices = await syncService.getUserDevices(req.user!.id);
+      res.json({ devices });
+    } catch (error: any) {
+      console.error('Get devices error:', error);
+      res.status(500).json({ message: "Failed to get devices" });
+    }
+  });
+
+  // Sync family data
+  app.get('/api/sync/family-data', isAuthenticated, async (req, res) => {
+    try {
+      const lastSyncTime = req.query.lastSyncTime 
+        ? new Date(req.query.lastSyncTime as string) 
+        : undefined;
+      
+      const familyData = await syncService.syncFamilyData(req.user!.id);
+      const pendingEvents = await syncService.getPendingSyncEvents(req.user!.id, lastSyncTime);
+      
+      res.json({
+        ...familyData,
+        syncEvents: pendingEvents,
+        lastSyncTime: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('Sync family data error:', error);
+      res.status(500).json({ message: "Failed to sync family data" });
+    }
+  });
+
+  // Mark sync completed
+  app.post('/api/sync/mark-completed', isAuthenticated, async (req, res) => {
+    try {
+      const { deviceId, eventIds } = req.body;
+      
+      if (deviceId) {
+        await syncService.updateDeviceLastSync(deviceId);
+      }
+      
+      if (eventIds && eventIds.length > 0) {
+        await syncService.markEventsProcessed(eventIds);
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Mark sync completed error:', error);
+      res.status(500).json({ message: "Failed to mark sync completed" });
+    }
+  });
+
+  // Deactivate device
+  app.post('/api/sync/deactivate-device', isAuthenticated, async (req, res) => {
+    try {
+      const { deviceId } = req.body;
+      await syncService.deactivateDevice(req.user!.id, deviceId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Deactivate device error:', error);
+      res.status(500).json({ message: "Failed to deactivate device" });
     }
   });
 
