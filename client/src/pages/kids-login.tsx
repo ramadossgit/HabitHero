@@ -100,6 +100,16 @@ export default function KidsLogin() {
               </div>
               <h2 className="font-fredoka text-3xl text-gray-800 mb-2">Hero Login</h2>
               <p className="text-gray-600">Enter your hero credentials to start your adventure!</p>
+              
+              {/* Available Heroes Hint */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <p className="text-blue-800 font-bold text-sm mb-1">Available Heroes:</p>
+                <div className="text-blue-700 text-xs space-y-1">
+                  <div>• Loshini (username: loshini, PIN: 1234)</div>
+                  <div>• Jinisha (username: jinisha, PIN: 1111)</div>
+                  <div>• Aathiran (username: aathiran, PIN: 2222)</div>
+                </div>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -107,10 +117,11 @@ export default function KidsLogin() {
                 <label className="block text-gray-700 font-bold mb-2">Hero Username</label>
                 <Input
                   type="text"
-                  placeholder="Enter your username"
+                  placeholder="Enter your username (e.g., loshini)"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full text-center text-lg py-3 border-2 border-sky font-bold rounded-xl"
+                  data-testid="input-username"
                 />
               </div>
 
@@ -123,6 +134,7 @@ export default function KidsLogin() {
                   onChange={(e) => setPin(e.target.value)}
                   maxLength={4}
                   className="w-full text-center text-2xl py-3 border-2 border-turquoise font-bold rounded-xl tracking-widest"
+                  data-testid="input-pin"
                 />
               </div>
 
