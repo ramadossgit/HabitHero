@@ -66,6 +66,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarUrl: child.avatarUrl,
         level: child.level,
         xp: child.xp,
+        totalXp: child.totalXp,
+        rewardPoints: child.rewardPoints,
+        unlockedAvatars: child.unlockedAvatars,
+        unlockedGear: child.unlockedGear,
         role: "child"
       });
     } catch (error) {
@@ -93,6 +97,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarUrl: child.avatarUrl,
         level: child.level,
         xp: child.xp,
+        totalXp: child.totalXp,
+        rewardPoints: child.rewardPoints,
+        unlockedAvatars: child.unlockedAvatars,
+        unlockedGear: child.unlockedGear,
         role: "child"
       });
     } catch (error) {
@@ -274,6 +282,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching streak:", error);
       res.status(500).json({ message: "Failed to fetch streak" });
+    }
+  });
+
+  // Daily habit reload - remove pending/rejected completions to allow re-completion
+  app.post('/api/children/:childId/habits/reload', isAuthenticated, async (req, res) => {
+    try {
+      await storage.reloadDailyHabits(req.params.childId);
+      res.json({ message: "Daily habits reloaded successfully" });
+    } catch (error) {
+      console.error("Error reloading daily habits:", error);
+      res.status(500).json({ message: "Failed to reload daily habits" });
+    }
+  });
+
+  // Weekly progress summary
+  app.get('/api/children/:childId/progress/weekly', isAuthenticated, async (req, res) => {
+    try {
+      const weeklyProgress = await storage.getWeeklyProgress(req.params.childId);
+      res.json(weeklyProgress);
+    } catch (error) {
+      console.error("Error fetching weekly progress:", error);
+      res.status(500).json({ message: "Failed to fetch weekly progress" });
     }
   });
 

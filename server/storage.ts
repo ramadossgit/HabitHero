@@ -36,7 +36,7 @@ import {
   type InsertRewardTransaction,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, desc, sql, or } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -728,6 +728,133 @@ export class DatabaseStorage implements IStorage {
     await this.updateChildRewardPoints(transaction.childId, transaction.amount);
 
     return approvedTransaction;
+  }
+
+  // Daily habit reload functionality
+  async reloadDailyHabits(childId: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Remove pending and rejected completions for today to allow re-completion
+    await db
+      .delete(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          eq(habitCompletions.date, today),
+          or(
+            eq(habitCompletions.status, "pending"),
+            eq(habitCompletions.status, "rejected")
+          )
+        )
+      );
+  }
+
+  // Weekly progress tracking
+  async getWeeklyProgress(childId: string): Promise<{
+    totalHabits: number;
+    completedHabits: number;
+    pendingHabits: number;
+    weekStart: string;
+    weekEnd: string;
+    status: 'red' | 'yellow' | 'green';
+    dailyBreakdown: Array<{
+      date: string;
+      completed: number;
+      total: number;
+    }>;
+  }> {
+    // Get current week's date range (Monday to Sunday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so 6 days back to Monday
+    
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToMonday);
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    
+    // Get all active habits for this child
+    const activeHabits = await db
+      .select()
+      .from(habits)
+      .where(
+        and(
+          eq(habits.childId, childId),
+          eq(habits.isActive, true)
+        )
+      );
+    
+    // Get all completions for this week
+    const weeklyCompletions = await db
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          gte(habitCompletions.date, weekStartStr),
+          sql`${habitCompletions.date} <= ${weekEndStr}`,
+          eq(habitCompletions.status, "approved")
+        )
+      );
+    
+    // Calculate daily breakdown
+    const dailyBreakdown = [];
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(weekStart);
+      currentDate.setDate(weekStart.getDate() + i);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      const dayCompletions = weeklyCompletions.filter(c => c.date === dateStr).length;
+      dailyBreakdown.push({
+        date: dateStr,
+        completed: dayCompletions,
+        total: activeHabits.length
+      });
+    }
+    
+    const totalPossibleHabits = activeHabits.length * 7; // 7 days per week
+    const totalCompletedHabits = weeklyCompletions.length;
+    
+    // Get pending habits
+    const pendingHabits = await db
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          gte(habitCompletions.date, weekStartStr),
+          sql`${habitCompletions.date} <= ${weekEndStr}`,
+          eq(habitCompletions.status, "pending")
+        )
+      );
+    
+    // Determine status based on completion percentage
+    let status: 'red' | 'yellow' | 'green';
+    const completionPercentage = totalPossibleHabits > 0 ? (totalCompletedHabits / totalPossibleHabits) * 100 : 0;
+    
+    if (completionPercentage === 100) {
+      status = 'green';
+    } else if (completionPercentage >= 50) {
+      status = 'yellow';
+    } else {
+      status = 'red';
+    }
+    
+    return {
+      totalHabits: totalPossibleHabits,
+      completedHabits: totalCompletedHabits,
+      pendingHabits: pendingHabits.length,
+      weekStart: weekStartStr,
+      weekEnd: weekEndStr,
+      status,
+      dailyBreakdown
+    };
   }
 }
 

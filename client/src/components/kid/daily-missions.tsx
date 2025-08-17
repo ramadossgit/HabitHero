@@ -14,7 +14,8 @@ import {
   Star,
   CheckCircle,
   Clock,
-  Flame
+  Flame,
+  RefreshCw
 } from "lucide-react";
 import type { Habit, HabitCompletion } from "@shared/schema";
 
@@ -51,6 +52,27 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
     onError: (error) => {
       toast({
         title: "Oops!",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reloadDailyHabitsMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/children/${childId}/habits/reload`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Daily Habits Reloaded! 🔄",
+        description: "You can now work on your habits again!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", childId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", childId, "completions"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Reload Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -112,10 +134,23 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   return (
     <section className="mb-8">
-      <h2 className="font-fredoka text-3xl text-gray-800 mb-6 flex items-center">
-        <Star className="text-coral mr-3" />
-        Today's Hero Missions
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-fredoka text-3xl text-gray-800 flex items-center">
+          <Star className="text-coral mr-3" />
+          Today's Hero Missions
+        </h2>
+        
+        {/* Daily Reload Button */}
+        <Button
+          onClick={() => reloadDailyHabitsMutation.mutate()}
+          disabled={reloadDailyHabitsMutation.isPending}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+          data-testid="button-reload-habits"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${reloadDailyHabitsMutation.isPending ? 'animate-spin' : ''}`} />
+          {reloadDailyHabitsMutation.isPending ? "Reloading..." : "Reload Daily Habits"}
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {habitsArray.map((habit: Habit) => {
