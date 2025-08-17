@@ -9,6 +9,8 @@ import {
   parentalControls,
   avatarShopItems,
   weekendChallenges,
+  gearShopItems,
+  rewardTransactions,
   type User,
   type UpsertUser,
   type Child,
@@ -28,6 +30,10 @@ import {
   type InsertAvatarShopItem,
   type WeekendChallenge,
   type InsertWeekendChallenge,
+  type GearShopItem,
+  type InsertGearShopItem,
+  type RewardTransaction,
+  type InsertRewardTransaction,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, desc, sql } from "drizzle-orm";
@@ -88,6 +94,17 @@ export interface IStorage {
   acceptWeekendChallenge(challengeId: string): Promise<WeekendChallenge>;
   completeWeekendChallenge(challengeId: string, pointsEarned: number): Promise<WeekendChallenge>;
   updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child>;
+  
+  // Gear shop operations
+  getAllGearShopItems(): Promise<GearShopItem[]>;
+  createGearShopItem(item: InsertGearShopItem): Promise<GearShopItem>;
+  purchaseGear(childId: string, gearId: string, cost: number): Promise<Child>;
+  
+  // Reward transaction operations
+  getRewardTransactions(childId: string): Promise<RewardTransaction[]>;
+  getPendingRewardTransactions(childId: string): Promise<RewardTransaction[]>;
+  createRewardTransaction(transaction: InsertRewardTransaction): Promise<RewardTransaction>;
+  approveRewardTransaction(transactionId: string, approvedBy: string): Promise<RewardTransaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -495,6 +512,111 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return updatedChild;
+  }
+
+  // Gear shop operations
+  async getAllGearShopItems(): Promise<GearShopItem[]> {
+    return await db.select().from(gearShopItems).where(eq(gearShopItems.isActive, true));
+  }
+
+  async createGearShopItem(item: InsertGearShopItem): Promise<GearShopItem> {
+    const [newItem] = await db.insert(gearShopItems).values(item).returning();
+    return newItem;
+  }
+
+  async purchaseGear(childId: string, gearId: string, cost: number): Promise<Child> {
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+    
+    if ((child.rewardPoints || 0) < cost) {
+      throw new Error("Not enough reward points");
+    }
+
+    // Check if gear is already unlocked
+    const unlockedGear = child.unlockedGear as string[] || [];
+    if (unlockedGear.includes(gearId)) {
+      throw new Error("Gear already unlocked");
+    }
+
+    // Update child with new gear and reduced points
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        unlockedGear: [...unlockedGear, gearId],
+        rewardPoints: (child.rewardPoints || 0) - cost,
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+
+    // Create transaction record
+    await this.createRewardTransaction({
+      childId,
+      type: 'spent',
+      amount: -cost,
+      source: 'gear_purchase',
+      description: `Purchased gear item: ${gearId}`,
+    });
+
+    return updatedChild;
+  }
+
+  // Reward transaction operations
+  async getRewardTransactions(childId: string): Promise<RewardTransaction[]> {
+    return await db.select()
+      .from(rewardTransactions)
+      .where(eq(rewardTransactions.childId, childId))
+      .orderBy(desc(rewardTransactions.createdAt));
+  }
+
+  async getPendingRewardTransactions(childId: string): Promise<RewardTransaction[]> {
+    return await db.select()
+      .from(rewardTransactions)
+      .where(
+        and(
+          eq(rewardTransactions.childId, childId),
+          eq(rewardTransactions.requiresApproval, true),
+          eq(rewardTransactions.isApproved, false)
+        )
+      )
+      .orderBy(desc(rewardTransactions.createdAt));
+  }
+
+  async createRewardTransaction(transaction: InsertRewardTransaction): Promise<RewardTransaction> {
+    const [newTransaction] = await db.insert(rewardTransactions).values(transaction).returning();
+    return newTransaction;
+  }
+
+  async approveRewardTransaction(transactionId: string, approvedBy: string): Promise<RewardTransaction> {
+    const [transaction] = await db.select()
+      .from(rewardTransactions)
+      .where(eq(rewardTransactions.id, transactionId));
+    
+    if (!transaction) {
+      throw new Error("Transaction not found");
+    }
+
+    if (transaction.isApproved) {
+      throw new Error("Transaction already approved");
+    }
+
+    // Update transaction as approved
+    const [approvedTransaction] = await db
+      .update(rewardTransactions)
+      .set({
+        isApproved: true,
+        approvedBy,
+        approvedAt: new Date(),
+      })
+      .where(eq(rewardTransactions.id, transactionId))
+      .returning();
+
+    // Add points to child's account
+    await this.updateChildRewardPoints(transaction.childId, transaction.amount);
+
+    return approvedTransaction;
   }
 }
 

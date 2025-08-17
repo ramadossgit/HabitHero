@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { UserRound, Crown, Zap, Heart, Shield, Lock, ShoppingBag } from "lucide-react";
 import AvatarShop from "./avatar-shop";
+import GearShop from "./gear-shop";
 import type { Child } from "@shared/schema";
 
 interface HeroCustomizationProps {
@@ -68,7 +69,7 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="current" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="current" className="flex items-center gap-2">
             <UserRound className="w-4 h-4" />
             Current Hero
@@ -76,6 +77,10 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
           <TabsTrigger value="shop" className="flex items-center gap-2">
             <ShoppingBag className="w-4 h-4" />
             Avatar Shop
+          </TabsTrigger>
+          <TabsTrigger value="gear" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Gear Shop
           </TabsTrigger>
         </TabsList>
 
@@ -164,6 +169,10 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
 
         <TabsContent value="shop">
           <AvatarShop child={child} />
+        </TabsContent>
+
+        <TabsContent value="gear">
+          <GearShop child={child} />
         </TabsContent>
       </Tabs>
     </div>

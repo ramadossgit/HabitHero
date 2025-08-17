@@ -10,7 +10,9 @@ import {
   insertRewardClaimSchema,
   insertParentalControlsSchema,
   insertAvatarShopItemSchema,
-  insertWeekendChallengeSchema
+  insertWeekendChallengeSchema,
+  insertGearShopItemSchema,
+  insertRewardTransactionSchema
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -503,6 +505,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating child reward points:", error);
       res.status(500).json({ message: "Failed to update reward points" });
+    }
+  });
+
+  // Gear shop routes
+  app.get('/api/gear-shop', async (req, res) => {
+    try {
+      const items = await storage.getAllGearShopItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching gear shop items:", error);
+      res.status(500).json({ message: "Failed to fetch gear shop items" });
+    }
+  });
+
+  app.post('/api/gear-shop', isAuthenticated, async (req, res) => {
+    try {
+      const itemData = insertGearShopItemSchema.parse(req.body);
+      const item = await storage.createGearShopItem(itemData);
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating gear shop item:", error);
+      res.status(500).json({ message: "Failed to create gear shop item" });
+    }
+  });
+
+  // Purchase gear route
+  app.post('/api/children/:childId/purchase-gear', async (req, res) => {
+    try {
+      const { gearId, cost } = req.body;
+      
+      if (!gearId || !cost) {
+        return res.status(400).json({ message: "Gear ID and cost are required" });
+      }
+
+      const updatedChild = await storage.purchaseGear(req.params.childId, gearId, cost);
+      res.json(updatedChild);
+    } catch (error) {
+      console.error("Error purchasing gear:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to purchase gear" });
+      }
+    }
+  });
+
+  // Reward transaction routes
+  app.get('/api/children/:childId/reward-transactions', async (req, res) => {
+    try {
+      const transactions = await storage.getRewardTransactions(req.params.childId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching reward transactions:", error);
+      res.status(500).json({ message: "Failed to fetch reward transactions" });
+    }
+  });
+
+  app.get('/api/children/:childId/pending-rewards', async (req, res) => {
+    try {
+      const pendingTransactions = await storage.getPendingRewardTransactions(req.params.childId);
+      res.json(pendingTransactions);
+    } catch (error) {
+      console.error("Error fetching pending rewards:", error);
+      res.status(500).json({ message: "Failed to fetch pending rewards" });
+    }
+  });
+
+  app.post('/api/children/:childId/reward-transactions', isAuthenticated, async (req, res) => {
+    try {
+      const transactionData = insertRewardTransactionSchema.parse({
+        ...req.body,
+        childId: req.params.childId,
+      });
+      const transaction = await storage.createRewardTransaction(transactionData);
+      res.json(transaction);
+    } catch (error) {
+      console.error("Error creating reward transaction:", error);
+      res.status(500).json({ message: "Failed to create reward transaction" });
+    }
+  });
+
+  app.post('/api/reward-transactions/:transactionId/approve', isAuthenticated, async (req, res) => {
+    try {
+      const { approvedBy } = req.body;
+      
+      if (!approvedBy) {
+        return res.status(400).json({ message: "Approved by user ID is required" });
+      }
+
+      const approvedTransaction = await storage.approveRewardTransaction(req.params.transactionId, approvedBy);
+      res.json(approvedTransaction);
+    } catch (error) {
+      console.error("Error approving reward transaction:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to approve reward transaction" });
+      }
     }
   });
 

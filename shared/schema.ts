@@ -126,6 +126,34 @@ export const avatarShopItems = pgTable("avatar_shop_items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Gear shop items for avatar customization
+export const gearShopItems = pgTable("gear_shop_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  gearType: varchar("gear_type").notNull(), // helmet, armor, weapon, accessory
+  description: text("description").notNull(),
+  cost: integer("cost").notNull().default(30),
+  rarity: varchar("rarity").notNull().default("common"),
+  effect: varchar("effect"), // bonus effect description
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Reward point transactions for tracking and approval
+export const rewardTransactions = pgTable("reward_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  type: varchar("type").notNull(), // 'earned', 'spent', 'bonus_earned'
+  amount: integer("amount").notNull(),
+  source: varchar("source").notNull(), // 'habit_completion', 'avatar_purchase', 'gear_purchase', 'parent_bonus'
+  description: text("description"),
+  requiresApproval: boolean("requires_approval").notNull().default(false),
+  isApproved: boolean("is_approved").notNull().default(true),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Weekend challenges for bonus points
 export const weekendChallenges = pgTable("weekend_challenges", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -276,6 +304,17 @@ export const insertWeekendChallengeSchema = createInsertSchema(weekendChallenges
   completedAt: true,
 });
 
+export const insertGearShopItemSchema = createInsertSchema(gearShopItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRewardTransactionSchema = createInsertSchema(rewardTransactions).omit({
+  id: true,
+  createdAt: true,
+  approvedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -296,3 +335,7 @@ export type AvatarShopItem = typeof avatarShopItems.$inferSelect;
 export type InsertAvatarShopItem = z.infer<typeof insertAvatarShopItemSchema>;
 export type WeekendChallenge = typeof weekendChallenges.$inferSelect;
 export type InsertWeekendChallenge = z.infer<typeof insertWeekendChallengeSchema>;
+export type GearShopItem = typeof gearShopItems.$inferSelect;
+export type InsertGearShopItem = z.infer<typeof insertGearShopItemSchema>;
+export type RewardTransaction = typeof rewardTransactions.$inferSelect;
+export type InsertRewardTransaction = z.infer<typeof insertRewardTransactionSchema>;
