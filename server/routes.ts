@@ -788,6 +788,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update parent profile
+  app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updates = req.body;
+      await storage.updateUserProfile(userId, updates);
+      const updatedUser = await storage.getUser(userId);
+      res.json(updatedUser);
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update habit with reminder settings
+  app.patch("/api/habits/:habitId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { habitId } = req.params;
+      const updates = req.body;
+      const updatedHabit = await storage.updateHabit(habitId, updates);
+      res.json(updatedHabit);
+    } catch (error: any) {
+      console.error("Error updating habit:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

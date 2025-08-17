@@ -31,6 +31,15 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  phoneNumber: varchar("phone_number"),
+  voiceCommandsEnabled: boolean("voice_commands_enabled").default(false),
+  reminderSettings: jsonb("reminder_settings").default({
+    enabled: true,
+    voiceEnabled: false,
+    ringtoneEnabled: true,
+    defaultRingtone: "default",
+    reminderTime: 15
+  }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -65,6 +74,10 @@ export const habits = pgTable("habits", {
   color: varchar("color").notNull().default("mint"),
   isActive: boolean("is_active").notNull().default(true),
   frequency: varchar("frequency").notNull().default("daily"), // daily, weekly
+  reminderTime: varchar("reminder_time"), // HH:MM format for scheduled reminders
+  reminderEnabled: boolean("reminder_enabled").notNull().default(false),
+  voiceReminderEnabled: boolean("voice_reminder_enabled").notNull().default(false),
+  customRingtone: varchar("custom_ringtone").default("default"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
