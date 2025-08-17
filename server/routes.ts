@@ -606,6 +606,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Habit approval routes
+  app.get('/api/children/:childId/pending-habits', async (req, res) => {
+    try {
+      const pendingHabits = await storage.getPendingHabitCompletions(req.params.childId);
+      res.json(pendingHabits);
+    } catch (error) {
+      console.error("Error fetching pending habits:", error);
+      res.status(500).json({ message: "Failed to fetch pending habits" });
+    }
+  });
+
+  app.get('/api/children/:childId/pending-habits-count', async (req, res) => {
+    try {
+      const count = await storage.getChildPendingHabitsCount(req.params.childId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching pending habits count:", error);
+      res.status(500).json({ message: "Failed to fetch pending habits count" });
+    }
+  });
+
+  app.get('/api/pending-habits/all', isAuthenticated, async (req, res) => {
+    try {
+      const allPendingHabits = await storage.getAllPendingHabitCompletions();
+      res.json(allPendingHabits);
+    } catch (error) {
+      console.error("Error fetching all pending habits:", error);
+      res.status(500).json({ message: "Failed to fetch pending habits" });
+    }
+  });
+
+  app.post('/api/habit-completions/:completionId/approve', isAuthenticated, async (req, res) => {
+    try {
+      const { approvedBy, message } = req.body;
+      
+      if (!approvedBy) {
+        return res.status(400).json({ message: "Approved by user ID is required" });
+      }
+
+      const approvedCompletion = await storage.approveHabitCompletion(
+        req.params.completionId, 
+        approvedBy, 
+        message
+      );
+      res.json(approvedCompletion);
+    } catch (error) {
+      console.error("Error approving habit completion:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to approve habit completion" });
+      }
+    }
+  });
+
+  app.post('/api/habit-completions/:completionId/reject', isAuthenticated, async (req, res) => {
+    try {
+      const { rejectedBy, message } = req.body;
+      
+      if (!rejectedBy || !message) {
+        return res.status(400).json({ message: "Rejected by user ID and message are required" });
+      }
+
+      const rejectedCompletion = await storage.rejectHabitCompletion(
+        req.params.completionId, 
+        rejectedBy, 
+        message
+      );
+      res.json(rejectedCompletion);
+    } catch (error) {
+      console.error("Error rejecting habit completion:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to reject habit completion" });
+      }
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

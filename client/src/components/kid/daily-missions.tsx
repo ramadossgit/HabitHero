@@ -100,7 +100,15 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
     );
   }
 
-  const completedHabitIds = new Set(completionsArray.map((c: HabitCompletion) => c.habitId) || []);
+  // Group completions by status for today
+  const today = new Date().toISOString().split('T')[0];
+  const todayCompletions = completionsArray.filter(c => c.date === today);
+  
+  const getHabitStatus = (habitId: string) => {
+    const completion = todayCompletions.find(c => c.habitId === habitId);
+    if (!completion) return 'available';
+    return completion.status; // pending, approved, rejected
+  };
 
   return (
     <section className="mb-8">
@@ -111,15 +119,23 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {habitsArray.map((habit: Habit) => {
-          const isCompleted = completedHabitIds.has(habit.id);
+          const status = getHabitStatus(habit.id);
           const IconComponent = getIconComponent(habit.icon);
           const colorClasses = getColorClasses(habit.color);
           const [iconColor, bgColor, buttonColor, hoverButtonColor] = colorClasses.split(' ');
 
+          const completion = todayCompletions.find(c => c.habitId === habit.id);
+          const parentMessage = completion?.parentMessage;
+
           return (
             <Card 
               key={habit.id}
-              className={`mission-card p-6 shadow-lg border-2 ${isCompleted ? 'border-mint bg-mint/5 opacity-75' : 'border-transparent hover:' + colorClasses.split('hover:')[1].split(' ')[0]} cursor-pointer`}
+              className={`mission-card p-6 shadow-lg border-2 ${
+                status === 'approved' ? 'border-mint bg-mint/5' : 
+                status === 'pending' ? 'border-yellow-400 bg-yellow-50' :
+                status === 'rejected' ? 'border-red-400 bg-red-50' :
+                'border-transparent hover:' + colorClasses.split('hover:')[1].split(' ')[0]
+              } cursor-pointer`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`${bgColor} rounded-full p-3`}>
@@ -135,28 +151,48 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
               <h3 className="font-nunito font-extrabold text-lg mb-2 text-black">{habit.name}</h3>
               <p className="text-black/90 mb-4">{habit.description}</p>
               
+              {/* Parent message for rejected habits */}
+              {status === 'rejected' && parentMessage && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium">Parent feedback:</p>
+                  <p className="text-sm text-red-700">{parentMessage}</p>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
-                {isCompleted ? (
+                {status === 'approved' ? (
                   <>
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="w-5 h-5 text-mint" />
-                      <span className="text-sm font-semibold text-black">Completed!</span>
+                      <span className="text-sm font-semibold text-black">Approved!</span>
                     </div>
                     <div className="text-mint font-bold">✓ Done</div>
+                  </>
+                ) : status === 'pending' ? (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <span className="text-sm font-semibold text-black">Waiting for approval</span>
+                    </div>
+                    <div className="text-yellow-600 font-bold">⏳ Pending</div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-center space-x-2">
                       <Flame className="w-5 h-5 text-orange-500" />
-                      <span className="text-sm font-semibold text-black">Ready</span>
+                      <span className="text-sm font-semibold text-black">
+                        {status === 'rejected' ? 'Try again!' : 'Ready'}
+                      </span>
                     </div>
                     <Button 
                       className={`${buttonColor} text-white px-4 py-2 rounded-full font-bold ${hoverButtonColor} transition-colors shadow-lg`}
                       style={{ color: 'white' }}
                       onClick={() => completeMissionMutation.mutate(habit.id)}
                       disabled={completeMissionMutation.isPending}
+                      data-testid={`complete-habit-${habit.id}`}
                     >
-                      {completeMissionMutation.isPending ? "Completing..." : "Complete!"}
+                      {completeMissionMutation.isPending ? "Completing..." : 
+                       status === 'rejected' ? "Try Again!" : "Complete!"}
                     </Button>
                   </>
                 )}

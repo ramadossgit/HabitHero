@@ -283,20 +283,21 @@ export class DatabaseStorage implements IStorage {
     // Calculate streak
     const streak = await this.getHabitStreak(completion.habitId, completion.childId);
     
+    // Calculate potential reward points (1 point per 10 XP earned)
+    const rewardPoints = Math.floor(completion.xpEarned / 10);
+    
     const [newCompletion] = await db
       .insert(habitCompletions)
       .values({
         ...completion,
         streakCount: streak + 1,
+        status: "pending",
+        requiresApproval: true,
+        rewardPointsEarned: rewardPoints,
       })
       .returning();
 
-    // Update child XP and reward points (1 point per 10 XP earned)
-    await this.updateChildXP(completion.childId, completion.xpEarned);
-    const rewardPoints = Math.floor(completion.xpEarned / 10);
-    if (rewardPoints > 0) {
-      await this.updateChildRewardPoints(completion.childId, rewardPoints);
-    }
+    // Note: XP and reward points are NOT awarded until parent approval
 
     return newCompletion;
   }
@@ -308,7 +309,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(habitCompletions.habitId, habitId),
-          eq(habitCompletions.childId, childId)
+          eq(habitCompletions.childId, childId),
+          eq(habitCompletions.status, "approved") // Only count approved completions
         )
       )
       .orderBy(desc(habitCompletions.date))
@@ -344,6 +346,115 @@ export class DatabaseStorage implements IStorage {
           eq(habitCompletions.date, today)
         )
       );
+  }
+
+  // Habit approval methods
+  async getPendingHabitCompletions(childId: string): Promise<any[]> {
+    return await db
+      .select({
+        completion: habitCompletions,
+        habit: habits
+      })
+      .from(habitCompletions)
+      .innerJoin(habits, eq(habitCompletions.habitId, habits.id))
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          eq(habitCompletions.status, "pending")
+        )
+      )
+      .orderBy(desc(habitCompletions.completedAt));
+  }
+
+  async getAllPendingHabitCompletions(): Promise<any[]> {
+    return await db
+      .select({
+        completion: habitCompletions,
+        habit: habits,
+        child: children
+      })
+      .from(habitCompletions)
+      .innerJoin(habits, eq(habitCompletions.habitId, habits.id))
+      .innerJoin(children, eq(habitCompletions.childId, children.id))
+      .where(eq(habitCompletions.status, "pending"))
+      .orderBy(desc(habitCompletions.completedAt));
+  }
+
+  async approveHabitCompletion(completionId: string, approvedBy: string, message?: string): Promise<HabitCompletion> {
+    const [completion] = await db.select()
+      .from(habitCompletions)
+      .where(eq(habitCompletions.id, completionId));
+    
+    if (!completion) {
+      throw new Error("Habit completion not found");
+    }
+
+    if (completion.status !== "pending") {
+      throw new Error("Habit completion already reviewed");
+    }
+
+    // Update completion as approved
+    const [approvedCompletion] = await db
+      .update(habitCompletions)
+      .set({
+        status: "approved",
+        reviewedBy: approvedBy,
+        reviewedAt: new Date(),
+        parentMessage: message,
+      })
+      .where(eq(habitCompletions.id, completionId))
+      .returning();
+
+    // Award XP and reward points to child
+    await this.updateChildXP(completion.childId, completion.xpEarned);
+    if (completion.rewardPointsEarned > 0) {
+      await this.updateChildRewardPoints(completion.childId, completion.rewardPointsEarned);
+    }
+
+    return approvedCompletion;
+  }
+
+  async rejectHabitCompletion(completionId: string, rejectedBy: string, message: string): Promise<HabitCompletion> {
+    const [completion] = await db.select()
+      .from(habitCompletions)
+      .where(eq(habitCompletions.id, completionId));
+    
+    if (!completion) {
+      throw new Error("Habit completion not found");
+    }
+
+    if (completion.status !== "pending") {
+      throw new Error("Habit completion already reviewed");
+    }
+
+    // Update completion as rejected
+    const [rejectedCompletion] = await db
+      .update(habitCompletions)
+      .set({
+        status: "rejected",
+        reviewedBy: rejectedBy,
+        reviewedAt: new Date(),
+        parentMessage: message,
+      })
+      .where(eq(habitCompletions.id, completionId))
+      .returning();
+
+    // Note: When rejected, the habit can be completed again for the same day
+    return rejectedCompletion;
+  }
+
+  async getChildPendingHabitsCount(childId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.childId, childId),
+          eq(habitCompletions.status, "pending")
+        )
+      );
+    
+    return result.count;
   }
 
   // Reward operations

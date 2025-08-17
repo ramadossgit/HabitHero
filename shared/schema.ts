@@ -78,6 +78,12 @@ export const habitCompletions = pgTable("habit_completions", {
   xpEarned: integer("xp_earned").notNull(),
   streakCount: integer("streak_count").notNull().default(1),
   completedAt: timestamp("completed_at").defaultNow(),
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected
+  parentMessage: text("parent_message"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by"),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  rewardPointsEarned: integer("reward_points_earned").notNull().default(0),
 });
 
 // Rewards that can be earned
@@ -276,6 +282,7 @@ export const insertHabitSchema = createInsertSchema(habits).omit({
 export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).omit({
   id: true,
   completedAt: true,
+  reviewedAt: true,
 });
 
 export const insertRewardSchema = createInsertSchema(rewards).omit({

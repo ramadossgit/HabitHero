@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import HabitApproval from "../components/parent/habit-approval";
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
@@ -401,8 +402,13 @@ export default function ParentDashboard() {
             <HabitManagementSection childId={child.id} showAddHabit={showAddHabit} setShowAddHabit={setShowAddHabit} />
           </div>
 
-          {/* Kids Management Section */}
+          {/* Habit Approval Section */}
           <div className="bounce-in" style={{ animationDelay: '0.25s' }}>
+            <HabitApproval children={children} />
+          </div>
+
+          {/* Kids Management Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
             <KidsManagementSection 
               children={children} 
               createHeroMutation={createHeroMutation}
@@ -421,17 +427,17 @@ export default function ParentDashboard() {
           </div>
 
           {/* Reward Settings Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
+          <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
             <RewardSettingsSection childId={child.id} showAddReward={showAddReward} setShowAddReward={setShowAddReward} />
           </div>
 
           {/* Reward Approval Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
+          <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
             <RewardApprovalSection childId={child.id} />
           </div>
 
           {/* Progress Reports Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
+          <div className="bounce-in" style={{ animationDelay: '0.45s' }}>
             <ProgressReportsSection childId={child.id} showReports={showReports} setShowReports={setShowReports} />
           </div>
 
