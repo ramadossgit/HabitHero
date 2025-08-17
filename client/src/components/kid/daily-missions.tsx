@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,6 +26,8 @@ interface DailyMissionsProps {
 
 export default function DailyMissions({ childId }: DailyMissionsProps) {
   const { toast } = useToast();
+
+
 
   const { data: habits, isLoading: habitsLoading } = useQuery({
     queryKey: ["/api/children", childId, "habits"],
@@ -78,6 +81,26 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
       });
     },
   });
+
+  // Auto-reload daily habits when date changes
+  useEffect(() => {
+    const checkForDateChange = () => {
+      const today = new Date().toISOString().split('T')[0];
+      const lastReloadDate = localStorage.getItem(`lastReloadDate-${childId}`);
+      
+      if (lastReloadDate !== today) {
+        // New day detected, reload habits automatically
+        reloadDailyHabitsMutation.mutate();
+        localStorage.setItem(`lastReloadDate-${childId}`, today);
+      }
+    };
+
+    // Check immediately and then every minute
+    checkForDateChange();
+    const interval = setInterval(checkForDateChange, 60000);
+
+    return () => clearInterval(interval);
+  }, [childId, reloadDailyHabitsMutation]);
 
   const getIconComponent = (iconName: string) => {
     const icons = {

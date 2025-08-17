@@ -140,7 +140,8 @@ export default function AvatarShop({ child }: AvatarShopProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredItems.map((item) => {
-              const isUnlocked = unlockedAvatars.includes(item.avatarType);
+              // Check if this specific avatar is purchased by ID, not just avatar type
+              const isUnlocked = unlockedAvatars.includes(item.id);
               const canAfford = rewardPoints >= item.cost;
               const RarityIcon = getRarityIcon(item.rarity);
 

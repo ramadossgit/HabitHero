@@ -86,20 +86,7 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
           </div>
         </div>
 
-        {/* XP Progress Bar */}
-        <div className="bg-white/20 rounded-full p-1">
-          <div className="relative">
-            <Progress 
-              value={progressPercentage} 
-              className="h-4 bg-transparent"
-            />
-            <div className="absolute inset-0 bg-sunshine rounded-full" style={{ width: `${progressPercentage}%` }}>
-              <span className="absolute right-2 top-0 bottom-0 flex items-center text-xs font-bold text-gray-800">
-                {xpForCurrentLevel}/{xpNeededForNextLevel} XP
-              </span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </header>
   );

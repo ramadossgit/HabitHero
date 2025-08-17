@@ -550,18 +550,29 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Not enough reward points");
     }
 
-    // Check if avatar is already unlocked
+    // Find the specific avatar shop item by avatar type to get its ID
+    const [avatarItem] = await db
+      .select()
+      .from(avatarShopItems)
+      .where(eq(avatarShopItems.avatarType, avatarType))
+      .limit(1);
+
+    if (!avatarItem) {
+      throw new Error("Avatar not found in shop");
+    }
+
+    // Check if avatar is already unlocked using shop item ID
     const unlockedAvatars = child.unlockedAvatars as string[] || ["robot"];
-    if (unlockedAvatars.includes(avatarType)) {
+    if (unlockedAvatars.includes(avatarItem.id)) {
       throw new Error("Avatar already unlocked");
     }
 
-    // Update child with new avatar and deduct points
+    // Update child with new avatar ID and deduct points
     const [updatedChild] = await db
       .update(children)
       .set({
         rewardPoints: (child.rewardPoints || 0) - cost,
-        unlockedAvatars: [...unlockedAvatars, avatarType],
+        unlockedAvatars: [...unlockedAvatars, avatarItem.id],
         updatedAt: new Date(),
       })
       .where(eq(children.id, childId))
