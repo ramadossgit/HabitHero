@@ -24,12 +24,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (required for Replit Auth - parents)
+// User storage table (parents with custom authentication)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password"), // Hashed password (nullable for migration)
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
   phoneNumber: varchar("phone_number"),
   voiceCommandsEnabled: boolean("voice_commands_enabled").default(false),
@@ -40,6 +41,7 @@ export const users = pgTable("users", {
     defaultRingtone: "default",
     reminderTime: 15
   }),
+  emailVerified: boolean("email_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -292,6 +294,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  emailVerified: true,
 });
 
 export const insertChildSchema = createInsertSchema(children).omit({

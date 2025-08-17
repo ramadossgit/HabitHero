@@ -39,9 +39,10 @@ import { db } from "./db";
 import { eq, and, gte, desc, sql, or } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations (custom authentication)
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
   updateUserProfile(id: string, updates: Partial<User>): Promise<User>;
   
   // Child operations
@@ -117,26 +118,17 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    // Try to find existing user by email first
-    const [existingUser] = await db.select().from(users).where(eq(users.email, userData.email!));
-    
-    if (existingUser) {
-      // Update existing user
-      const [updatedUser] = await db
-        .update(users)
-        .set({ ...userData, updatedAt: new Date() })
-        .where(eq(users.email, userData.email!))
-        .returning();
-      return updatedUser;
-    } else {
-      // Create new user
-      const [newUser] = await db
-        .insert(users)
-        .values(userData)
-        .returning();
-      return newUser;
-    }
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values(userData)
+      .returning();
+    return newUser;
   }
 
   async updateUserProfile(id: string, updates: Partial<User>): Promise<User> {

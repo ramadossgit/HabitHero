@@ -6,8 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useChildAuth } from "@/hooks/useChildAuth";
 import Landing from "@/pages/landing";
-import Login from "@/pages/login";
-import Signup from "@/pages/signup";
+import ParentAuthPage from "@/pages/parent-auth-page";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ProgressReportsPage from "@/pages/progress-reports";
@@ -41,16 +40,15 @@ function Router() {
         {childUser ? <Home /> : <KidsLogin />}
       </Route>
       
-      {/* Parent Authentication Routes */}
-      <Route path="/parent/login" component={Login} />
-      <Route path="/parent/signup" component={Signup} />
+      {/* Parent Authentication Route */}
+      <Route path="/parent/auth" component={ParentAuthPage} />
       
       {/* Parent Dashboard - Full Management Interface */}
       <Route path="/parent">
-        {isAuthenticated ? <ParentDashboard /> : <Login />}
+        {isAuthenticated ? <ParentDashboard /> : <ParentAuthPage />}
       </Route>
       <Route path="/progress-reports">
-        {isAuthenticated ? <ProgressReportsPage /> : <Login />}
+        {isAuthenticated ? <ProgressReportsPage /> : <ParentAuthPage />}
       </Route>
       
       {/* Default Route */}

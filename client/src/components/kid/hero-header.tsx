@@ -16,25 +16,13 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
   const xpNeededForNextLevel = 1000;
   const progressPercentage = (xpForCurrentLevel / xpNeededForNextLevel) * 100;
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      // Use direct redirect for logout instead of API request
-      window.location.href = "/api/logout";
-    },
-    onSuccess: () => {
-      toast({
-        title: "Logged out successfully!",
-        description: "See you next time, hero!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const handleLogout = () => {
+    toast({
+      title: "Logging out...",
+      description: "See you next time, hero!",
+    });
+    window.location.href = "/api/logout";
+  };
 
   const getAvatarImage = (avatarType: string) => {
     const avatarImages = {
@@ -68,13 +56,12 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
+              onClick={handleLogout}
               className="bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
               data-testid="button-logout"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              {logoutMutation.isPending ? "Logging out..." : "Logout"}
+              Logout
             </Button>
           </div>
         </div>

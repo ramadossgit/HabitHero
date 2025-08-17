@@ -57,7 +57,7 @@ export default function Landing() {
               <Button 
                 variant="outline" 
                 className="text-gray-800 bg-white border-white hover:bg-gray-100 hover:text-gray-900 font-bold ml-2"
-                onClick={() => setLocation("/parent/signup")}
+                onClick={() => setLocation("/parent")}
               >
                 Sign Up Here
               </Button>
