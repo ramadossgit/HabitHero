@@ -55,30 +55,45 @@ export default function ParentDashboard() {
 
   const createHeroMutation = useMutation({
     mutationFn: async (heroData: { name: string; avatarType: string; avatarUrl?: string }) => {
-      await apiRequest("POST", "/api/children", {
+      console.log("Creating hero with data:", heroData);
+      const response = await apiRequest("POST", "/api/children", {
         name: heroData.name,
         avatarType: heroData.avatarType,
         avatarUrl: heroData.avatarUrl,
         level: 1,
         xp: 0,
         totalXp: 0,
-        streakCount: 0,
+        rewardPoints: 0,
+        unlockedAvatars: [heroData.avatarType],
         unlockedGear: [],
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Hero creation failed:", errorText);
+        throw new Error(errorText || "Failed to create hero");
+      }
+      
+      const result = await response.json();
+      console.log("Hero created successfully:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (newHero) => {
+      console.log("Hero creation success callback:", newHero);
       toast({
         title: "Hero Created! 🎉",
-        description: "Your hero is ready for adventures!",
+        description: `${newHero.name} is ready for adventures!`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
       setHeroName("");
       setAvatarType("robot");
+      setImagePreview("");
     },
     onError: (error) => {
+      console.error("Hero creation error callback:", error);
       toast({
         title: "Creation failed",
-        description: error.message,
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     },

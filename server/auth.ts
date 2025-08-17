@@ -10,8 +10,18 @@ import type { User } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends Omit<User, 'id'> {
+    interface User {
       id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImageUrl?: string | null;
+      phoneNumber?: string | null;
+      voiceCommandsEnabled?: boolean | null;
+      reminderSettings?: any;
+      emailVerified?: boolean | null;
+      createdAt?: Date | null;
+      updatedAt?: Date | null;
     }
   }
 }
@@ -82,9 +92,13 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
+      if (!user) {
+        return done(null, false); // User not found, clear session
+      }
       done(null, user);
     } catch (error) {
-      done(error, null);
+      console.error("Deserialize user error:", error);
+      done(null, false); // On error, clear session rather than failing
     }
   });
 
