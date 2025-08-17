@@ -21,6 +21,8 @@ import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 export default function ParentDashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
+  
+  console.log("ParentDashboard - Auth State:", { isAuthenticated, isLoading, user });
   const [heroName, setHeroName] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
   const [showParentProfile, setShowParentProfile] = useState(false);
@@ -199,7 +201,7 @@ export default function ParentDashboard() {
     setShowOnboarding(true);
   };
 
-  if (isLoading || childrenLoading || !child) {
+  if (isLoading || childrenLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

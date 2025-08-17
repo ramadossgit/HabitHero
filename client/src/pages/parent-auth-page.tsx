@@ -42,7 +42,10 @@ export default function ParentAuthPage() {
         title: "Welcome back!",
         description: "Successfully logged into your parent account.",
       });
-      setLocation("/parent");
+      // Delay to ensure auth state is updated
+      setTimeout(() => {
+        setLocation("/parent");
+      }, 500);
     },
     onError: (error: any) => {
       toast({
@@ -70,7 +73,10 @@ export default function ParentAuthPage() {
         title: "Account created!",
         description: "Welcome to Habit Heroes! Let's set up your first child.",
       });
-      setLocation("/parent");
+      // Delay to ensure auth state is updated
+      setTimeout(() => {
+        setLocation("/parent");
+      }, 500);
     },
     onError: (error: any) => {
       toast({

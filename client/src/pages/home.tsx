@@ -12,7 +12,7 @@ import RewardsSection from "@/components/kid/rewards-section";
 import WeeklyProgress from "@/components/kid/weekly-progress";
 import HabitHealthMeter from "@/components/kid/habit-health-meter";
 import { Gamepad2, Trophy, Star, Settings, Lock } from "lucide-react";
-import type { Child, ParentalControls } from "@shared/schema";
+import type { Child, ParentalControls, Habit, HabitCompletion } from "@shared/schema";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("missions");
@@ -21,12 +21,12 @@ export default function Home() {
   const { child: loggedInChild, isChildAuthenticated, isLoading: childAuthLoading } = useChildAuth();
 
   // Fetch habits and completions for health meter
-  const { data: habits = [] } = useQuery({
+  const { data: habits = [] } = useQuery<Habit[]>({
     queryKey: ["/api/children", loggedInChild?.id, "habits"],
     enabled: !!loggedInChild?.id,
   });
 
-  const { data: todaysCompletions = [] } = useQuery({
+  const { data: todaysCompletions = [] } = useQuery<HabitCompletion[]>({
     queryKey: ["/api/children", loggedInChild?.id, "completions", "today"],
     enabled: !!loggedInChild?.id,
   });
