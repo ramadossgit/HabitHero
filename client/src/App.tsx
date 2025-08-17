@@ -16,6 +16,8 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
   const { child: childUser, isLoading: childLoading } = useChildAuth();
+  
+  console.log("Router debug:", { childUser, childLoading, isAuthenticated, isLoading });
 
   if (isLoading || childLoading) {
     return (

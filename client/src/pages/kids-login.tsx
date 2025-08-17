@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Star, Gamepad2 } from "lucide-react";
 
 export default function KidsLogin() {
@@ -23,7 +23,11 @@ export default function KidsLogin() {
         title: "Welcome back, Hero!",
         description: "Ready for your next adventure?",
       });
-      setLocation("/kids");
+      // Invalidate auth queries to refresh authentication state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/child"] });
+      setTimeout(() => {
+        setLocation("/kids");
+      }, 100);
     },
     onError: (error: any) => {
       toast({
