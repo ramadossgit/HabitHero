@@ -123,17 +123,18 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          Habit Approvals
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="fun-card p-6 border-4 border-mint">
+      <div className="flex items-center space-x-3 mb-6">
+        <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-mint" />
+        <div>
+          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">✅ Habit Approvals</h3>
+          <p className="text-gray-600 text-sm sm:text-base">Review and approve completed habits</p>
+        </div>
+      </div>
+      <div>
         {/* Child Selection */}
         <div className="space-y-4">
-          <h3 className="font-semibold">Select a child to review their habits:</h3>
+          <h4 className="font-fredoka text-lg font-bold text-gray-700">👶 Select a child to review their habits:</h4>
           <div className="grid gap-3">
             {childrenWithCounts.map((child) => (
               <div
@@ -164,7 +165,7 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
           {/* Pending Habits for Selected Child */}
           {selectedChild && pendingHabits && (
             <div className="mt-6 space-y-4">
-              <h3 className="font-semibold">Pending Habits:</h3>
+              <h4 className="font-fredoka text-lg font-bold text-gray-700 hero-title">⏳ Pending Habits:</h4>
               {pendingHabits.length === 0 ? (
                 <p className="text-gray-500">No pending habits for this child.</p>
               ) : (
@@ -216,9 +217,10 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                                 size="sm"
                                 onClick={() => handleReject(item.completion.id)}
                                 disabled={rejectHabitMutation.isPending}
+                                className="super-button"
                                 data-testid={`confirm-reject-${item.completion.id}`}
                               >
-                                {rejectHabitMutation.isPending ? "Sending..." : "Send Feedback"}
+                                {rejectHabitMutation.isPending ? "Sending..." : "📤 Send Feedback"}
                               </Button>
                               <Button
                                 variant="outline"
@@ -239,11 +241,11 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                               size="sm"
                               onClick={() => handleApprove(item.completion.id, "Great job!")}
                               disabled={approveHabitMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="super-button bg-green-600 hover:bg-green-700"
                               data-testid={`approve-habit-${item.completion.id}`}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
-                              {approveHabitMutation.isPending ? "Approving..." : "Approve"}
+                              {approveHabitMutation.isPending ? "Approving..." : "✅ Approve"}
                             </Button>
                             <Button
                               variant="outline"
@@ -253,7 +255,7 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                               data-testid={`reject-habit-${item.completion.id}`}
                             >
                               <XCircle className="w-4 h-4 mr-1" />
-                              Needs Work
+                              ❌ Needs Work
                             </Button>
                           </div>
                         )}
@@ -265,7 +267,7 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }

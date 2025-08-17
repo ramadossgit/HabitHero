@@ -118,7 +118,7 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl h-[90vh] overflow-hidden">
+      <Card className="w-full max-w-5xl h-[95vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white">
           <div className="flex items-center gap-4">
             <Button 
@@ -205,7 +205,7 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
           </div>
 
           {/* Main Controls Panel */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto max-h-[calc(95vh-120px)]">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-lg">Loading controls...</div>
@@ -520,7 +520,7 @@ function EmergencyControls({
   isLoading: boolean
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-h-[calc(95vh-200px)] overflow-y-auto">
       <Card className="p-6 fun-card border-red-200">
         <h4 className="font-fredoka text-xl mb-4 flex items-center gap-2 text-red-600 hero-title">
           🚨 Emergency Mode
