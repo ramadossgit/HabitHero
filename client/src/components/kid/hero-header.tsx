@@ -18,14 +18,14 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout", {});
+      // Use direct redirect for logout instead of API request
+      window.location.href = "/api/logout";
     },
     onSuccess: () => {
       toast({
         title: "Logged out successfully!",
         description: "See you next time, hero!",
       });
-      window.location.href = "/";
     },
     onError: (error: any) => {
       toast({

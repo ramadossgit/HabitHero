@@ -57,8 +57,7 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
+  return await storage.upsertUser({
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
@@ -117,12 +116,18 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      // Clear child session data if exists
+      req.session.childId = undefined;
+      req.session.isChildUser = undefined;
+      
+      // Destroy session completely
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/');
+      });
     });
   });
 }
