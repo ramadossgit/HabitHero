@@ -101,7 +101,7 @@ export default function WeeklyProgress({ childId }: WeeklyProgressProps) {
     const percentage = day.total > 0 ? (day.completed / day.total) * 100 : 0;
     if (percentage === 100) return 'bg-green-500 text-white';
     if (percentage >= 50) return 'bg-yellow-500 text-white';
-    if (percentage > 0) return 'bg-red-500 text-white';
+    if (day.total > 0 && percentage < 50) return 'bg-red-500 text-white';
     return 'bg-gray-200 text-gray-600';
   };
 

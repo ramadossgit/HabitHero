@@ -64,13 +64,6 @@ export default function HeroHeader({ child }: HeroHeaderProps) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {/* XP Only */}
-            <div className="flex items-center space-x-2">
-              <Star className="w-6 h-6 text-sunshine" />
-              <span className="font-nunito font-extrabold text-xl">{(child.totalXp || 0).toLocaleString()}</span>
-              <span className="text-white/90">XP</span>
-            </div>
-            
             {/* Logout Button */}
             <Button
               variant="outline"

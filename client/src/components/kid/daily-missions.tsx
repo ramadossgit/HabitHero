@@ -84,20 +84,26 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   // Auto-reload daily habits when date changes
   useEffect(() => {
-    const checkForDateChange = () => {
+    const checkForDateChange = async () => {
       const today = new Date().toISOString().split('T')[0];
       const lastReloadDate = localStorage.getItem(`lastReloadDate-${childId}`);
       
       if (lastReloadDate !== today) {
         // New day detected, reload habits automatically
-        reloadDailyHabitsMutation.mutate();
-        localStorage.setItem(`lastReloadDate-${childId}`, today);
+        try {
+          await reloadDailyHabitsMutation.mutateAsync();
+          localStorage.setItem(`lastReloadDate-${childId}`, today);
+        } catch (error) {
+          console.error('Auto-reload failed:', error);
+        }
       }
     };
 
-    // Check immediately and then every minute
+    // Check immediately when component mounts
     checkForDateChange();
-    const interval = setInterval(checkForDateChange, 60000);
+    
+    // Check every hour for date changes
+    const interval = setInterval(checkForDateChange, 3600000); // 1 hour
 
     return () => clearInterval(interval);
   }, [childId, reloadDailyHabitsMutation]);
@@ -157,23 +163,10 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   return (
     <section className="mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-fredoka text-3xl text-gray-800 flex items-center">
-          <Star className="text-coral mr-3" />
-          Today's Hero Missions
-        </h2>
-        
-        {/* Daily Reload Button */}
-        <Button
-          onClick={() => reloadDailyHabitsMutation.mutate()}
-          disabled={reloadDailyHabitsMutation.isPending}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
-          data-testid="button-reload-habits"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${reloadDailyHabitsMutation.isPending ? 'animate-spin' : ''}`} />
-          {reloadDailyHabitsMutation.isPending ? "Reloading..." : "Reload Daily Habits"}
-        </Button>
-      </div>
+      <h2 className="font-fredoka text-3xl text-gray-800 mb-6 flex items-center">
+        <Star className="text-coral mr-3" />
+        Today's Hero Missions
+      </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {habitsArray.map((habit: Habit) => {
