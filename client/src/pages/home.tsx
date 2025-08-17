@@ -10,6 +10,7 @@ import DailyMissions from "@/components/kid/daily-missions";
 import HeroCustomization from "@/components/kid/hero-customization";
 import RewardsSection from "@/components/kid/rewards-section";
 import WeeklyProgress from "@/components/kid/weekly-progress";
+import HabitHealthMeter from "@/components/kid/habit-health-meter";
 import { Gamepad2, Trophy, Star, Settings, Lock } from "lucide-react";
 import type { Child, ParentalControls } from "@shared/schema";
 
@@ -18,6 +19,17 @@ export default function Home() {
   
   // Single-user experience - only for logged in children
   const { child: loggedInChild, isChildAuthenticated, isLoading: childAuthLoading } = useChildAuth();
+
+  // Fetch habits and completions for health meter
+  const { data: habits = [] } = useQuery({
+    queryKey: ["/api/children", loggedInChild?.id, "habits"],
+    enabled: !!loggedInChild?.id,
+  });
+
+  const { data: todaysCompletions = [] } = useQuery({
+    queryKey: ["/api/children", loggedInChild?.id, "completions", "today"],
+    enabled: !!loggedInChild?.id,
+  });
 
   if (childAuthLoading) {
     return (
@@ -134,7 +146,14 @@ export default function Home() {
 
           <TabsContent value="missions" className="space-y-6">
             {featuresEnabled.habits ? (
-              <DailyMissions childId={currentChild.id} />
+              <>
+                <HabitHealthMeter 
+                  habits={habits} 
+                  completions={todaysCompletions} 
+                  childName={currentChild.name} 
+                />
+                <DailyMissions childId={currentChild.id} />
+              </>
             ) : (
               <Alert>
                 <Lock className="h-4 w-4" />

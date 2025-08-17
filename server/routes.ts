@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Children routes
   app.get('/api/children', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const children = await storage.getChildrenByParent(userId);
       res.json(children);
     } catch (error) {
@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/children', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const childData = insertChildSchema.parse({
         ...req.body,
         parentId: userId,
@@ -781,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update parent profile
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const updates = req.body;
       await storage.updateUserProfile(userId, updates);
       const updatedUser = await storage.getUser(userId);
