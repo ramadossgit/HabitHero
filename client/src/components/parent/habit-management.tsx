@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { CheckSquare, Plus, Edit, Trash2, Zap, Bed, Heart, Book, Droplets } from "lucide-react";
+import { CheckSquare, Plus, Edit, Trash2, Zap, Bed, Heart, Book, Droplets, Clock, Volume2, Gift } from "lucide-react";
 import type { Habit } from "@shared/schema";
 
 interface HabitManagementProps {
@@ -26,6 +27,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
     icon: "star",
     xpReward: 50,
     color: "mint",
+    rewardPoints: 5,
+    reminderEnabled: false,
+    reminderTime: "",
+    voiceReminderEnabled: false,
+    customRingtone: "default",
+    timeRangeStart: "07:00",
+    timeRangeEnd: "20:00",
   });
 
   const { data: habits, isLoading } = useQuery({
@@ -104,6 +112,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       icon: "star",
       xpReward: 50,
       color: "mint",
+      rewardPoints: 5,
+      reminderEnabled: false,
+      reminderTime: "",
+      voiceReminderEnabled: false,
+      customRingtone: "default",
+      timeRangeStart: "07:00",
+      timeRangeEnd: "20:00",
     });
   };
 
@@ -115,6 +130,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       icon: habit.icon,
       xpReward: habit.xpReward,
       color: habit.color,
+      rewardPoints: habit.rewardPoints || 5,
+      reminderEnabled: habit.reminderEnabled || false,
+      reminderTime: habit.reminderTime || "",
+      voiceReminderEnabled: habit.voiceReminderEnabled || false,
+      customRingtone: habit.customRingtone || "default",
+      timeRangeStart: habit.timeRangeStart || "07:00",
+      timeRangeEnd: habit.timeRangeEnd || "20:00",
     });
     setIsDialogOpen(true);
   };
@@ -246,16 +268,125 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="xpReward">XP Reward</Label>
-                <Input
-                  id="xpReward"
-                  type="number"
-                  value={habitForm.xpReward}
-                  onChange={(e) => setHabitForm({ ...habitForm, xpReward: parseInt(e.target.value) })}
-                  min="10"
-                  max="200"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="xpReward">XP Reward</Label>
+                  <Input
+                    id="xpReward"
+                    type="number"
+                    value={habitForm.xpReward}
+                    onChange={(e) => setHabitForm({ ...habitForm, xpReward: parseInt(e.target.value) || 0 })}
+                    min="10"
+                    max="200"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rewardPoints" className="flex items-center">
+                    <Gift className="w-4 h-4 mr-2 text-coral" />
+                    Reward Points
+                  </Label>
+                  <Input
+                    id="rewardPoints"
+                    type="number"
+                    value={habitForm.rewardPoints}
+                    onChange={(e) => setHabitForm({ ...habitForm, rewardPoints: parseInt(e.target.value) || 0 })}
+                    min="1"
+                    max="50"
+                  />
+                </div>
+              </div>
+
+              {/* Time Range Settings */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-sky" />
+                  Time Range Settings
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="timeRangeStart">Start Time</Label>
+                    <Input
+                      id="timeRangeStart"
+                      type="time"
+                      value={habitForm.timeRangeStart}
+                      onChange={(e) => setHabitForm({ ...habitForm, timeRangeStart: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="timeRangeEnd">End Time</Label>
+                    <Input
+                      id="timeRangeEnd"
+                      type="time"
+                      value={habitForm.timeRangeEnd}
+                      onChange={(e) => setHabitForm({ ...habitForm, timeRangeEnd: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Child can complete this habit between {habitForm.timeRangeStart} and {habitForm.timeRangeEnd}
+                </p>
+              </div>
+
+              {/* Reminder Settings */}
+              <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg">
+                <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
+                  <Volume2 className="w-5 h-5 mr-2 text-coral" />
+                  Reminder Settings
+                </h4>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="reminderEnabled" className="flex-1">
+                      Enable Daily Reminders
+                    </Label>
+                    <Switch
+                      id="reminderEnabled"
+                      checked={habitForm.reminderEnabled}
+                      onCheckedChange={(checked) => setHabitForm({ ...habitForm, reminderEnabled: checked })}
+                    />
+                  </div>
+
+                  {habitForm.reminderEnabled && (
+                    <>
+                      <div>
+                        <Label htmlFor="reminderTime">Reminder Time</Label>
+                        <Input
+                          id="reminderTime"
+                          type="time"
+                          value={habitForm.reminderTime}
+                          onChange={(e) => setHabitForm({ ...habitForm, reminderTime: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="voiceReminderEnabled" className="flex-1">
+                          Voice Reminders
+                        </Label>
+                        <Switch
+                          id="voiceReminderEnabled"
+                          checked={habitForm.voiceReminderEnabled}
+                          onCheckedChange={(checked) => setHabitForm({ ...habitForm, voiceReminderEnabled: checked })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="customRingtone">Ringtone</Label>
+                        <Select value={habitForm.customRingtone} onValueChange={(value) => setHabitForm({ ...habitForm, customRingtone: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">Default Chime</SelectItem>
+                            <SelectItem value="cheerful">Cheerful Bell</SelectItem>
+                            <SelectItem value="gentle">Gentle Notification</SelectItem>
+                            <SelectItem value="playful">Playful Tune</SelectItem>
+                            <SelectItem value="hero">Hero Theme</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               <Button 
                 type="submit" 
