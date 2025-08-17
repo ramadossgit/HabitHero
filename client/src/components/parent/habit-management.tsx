@@ -210,13 +210,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-xl font-fredoka text-gray-800">
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 pb-6">
               <div>
                 <Label htmlFor="name">Habit Name</Label>
                 <Input
@@ -297,10 +297,10 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               </div>
 
               {/* Time Range Settings */}
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-gray-50 rounded-lg border-2 border-sky/30">
                 <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
                   <Clock className="w-5 h-5 mr-2 text-sky" />
-                  Time Range Settings
+                  🕐 Time Range Settings
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -328,10 +328,10 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               </div>
 
               {/* Reminder Settings */}
-              <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg">
+              <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg border-2 border-coral/30">
                 <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
                   <Volume2 className="w-5 h-5 mr-2 text-coral" />
-                  Reminder Settings
+                  🔔 Reminder Settings
                 </h4>
                 
                 <div className="space-y-4">
