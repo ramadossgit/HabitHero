@@ -25,6 +25,24 @@ export default function ParentDashboard() {
     enabled: isAuthenticated,
   });
 
+  const child = children?.[0];
+
+  // Fetch real data for calculations - Always run these hooks
+  const { data: weeklyProgress } = useQuery({
+    queryKey: ["/api/children", child?.id, "progress/weekly"],
+    enabled: isAuthenticated && !!child,
+  });
+
+  const { data: habits } = useQuery({
+    queryKey: ["/api/children", child?.id, "habits"],
+    enabled: isAuthenticated && !!child,
+  });
+
+  const { data: completions } = useQuery({
+    queryKey: ["/api/children", child?.id, "completions"],
+    enabled: isAuthenticated && !!child,
+  });
+
   const createHeroMutation = useMutation({
     mutationFn: async (heroData: { name: string; avatarType: string; avatarUrl?: string }) => {
       await apiRequest("POST", "/api/children", {
@@ -154,7 +172,7 @@ export default function ParentDashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  if (isLoading || childrenLoading) {
+  if (isLoading || childrenLoading || !child) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -286,10 +304,79 @@ export default function ParentDashboard() {
     );
   }
 
-  const child = children[0] as Child;
-  const completionRate = 85; // TODO: Calculate from actual data
-  const currentStreak = 7; // TODO: Calculate from actual data
-  const badgesEarned = 23; // TODO: Calculate from actual data
+
+
+  // Calculate real statistics
+  const completionRate = weeklyProgress && child ? 
+    Math.round((weeklyProgress.completedHabits / Math.max(weeklyProgress.totalHabits, 1)) * 100) : 0;
+
+  // Calculate current streak - consecutive days with at least one completed habit
+  const calculateCurrentStreak = () => {
+    if (!completions || completions.length === 0) return 0;
+    
+    const approvedCompletions = completions.filter((c: any) => c.status === 'approved');
+    if (approvedCompletions.length === 0) return 0;
+
+    // Group completions by date
+    const completionsByDate = approvedCompletions.reduce((acc: any, completion: any) => {
+      const date = completion.date;
+      if (!acc[date]) acc[date] = 0;
+      acc[date]++;
+      return acc;
+    }, {});
+
+    // Calculate streak from most recent date backwards
+    let streak = 0;
+    const today = new Date();
+    let currentDate = new Date(today);
+    
+    while (true) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      if (completionsByDate[dateStr] && completionsByDate[dateStr] > 0) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  const currentStreak = calculateCurrentStreak();
+
+  // Calculate badges earned based on achievements
+  const calculateBadgesEarned = () => {
+    if (!completions || !habits) return 0;
+    
+    let badges = 0;
+    const approvedCompletions = completions.filter((c: any) => c.status === 'approved');
+    
+    // Badge for first completion
+    if (approvedCompletions.length > 0) badges++;
+    
+    // Badge for 10 completions
+    if (approvedCompletions.length >= 10) badges++;
+    
+    // Badge for 50 completions  
+    if (approvedCompletions.length >= 50) badges++;
+    
+    // Badge for 100 completions
+    if (approvedCompletions.length >= 100) badges++;
+    
+    // Badge for 7-day streak
+    if (currentStreak >= 7) badges++;
+    
+    // Badge for 30-day streak
+    if (currentStreak >= 30) badges++;
+    
+    // Badge for having 5+ active habits
+    if (habits && habits.length >= 5) badges++;
+    
+    return badges;
+  };
+
+  const badgesEarned = calculateBadgesEarned();
 
   return (
     <div className="min-h-screen hero-gradient">
@@ -319,7 +406,7 @@ export default function ParentDashboard() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="text-xs sm:text-sm text-white/80">Total Family XP</div>
-                  <div className="font-bold text-lg sm:text-2xl">{child.totalXp.toLocaleString()} XP ⭐</div>
+                  <div className="font-bold text-lg sm:text-2xl">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
                 </div>
                 <img 
                   src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
@@ -355,7 +442,7 @@ export default function ParentDashboard() {
                     {child.totalXp.toLocaleString()} Total XP
                   </span>
                   <span className="px-3 py-1 bg-coral/20 text-coral-dark rounded-full text-xs font-bold">
-                    Current Streak: 5 days
+                    Current Streak: {currentStreak} days
                   </span>
                 </div>
               </div>
@@ -438,7 +525,40 @@ export default function ParentDashboard() {
 
           {/* Progress Reports Section */}
           <div className="bounce-in" style={{ animationDelay: '0.45s' }}>
-            <ProgressReportsSection childId={child.id} showReports={showReports} setShowReports={setShowReports} />
+            <Card className="fun-card p-4 sm:p-8 border-4 border-coral">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <div className="flex items-center">
+                  <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-coral mr-2 sm:mr-3" />
+                  <div>
+                    <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📊 Progress Reports</h3>
+                    <p className="text-gray-600 text-sm sm:text-base">View detailed analytics and insights</p>
+                  </div>
+                </div>
+                <Link href="/progress-reports">
+                  <Button className="bg-coral hover:bg-coral/80 text-white">
+                    View Reports
+                  </Button>
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-mint/10 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800">{completionRate}%</div>
+                  <div className="text-sm text-gray-600">Completion Rate</div>
+                </div>
+                <div className="text-center p-4 bg-orange-500/10 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800">{currentStreak}</div>
+                  <div className="text-sm text-gray-600">Day Streak</div>
+                </div>
+                <div className="text-center p-4 bg-sunshine/10 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800">{badgesEarned}</div>
+                  <div className="text-sm text-gray-600">Badges</div>
+                </div>
+                <div className="text-center p-4 bg-coral/10 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-800">{child?.level || 1}</div>
+                  <div className="text-sm text-gray-600">Level</div>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* Parental Controls Section */}

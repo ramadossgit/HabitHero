@@ -10,6 +10,7 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
+import ProgressReportsPage from "@/pages/progress-reports";
 import KidsLogin from "@/pages/kids-login";
 import NotFound from "@/pages/not-found";
 
@@ -47,6 +48,9 @@ function Router() {
       {/* Parent Dashboard - Full Management Interface */}
       <Route path="/parent">
         {isAuthenticated ? <ParentDashboard /> : <Login />}
+      </Route>
+      <Route path="/progress-reports">
+        {isAuthenticated ? <ProgressReportsPage /> : <Login />}
       </Route>
       
       {/* Default Route */}

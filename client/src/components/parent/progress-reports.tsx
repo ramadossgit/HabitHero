@@ -9,12 +9,16 @@ interface ProgressReportsProps {
 }
 
 export default function ProgressReports({ childId }: ProgressReportsProps) {
-  const { data: habits } = useQuery({
+  const { data: habits = [] } = useQuery<Habit[]>({
     queryKey: ["/api/children", childId, "habits"],
   });
 
-  const { data: completions } = useQuery({
+  const { data: completions = [] } = useQuery<HabitCompletion[]>({
     queryKey: ["/api/children", childId, "completions"],
+  });
+
+  const { data: child } = useQuery({
+    queryKey: ["/api/children", childId],
   });
 
   // Calculate weekly performance for each habit
@@ -24,10 +28,11 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    return habits.map((habit: Habit) => {
-      const habitCompletions = completions.filter((completion: HabitCompletion) => 
+    return habits.map((habit) => {
+      const habitCompletions = completions.filter((completion) => 
         completion.habitId === habit.id && 
-        new Date(completion.date) >= oneWeekAgo
+        new Date(completion.date) >= oneWeekAgo &&
+        completion.status === 'approved'
       );
 
       const completionRate = (habitCompletions.length / 7) * 100;
@@ -46,12 +51,11 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
     const insights = [];
 
     // Find best performing habit
-    const bestHabit = performance.reduce((best, current) => 
-      current.percentage > best.percentage ? current : best, 
-      performance[0] || { percentage: 0, habit: { name: "" } }
-    );
+    const bestHabit = performance.length > 0 ? performance.reduce((best, current) => 
+      current.percentage > best.percentage ? current : best
+    ) : null;
 
-    if (bestHabit.percentage >= 85) {
+    if (bestHabit && bestHabit.percentage >= 85) {
       insights.push({
         type: "success",
         icon: ThumbsUp,
@@ -62,7 +66,7 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
     }
 
     // Find habit that needs improvement
-    const needsImprovement = performance.find(p => p.percentage < 60);
+    const needsImprovement = performance.find((p) => p.percentage < 60);
     if (needsImprovement) {
       insights.push({
         type: "suggestion",
@@ -74,7 +78,7 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
     }
 
     // Check for streaks
-    const highPerformers = performance.filter(p => p.percentage >= 70);
+    const highPerformers = performance.filter((p) => p.percentage >= 70);
     if (highPerformers.length >= 3) {
       insights.push({
         type: "achievement",
@@ -133,7 +137,7 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
                     <div className="w-20 bg-gray-200 rounded-full h-2 relative">
                       <div 
                         className={`h-2 rounded-full ${getColorByPercentage(item.percentage)}`}
-                        style={{ width: `${item.percentage}%` }}
+                        style={{ width: `${Math.min(item.percentage, 100)}%` }}
                       ></div>
                     </div>
                     <span className="text-sm font-bold min-w-[3rem] text-right">
