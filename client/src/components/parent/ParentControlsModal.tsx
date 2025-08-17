@@ -127,17 +127,15 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
               className="text-white hover:bg-white/20 p-2"
               data-testid="button-back"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h2 className="font-fredoka text-3xl hero-title">🛡️ Parent Controls</h2>
-              <p className="text-white/90 font-medium">Manage screen time, bedtime, app features & emergency controls</p>
+              <h2 className="font-fredoka text-2xl hero-title">⚙️ Parent Controls</h2>
+              <p className="text-white/90 text-sm">Manage settings for each child</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20">
-            <X className="w-6 h-6" />
+          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20 p-2">
+            <X className="w-5 h-5" />
           </Button>
         </div>
 
@@ -520,12 +518,12 @@ function EmergencyControls({
   isLoading: boolean
 }) {
   return (
-    <div className="space-y-4 max-h-[calc(95vh-200px)] overflow-y-auto">
-      <Card className="p-6 fun-card border-red-200">
-        <h4 className="font-fredoka text-xl mb-4 flex items-center gap-2 text-red-600 hero-title">
+    <div className="space-y-4">
+      <Card className="p-4 fun-card border-red-200">
+        <h4 className="font-fredoka text-lg mb-3 flex items-center gap-2 text-red-600 hero-title">
           🚨 Emergency Mode
         </h4>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 mb-3 text-sm">
           Emergency mode will immediately block all apps and restrict access for {childName}. 
           Use this feature only when immediate intervention is required.
         </p>
@@ -570,26 +568,32 @@ function EmergencyControls({
         </Button>
       </Card>
 
-      <Card className="p-6 fun-card">
-        <h4 className="font-fredoka text-xl mb-4 hero-title">📊 Current Emergency Settings</h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            <span className="text-sm">Block All Apps:</span>
+      <Card className="p-4 fun-card">
+        <h4 className="font-fredoka text-lg mb-3 hero-title">📊 Current Settings</h4>
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm">Block All Apps:</span>
+            </div>
             <Badge variant={controls.blockAllApps ? "destructive" : "secondary"}>
               {controls.blockAllApps ? "Yes" : "No"}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Wifi className="w-4 h-4" />
-            <span className="text-sm">Limit Internet:</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wifi className="w-4 h-4" />
+              <span className="text-sm">Limit Internet:</span>
+            </div>
             <Badge variant={controls.limitInternet ? "destructive" : "secondary"}>
               {controls.limitInternet ? "Yes" : "No"}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4" />
-            <span className="text-sm">Parent Contact:</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              <span className="text-sm">Parent Contact:</span>
+            </div>
             <Badge variant={controls.parentContactEnabled ? "default" : "secondary"}>
               {controls.parentContactEnabled ? "Enabled" : "Disabled"}
             </Badge>
