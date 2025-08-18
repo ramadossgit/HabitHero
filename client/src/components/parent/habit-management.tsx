@@ -36,7 +36,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
     timeRangeEnd: "20:00",
   });
 
-  const { data: habits, isLoading } = useQuery({
+  const { data: habits, isLoading } = useQuery<Habit[]>({
     queryKey: ["/api/children", childId, "habits"],
   });
 
