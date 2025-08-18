@@ -248,14 +248,20 @@ export function isChildAuthenticated(req: any, res: any, next: any) {
 export function isParentOrChildAuthenticated(req: any, res: any, next: any) {
   // Check if parent is authenticated
   if (req.isAuthenticated()) {
+    console.log('Parent authenticated:', req.user?.id);
     return next();
   }
   
   // Check if child is authenticated
   if (req.session.childId && req.session.isChildUser) {
+    console.log('Child authenticated:', req.session.childId);
     return next();
   }
   
+  console.log('Authentication failed - Parent auth:', req.isAuthenticated(), 'Child session:', {
+    childId: req.session.childId,
+    isChildUser: req.session.isChildUser
+  });
   res.status(401).json({ message: "Not authenticated" });
 }
 

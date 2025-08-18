@@ -968,6 +968,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Sync family data for children - get family updates from child perspective
   app.get('/api/sync/child-family-data', isParentOrChildAuthenticated, async (req, res) => {
+    console.log('Child sync endpoint called - session:', {
+      childId: req.session.childId,
+      isChildUser: req.session.isChildUser,
+      parentId: req.session.parentId
+    });
     try {
       const lastSyncTime = req.query.lastSyncTime 
         ? new Date(req.query.lastSyncTime as string) 
@@ -979,9 +984,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user) {
         // Parent user
         parentId = req.user.id;
-      } else if (req.child) {
-        // Child user - get their parent ID
-        parentId = req.child.parentId;
+      } else if (req.session.childId && req.session.isChildUser) {
+        // Child user - get their parent ID from session
+        parentId = req.session.parentId;
       } else {
         return res.status(401).json({ message: "Not authenticated" });
       }
