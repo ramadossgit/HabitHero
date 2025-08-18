@@ -297,6 +297,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const completion = await storage.createHabitCompletion(completionData);
+      
+      // Create real-time sync event to notify parents immediately
+      try {
+        // Get the child record to find the parent ID
+        const child = await storage.getChild(habit.childId);
+        if (child && child.parentId) {
+          await syncService.createSyncEvent({
+            userId: child.parentId, // Use parent ID to trigger parent dashboard updates
+            eventType: 'habit_completed',
+            entityType: 'habit_completions',
+            entityId: completion.id,
+            eventData: {
+              habitId: habit.id,
+              habitName: habit.name,
+              childId: habit.childId,
+              childName: child.name,
+              completionDate: completion.date,
+              status: completion.status,
+              xpEarned: completion.xpEarned
+            },
+            processed: false
+          });
+          console.log(`Created sync event for habit completion: ${habit.name} by child ${child.name} (${habit.childId}) for parent ${child.parentId}`);
+        }
+      } catch (syncError) {
+        console.error('Failed to create sync event for habit completion:', syncError);
+        // Don't fail the request if sync fails
+      }
+      
       res.json(completion);
     } catch (error) {
       console.error("Error completing habit:", error);
@@ -754,6 +783,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         approvedBy, 
         message
       );
+      
+      // Create sync event for habit approval
+      try {
+        const habit = await storage.getHabit(approvedCompletion.habitId);
+        const child = await storage.getChild(approvedCompletion.childId);
+        if (habit && child) {
+          await syncService.createSyncEvent({
+            userId: child.parentId,
+            eventType: 'habit_approved',
+            entityType: 'habit_completions',
+            entityId: approvedCompletion.id,
+            eventData: {
+              habitId: habit.id,
+              habitName: habit.name,
+              childId: child.id,
+              childName: child.name,
+              completionDate: approvedCompletion.date,
+              status: 'approved',
+              xpEarned: approvedCompletion.xpEarned,
+              message: message
+            },
+            processed: false
+          });
+          console.log(`Created sync event for habit approval: ${habit.name} by child ${child.name}`);
+        }
+      } catch (syncError) {
+        console.error('Failed to create sync event for habit approval:', syncError);
+      }
+      
       res.json(approvedCompletion);
     } catch (error) {
       console.error("Error approving habit completion:", error);
@@ -778,6 +836,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rejectedBy, 
         message
       );
+      
+      // Create sync event for habit rejection
+      try {
+        const habit = await storage.getHabit(rejectedCompletion.habitId);
+        const child = await storage.getChild(rejectedCompletion.childId);
+        if (habit && child) {
+          await syncService.createSyncEvent({
+            userId: child.parentId,
+            eventType: 'habit_rejected',
+            entityType: 'habit_completions',
+            entityId: rejectedCompletion.id,
+            eventData: {
+              habitId: habit.id,
+              habitName: habit.name,
+              childId: child.id,
+              childName: child.name,
+              completionDate: rejectedCompletion.date,
+              status: 'rejected',
+              message: message
+            },
+            processed: false
+          });
+          console.log(`Created sync event for habit rejection: ${habit.name} by child ${child.name}`);
+        }
+      } catch (syncError) {
+        console.error('Failed to create sync event for habit rejection:', syncError);
+      }
+      
       res.json(rejectedCompletion);
     } catch (error) {
       console.error("Error rejecting habit completion:", error);
@@ -824,7 +910,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sync/register-device', isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertDeviceSchema.parse(req.body);
-      const device = await syncService.registerDevice(req.user!.id, validatedData);
+      const device = await syncService.registerDevice(req.user!.id, {
+        deviceId: validatedData.deviceId,
+        deviceName: validatedData.deviceName,
+        deviceType: validatedData.deviceType as 'web' | 'ios' | 'android',
+        pushToken: validatedData.pushToken
+      });
       
       // Create sync event for device registration
       await syncService.createSyncEvent({
