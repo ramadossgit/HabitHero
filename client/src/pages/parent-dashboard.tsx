@@ -100,6 +100,42 @@ export default function ParentDashboard() {
     },
   });
 
+  const generateCredentialsMutation = useMutation({
+    mutationFn: async ({ childId, name }: { childId: string; name: string }) => {
+      const generatePin = (): string => {
+        return Math.floor(1000 + Math.random() * 9000).toString();
+      };
+
+      const generateUsername = (name: string): string => {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 100);
+      };
+
+      const response = await apiRequest("PATCH", `/api/children/${childId}`, {
+        username: generateUsername(name),
+        pin: generatePin()
+      });
+      return await response.json();
+    },
+    onSuccess: (updatedChild) => {
+      toast({
+        title: "Login credentials created!",
+        description: `${updatedChild.name} can now log in with username "${updatedChild.username}" and PIN "${updatedChild.pin}"`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to generate credentials",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateLoginCredentials = (childId: string, name: string) => {
+    generateCredentialsMutation.mutate({ childId, name });
+  };
+
   const deleteChildMutation = useMutation({
     mutationFn: async (childId: string) => {
       await apiRequest("DELETE", `/api/children/${childId}`);
@@ -584,6 +620,31 @@ export default function ParentDashboard() {
                       {isTopScorer && <span className="text-sunshine text-sm font-bold">🏆 Top Scorer</span>}
                     </div>
                     <p className="text-gray-600 text-sm">Level {childData.level} {childData.avatarType.charAt(0).toUpperCase() + childData.avatarType.slice(1)} Hero</p>
+                    
+                    {/* Login Credentials Display */}
+                    <div className="mt-3 p-3 bg-turquoise/10 border border-turquoise/20 rounded-lg">
+                      <div className="text-xs text-turquoise font-semibold mb-2">🔑 Login Info for {childData.name}</div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-xs text-gray-500">Username</div>
+                          <div className="font-mono font-bold text-turquoise">{childData.username || 'Not set'}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">PIN</div>
+                          <div className="font-mono font-bold text-turquoise text-lg tracking-wider">{childData.pin || 'Not set'}</div>
+                        </div>
+                      </div>
+                      {(!childData.username || !childData.pin) && (
+                        <Button
+                          size="sm"
+                          className="mt-2 bg-turquoise hover:bg-turquoise/80 text-white text-xs"
+                          onClick={() => generateLoginCredentials(childData.id, childData.name)}
+                        >
+                          Generate Login
+                        </Button>
+                      )}
+                    </div>
+
                     <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
                       <span className="px-2 py-1 bg-sunshine/20 text-sunshine-dark rounded-full text-xs font-bold">
                         {childData.totalXp.toLocaleString()} XP

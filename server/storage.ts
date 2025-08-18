@@ -187,7 +187,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChild(child: InsertChild): Promise<Child> {
-    const [newChild] = await db.insert(children).values(child).returning();
+    // Generate username and PIN if not provided
+    const generatePin = (): string => {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    };
+
+    const generateUsername = (name: string): string => {
+      return name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 100);
+    };
+
+    const childWithCredentials = {
+      ...child,
+      username: child.username || generateUsername(child.name),
+      pin: child.pin || generatePin()
+    };
+
+    const [newChild] = await db.insert(children).values(childWithCredentials).returning();
     
     // Create default habits for new child
     const defaultHabits = [
