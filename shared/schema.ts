@@ -82,6 +82,7 @@ export const habits = pgTable("habits", {
   reminderEnabled: boolean("reminder_enabled").notNull().default(false),
   voiceReminderEnabled: boolean("voice_reminder_enabled").notNull().default(false),
   customRingtone: varchar("custom_ringtone").default("default"),
+  reminderDuration: integer("reminder_duration").notNull().default(5), // Duration in minutes
   timeRangeStart: varchar("time_range_start").default("07:00"), // Start time for habit completion
   timeRangeEnd: varchar("time_range_end").default("20:00"), // End time for habit completion
   createdAt: timestamp("created_at").defaultNow(),

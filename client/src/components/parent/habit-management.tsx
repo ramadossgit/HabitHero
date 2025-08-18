@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { CheckSquare, Plus, Edit, Trash2, Zap, Bed, Heart, Book, Droplets, Clock, Volume2, Gift, Apple, Dumbbell, Utensils, CircleDot, Music, Palette, PenTool, Sparkles } from "lucide-react";
+import { CheckSquare, Plus, Edit, Trash2, Zap, Bed, Heart, Book, Droplets, Clock, Volume2, Gift, Apple, Dumbbell, Utensils, CircleDot, Music, Palette, PenTool, Sparkles, Settings } from "lucide-react";
+import { useLocation } from "wouter";
+import AlertSettings from "./alert-settings";
 import type { Habit } from "@shared/schema";
 
 interface HabitManagementProps {
@@ -19,6 +21,7 @@ interface HabitManagementProps {
 
 export default function HabitManagement({ childId }: HabitManagementProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitForm, setHabitForm] = useState({
@@ -32,6 +35,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
     reminderTime: "",
     voiceReminderEnabled: false,
     customRingtone: "default",
+    reminderDuration: 5,
     timeRangeStart: "07:00",
     timeRangeEnd: "20:00",
   });
@@ -117,6 +121,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       reminderTime: "",
       voiceReminderEnabled: false,
       customRingtone: "default",
+      reminderDuration: 5,
       timeRangeStart: "07:00",
       timeRangeEnd: "20:00",
     });
@@ -135,6 +140,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       reminderTime: habit.reminderTime || "",
       voiceReminderEnabled: habit.voiceReminderEnabled || false,
       customRingtone: habit.customRingtone || "default",
+      reminderDuration: (habit as any).reminderDuration || 5,
       timeRangeStart: habit.timeRangeStart || "07:00",
       timeRangeEnd: habit.timeRangeEnd || "20:00",
     });
@@ -367,66 +373,23 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 </p>
               </div>
 
-              {/* Reminder Settings */}
+              {/* Alert Settings - New Component */}
               <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg border-2 border-coral/30">
-                <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
-                  <Volume2 className="w-5 h-5 mr-2 text-coral" />
-                  🔔 Reminder Settings
-                </h4>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="reminderEnabled" className="flex-1">
-                      Enable Daily Reminders
-                    </Label>
-                    <Switch
-                      id="reminderEnabled"
-                      checked={habitForm.reminderEnabled}
-                      onCheckedChange={(checked) => setHabitForm({ ...habitForm, reminderEnabled: checked })}
-                    />
-                  </div>
-
-                  {habitForm.reminderEnabled && (
-                    <>
-                      <div>
-                        <Label htmlFor="reminderTime">Reminder Time</Label>
-                        <Input
-                          id="reminderTime"
-                          type="time"
-                          value={habitForm.reminderTime}
-                          onChange={(e) => setHabitForm({ ...habitForm, reminderTime: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="voiceReminderEnabled" className="flex-1">
-                          Voice Reminders
-                        </Label>
-                        <Switch
-                          id="voiceReminderEnabled"
-                          checked={habitForm.voiceReminderEnabled}
-                          onCheckedChange={(checked) => setHabitForm({ ...habitForm, voiceReminderEnabled: checked })}
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="customRingtone">Ringtone</Label>
-                        <Select value={habitForm.customRingtone} onValueChange={(value) => setHabitForm({ ...habitForm, customRingtone: value })}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="default"><span className="emoji">🔔</span> Default Chime</SelectItem>
-                            <SelectItem value="cheerful"><span className="emoji">😊</span> Cheerful Bell</SelectItem>
-                            <SelectItem value="gentle"><span className="emoji">🌸</span> Gentle Notification</SelectItem>
-                            <SelectItem value="playful"><span className="emoji">🎵</span> Playful Tune</SelectItem>
-                            <SelectItem value="hero"><span className="emoji">🦸</span> Hero Theme</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <AlertSettings
+                  initialSettings={{
+                    reminderEnabled: habitForm.reminderEnabled,
+                    reminderTime: habitForm.reminderTime,
+                    voiceReminderEnabled: habitForm.voiceReminderEnabled,
+                    customRingtone: habitForm.customRingtone,
+                    reminderDuration: habitForm.reminderDuration,
+                    timeRangeStart: habitForm.timeRangeStart,
+                    timeRangeEnd: habitForm.timeRangeEnd,
+                  }}
+                  onSettingsChange={(newSettings) => {
+                    setHabitForm({ ...habitForm, ...newSettings });
+                  }}
+                  isStandalone={false}
+                />
               </div>
               <Button 
                 type="submit" 
@@ -470,7 +433,17 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => setLocation(`/alert-settings/${habit.id}`)}
+                    title="Configure Alert Settings"
+                    data-testid={`button-alert-settings-${habit.id}`}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleEditHabit(habit)}
+                    data-testid={`button-edit-${habit.id}`}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -479,6 +452,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     size="sm"
                     onClick={() => deleteHabitMutation.mutate(habit.id)}
                     disabled={deleteHabitMutation.isPending}
+                    data-testid={`button-delete-${habit.id}`}
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>

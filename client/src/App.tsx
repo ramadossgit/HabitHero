@@ -11,6 +11,7 @@ import ParentAuthPage from "@/pages/parent-auth-page";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ProgressReportsPage from "@/pages/progress-reports";
+import AlertSettingsPage from "@/pages/alert-settings-page";
 import KidsLogin from "@/pages/kids-login";
 import NotFound from "@/pages/not-found";
 
@@ -50,6 +51,12 @@ function Router() {
       </Route>
       <Route path="/progress-reports">
         {isAuthenticated ? <ProgressReportsPage /> : <ParentAuthPage />}
+      </Route>
+      <Route path="/alert-settings">
+        {isAuthenticated ? <AlertSettingsPage /> : <ParentAuthPage />}
+      </Route>
+      <Route path="/alert-settings/:habitId">
+        {(params) => isAuthenticated ? <AlertSettingsPage habitId={params.habitId} /> : <ParentAuthPage />}
       </Route>
       
       {/* Default Route */}

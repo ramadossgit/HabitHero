@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
@@ -530,6 +530,16 @@ export default function ParentDashboard() {
                 <Shield className="w-4 h-4" />
                 Controls
               </Button>
+              <Link href="/alert-settings">
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
+                  data-testid="button-global-alert-settings"
+                >
+                  <Bell className="w-4 h-4" />
+                  Alerts
+                </Button>
+              </Link>
             </div>
             
             <div className="flex items-center gap-2">
