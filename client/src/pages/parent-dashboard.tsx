@@ -220,6 +220,17 @@ export default function ParentDashboard() {
       <div className="min-h-screen hero-gradient">
         <header className="text-white p-6">
           <div className="max-w-6xl mx-auto">
+            {/* Family Code Display */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
+                <div className="text-center">
+                  <div className="text-white/80 text-sm font-medium">Family Code</div>
+                  <div className="text-white font-bold text-2xl tracking-wider font-mono">{(user as User)?.familyCode}</div>
+                  <div className="text-white/70 text-xs">Share this code with family members</div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-fredoka text-4xl hero-title">Parent Dashboard</h1>
@@ -426,11 +437,22 @@ export default function ParentDashboard() {
     <div className="min-h-screen hero-gradient">
       <header className="text-white p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
+          {/* Family Code Display */}
+          <div className="flex justify-center mb-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
+              <div className="text-center">
+                <div className="text-white/80 text-sm font-medium">Family Code</div>
+                <div className="text-white font-bold text-2xl tracking-wider font-mono">{(user as User)?.familyCode}</div>
+                <div className="text-white/70 text-xs">Share this code with family members</div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             {/* Left side - Title and description */}
             <div className="flex-1">
               <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Parent Dashboard</h1>
-              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {children?.length === 1 ? `${child.name}'s` : 'Family'} Hero Journey</p>
+              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {children?.length === 1 ? `${children[0]?.name}'s` : 'Family'} Hero Journey</p>
             </div>
             
             {/* Right side - Profile and XP display */}
