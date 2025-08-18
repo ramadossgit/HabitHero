@@ -189,41 +189,13 @@ export function setupAuth(app: Express) {
     try {
       const user = req.user as any;
       
-      // Generate new family code for every login
-      const generateFamilyCode = (): string => {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
-      };
-
-      let familyCode;
-      let attempts = 0;
-      do {
-        familyCode = generateFamilyCode();
-        const existingCode = await storage.getUserByFamilyCode(familyCode);
-        if (!existingCode) break;
-        attempts++;
-      } while (attempts < 10);
-
-      if (attempts >= 10) {
-        return res.status(500).json({ message: "Failed to generate unique family code" });
-      }
-
-      // Update user's family code
-      await storage.updateUser(user.id, { familyCode });
-      
-      // Get updated user data
-      const updatedUser = await storage.getUser(user.id);
-      const { password: _, ...userWithoutPassword } = updatedUser as any;
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
       
       res.json(userWithoutPassword);
     } catch (error) {
-      console.error("Login update error:", error);
-      const { password: _, ...userWithoutPassword } = req.user as any;
-      res.json(userWithoutPassword);
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
     }
   });
 

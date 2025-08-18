@@ -46,6 +46,7 @@ export interface IStorage {
   createUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User>;
   updateUserProfile(id: string, updates: Partial<User>): Promise<User>;
+  upsertUser(user: Partial<UpsertUser>): Promise<User>;
   
   // Child operations
   getChildrenByParent(parentId: string): Promise<Child[]>;
@@ -155,6 +156,52 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async upsertUser(userData: Partial<UpsertUser>): Promise<User> {
+    // For Replit auth, we only update existing users or create minimal profiles
+    // We don't generate family codes for OAuth users unless they explicitly register
+    if (!userData.email) {
+      throw new Error("Email is required for user upsert");
+    }
+
+    const existingUser = await this.getUserByEmail(userData.email);
+    
+    if (existingUser) {
+      // Update existing user with new data (excluding family code to preserve it)
+      const { familyCode: _, ...updateData } = userData as any;
+      return this.updateUser(existingUser.id, updateData);
+    } else {
+      // Create new user via OAuth - generate family code
+      const generateFamilyCode = (): string => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let familyCode = generateFamilyCode();
+      let attempts = 0;
+      
+      // Ensure family code is unique
+      while (attempts < 10) {
+        const existingCode = await this.getUserByFamilyCode(familyCode);
+        if (!existingCode) break;
+        familyCode = generateFamilyCode();
+        attempts++;
+      }
+
+      if (attempts >= 10) {
+        throw new Error("Failed to generate unique family code");
+      }
+
+      return this.createUser({
+        ...userData,
+        familyCode,
+      } as UpsertUser);
+    }
   }
 
   // Child operations
