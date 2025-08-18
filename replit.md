@@ -32,10 +32,12 @@ Preferred communication style: Simple, everyday language.
 - **Schema-first Design**: Centralized schema definitions in shared directory for consistency
 
 ### Authentication and Authorization
-- **Replit Authentication**: OAuth integration using OpenID Connect with Replit's identity provider
-- **Passport.js Integration**: Session management and authentication strategy handling
+- **Dual Authentication System**: Support for both parent (email/password) and child (username/PIN) authentication
+- **Cross-Device Authentication**: Flexible middleware allowing children to access the app from any device
+- **Passport.js Integration**: Session management and authentication strategy handling for parents
 - **Parent-Child Relationships**: Hierarchical access control where parents manage children's data
 - **Session Storage**: PostgreSQL-backed session storage with configurable TTL
+- **Authentication Middleware**: Three-tier authentication (parent-only, child-only, parent-or-child) for different route protection levels
 
 ### External Dependencies
 - **Neon Database**: Serverless PostgreSQL hosting for data persistence
