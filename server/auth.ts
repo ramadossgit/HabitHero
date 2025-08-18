@@ -115,7 +115,7 @@ export function setupAuth(app: Express) {
   // Parent registration endpoint
   app.post("/api/auth/register", async (req, res, next) => {
     try {
-      const { email, password, firstName, lastName, phoneNumber } = req.body;
+      const { email, password, firstName, lastName, phoneNumber, joinFamilyCode } = req.body;
 
       if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({ message: "All required fields must be provided" });
@@ -127,27 +127,37 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
-      // Generate unique family code
-      const generateFamilyCode = (): string => {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
-      };
-
       let familyCode;
-      let attempts = 0;
-      do {
-        familyCode = generateFamilyCode();
-        const existingCode = await storage.getUserByFamilyCode(familyCode);
-        if (!existingCode) break;
-        attempts++;
-      } while (attempts < 10);
 
-      if (attempts >= 10) {
-        return res.status(500).json({ message: "Failed to generate unique family code" });
+      // If joining existing family, validate the family code
+      if (joinFamilyCode) {
+        const existingFamily = await storage.getUserByFamilyCode(joinFamilyCode);
+        if (!existingFamily) {
+          return res.status(400).json({ message: "Invalid family code. Please check the code and try again." });
+        }
+        familyCode = joinFamilyCode;
+      } else {
+        // Generate unique family code for new family
+        const generateFamilyCode = (): string => {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return code;
+        };
+
+        let attempts = 0;
+        do {
+          familyCode = generateFamilyCode();
+          const existingCode = await storage.getUserByFamilyCode(familyCode);
+          if (!existingCode) break;
+          attempts++;
+        } while (attempts < 10);
+
+        if (attempts >= 10) {
+          return res.status(500).json({ message: "Failed to generate unique family code" });
+        }
       }
 
       // Create new user with hashed password
@@ -175,9 +185,46 @@ export function setupAuth(app: Express) {
   });
 
   // Parent login endpoint
-  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
-    const { password: _, ...userWithoutPassword } = req.user as any;
-    res.json(userWithoutPassword);
+  app.post("/api/auth/login", passport.authenticate("local"), async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      // Generate new family code for every login
+      const generateFamilyCode = (): string => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let familyCode;
+      let attempts = 0;
+      do {
+        familyCode = generateFamilyCode();
+        const existingCode = await storage.getUserByFamilyCode(familyCode);
+        if (!existingCode) break;
+        attempts++;
+      } while (attempts < 10);
+
+      if (attempts >= 10) {
+        return res.status(500).json({ message: "Failed to generate unique family code" });
+      }
+
+      // Update user's family code
+      await storage.updateUser(user.id, { familyCode });
+      
+      // Get updated user data
+      const updatedUser = await storage.getUser(user.id);
+      const { password: _, ...userWithoutPassword } = updatedUser as any;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Login update error:", error);
+      const { password: _, ...userWithoutPassword } = req.user as any;
+      res.json(userWithoutPassword);
+    }
   });
 
   // Logout endpoint
