@@ -224,7 +224,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-fredoka text-2xl text-gray-800 flex items-center">
           <CheckSquare className="text-sky mr-3" />
-          🎯 Manage Habits
+          <span className="emoji mr-2">🎯</span> Manage Habits
         </h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -273,20 +273,20 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tooth">🦷 Tooth</SelectItem>
-                      <SelectItem value="bed">🛏️ Bed</SelectItem>
-                      <SelectItem value="heart">❤️ Heart</SelectItem>
-                      <SelectItem value="book">📚 Book</SelectItem>
-                      <SelectItem value="tint">💧 Water Drop</SelectItem>
-                      <SelectItem value="apple">🍎 Healthy Food</SelectItem>
-                      <SelectItem value="dumbbell">🏋️ Exercise</SelectItem>
-                      <SelectItem value="utensils">🍽️ Eating</SelectItem>
-                      <SelectItem value="shower">🚿 Shower</SelectItem>
-                      <SelectItem value="soccer">⚽ Sports</SelectItem>
-                      <SelectItem value="music">🎵 Music Practice</SelectItem>
-                      <SelectItem value="art">🎨 Art/Drawing</SelectItem>
-                      <SelectItem value="homework">📝 Homework</SelectItem>
-                      <SelectItem value="cleaning">✨ Cleaning</SelectItem>
+                      <SelectItem value="tooth"><span className="emoji">🦷</span> Tooth</SelectItem>
+                      <SelectItem value="bed"><span className="emoji">🛏️</span> Bed</SelectItem>
+                      <SelectItem value="heart"><span className="emoji">❤️</span> Heart</SelectItem>
+                      <SelectItem value="book"><span className="emoji">📚</span> Book</SelectItem>
+                      <SelectItem value="tint"><span className="emoji">💧</span> Water Drop</SelectItem>
+                      <SelectItem value="apple"><span className="emoji">🍎</span> Healthy Food</SelectItem>
+                      <SelectItem value="dumbbell"><span className="emoji">🏋️</span> Exercise</SelectItem>
+                      <SelectItem value="utensils"><span className="emoji">🍽️</span> Eating</SelectItem>
+                      <SelectItem value="shower"><span className="emoji">🚿</span> Shower</SelectItem>
+                      <SelectItem value="soccer"><span className="emoji">⚽</span> Sports</SelectItem>
+                      <SelectItem value="music"><span className="emoji">🎵</span> Music Practice</SelectItem>
+                      <SelectItem value="art"><span className="emoji">🎨</span> Art/Drawing</SelectItem>
+                      <SelectItem value="homework"><span className="emoji">📝</span> Homework</SelectItem>
+                      <SelectItem value="cleaning"><span className="emoji">✨</span> Cleaning</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -297,11 +297,11 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="coral">🪸 Coral</SelectItem>
-                      <SelectItem value="turquoise">🌊 Turquoise</SelectItem>
-                      <SelectItem value="sky">☁️ Sky</SelectItem>
-                      <SelectItem value="mint">🌿 Mint</SelectItem>
-                      <SelectItem value="sunshine">☀️ Sunshine</SelectItem>
+                      <SelectItem value="coral"><span className="emoji">🪸</span> Coral</SelectItem>
+                      <SelectItem value="turquoise"><span className="emoji">🌊</span> Turquoise</SelectItem>
+                      <SelectItem value="sky"><span className="emoji">☁️</span> Sky</SelectItem>
+                      <SelectItem value="mint"><span className="emoji">🌿</span> Mint</SelectItem>
+                      <SelectItem value="sunshine"><span className="emoji">☀️</span> Sunshine</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -309,7 +309,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="xpReward" className="flex items-center">
-                    ⚡ XP Reward
+                    <span className="emoji mr-1">⚡</span> XP Reward
                   </Label>
                   <Input
                     id="xpReward"
@@ -323,7 +323,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 <div>
                   <Label htmlFor="rewardPoints" className="flex items-center">
                     <Gift className="w-4 h-4 mr-2 text-coral" />
-                    🎁 Reward Points
+                    <span className="emoji mr-1">🎁</span> Reward Points
                   </Label>
                   <Input
                     id="rewardPoints"
@@ -416,11 +416,11 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="default">🔔 Default Chime</SelectItem>
-                            <SelectItem value="cheerful">😊 Cheerful Bell</SelectItem>
-                            <SelectItem value="gentle">🌸 Gentle Notification</SelectItem>
-                            <SelectItem value="playful">🎵 Playful Tune</SelectItem>
-                            <SelectItem value="hero">🦸 Hero Theme</SelectItem>
+                            <SelectItem value="default"><span className="emoji">🔔</span> Default Chime</SelectItem>
+                            <SelectItem value="cheerful"><span className="emoji">😊</span> Cheerful Bell</SelectItem>
+                            <SelectItem value="gentle"><span className="emoji">🌸</span> Gentle Notification</SelectItem>
+                            <SelectItem value="playful"><span className="emoji">🎵</span> Playful Tune</SelectItem>
+                            <SelectItem value="hero"><span className="emoji">🦸</span> Hero Theme</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -450,22 +450,22 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="flex items-center mr-3">
-                    <span className="text-2xl mr-2">{getHabitEmoji(habit.icon)}</span>
+                    <span className="emoji text-3xl mr-2">{getHabitEmoji(habit.icon)}</span>
                     <IconComponent className={`${colorClass} w-5 h-5`} />
                   </div>
                   <div>
                     <h4 className="font-bold flex items-center">
                       {habit.name}
-                      {habit.isActive && <span className="ml-2 text-green-500">✅</span>}
+                      {habit.isActive && <span className="emoji ml-2 text-green-500">✅</span>}
                     </h4>
                     <p className="text-sm text-gray-600 flex items-center">
-                      📅 Daily • ⚡ {habit.xpReward} XP • 🎁 {habit.rewardPoints} pts • {habit.description}
+                      <span className="emoji mr-1">📅</span> Daily • <span className="emoji mr-1">⚡</span> {habit.xpReward} XP • <span className="emoji mr-1">🎁</span> {habit.rewardPoints} pts • {habit.description}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className={`text-sm font-bold ${colorClass} flex items-center`}>
-                    {habit.isActive ? "🟢 Active" : "🔴 Inactive"}
+                    <span className="emoji mr-1">{habit.isActive ? "🟢" : "🔴"}</span> {habit.isActive ? "Active" : "Inactive"}
                   </span>
                   <Button
                     variant="ghost"

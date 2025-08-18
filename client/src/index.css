@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One:wght@400&family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -131,6 +132,7 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     background-color: var(--light-bg);
+    font-family: 'Nunito', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
   }
 }
 
@@ -138,6 +140,12 @@
 @layer utilities {
   .font-fredoka {
     font-family: var(--font-fredoka);
+  }
+  
+  .emoji {
+    font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
+    font-variation-settings: 'OPSZ' 32;
+    font-size: 1.2em;
   }
   
   /* Color utilities with new vibrant colors */
