@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Clock, Volume2, Bell, Timer, Play, Pause } from "lucide-react";
+import { Clock, Volume2, Bell, Timer, Play, Pause, Mic, MicOff, Upload, Trash2, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AlertSettings {
@@ -17,6 +17,8 @@ interface AlertSettings {
   reminderDuration: number; // in minutes
   timeRangeStart: string;
   timeRangeEnd: string;
+  voiceRecording?: string; // Base64 encoded audio data
+  voiceRecordingName?: string; // Name for the recording
 }
 
 interface AlertSettingsProps {
@@ -57,6 +59,11 @@ export default function AlertSettings({
   const { toast } = useToast();
   const [settings, setSettings] = useState<AlertSettings>(initialSettings);
   const [isTestingRingtone, setIsTestingRingtone] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const updateSettings = (newSettings: Partial<AlertSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
@@ -128,6 +135,86 @@ export default function AlertSettings({
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          updateSettings({ 
+            voiceRecording: base64,
+            voiceRecordingName: `Recording ${new Date().toLocaleTimeString()}`
+          });
+          toast({
+            title: "Recording Saved!",
+            description: "Your voice reminder has been recorded successfully.",
+          });
+        };
+        reader.readAsDataURL(audioBlob);
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      toast({
+        title: "Recording Started",
+        description: "Speak your personalized reminder message now.",
+      });
+    } catch (error) {
+      console.error('Recording failed:', error);
+      toast({
+        title: "Recording Failed",
+        description: "Unable to access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+  
+  const playRecording = () => {
+    if (settings.voiceRecording && !isPlayingRecording) {
+      if (audioRef.current) {
+        audioRef.current.src = settings.voiceRecording;
+        audioRef.current.play();
+        setIsPlayingRecording(true);
+        
+        audioRef.current.onended = () => {
+          setIsPlayingRecording(false);
+        };
+      }
+    }
+  };
+  
+  const deleteRecording = () => {
+    updateSettings({ 
+      voiceRecording: undefined,
+      voiceRecordingName: undefined
+    });
+    toast({
+      title: "Recording Deleted",
+      description: "Voice reminder has been removed.",
+    });
+  };
+
   const handleSave = () => {
     if (onSave) {
       onSave();
@@ -154,7 +241,14 @@ export default function AlertSettings({
             isTestingRingtone={isTestingRingtone}
             ringtoneOptions={ringtoneOptions}
             timeSlots={timeSlots}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            playRecording={playRecording}
+            deleteRecording={deleteRecording}
+            isRecording={isRecording}
+            isPlayingRecording={isPlayingRecording}
           />
+          <audio ref={audioRef} style={{ display: 'none' }} />
         </Card>
         
         <div className="flex gap-3 justify-end">
@@ -172,14 +266,23 @@ export default function AlertSettings({
   }
 
   return (
-    <AlertSettingsContent
-      settings={settings}
-      updateSettings={updateSettings}
-      testRingtone={testRingtone}
-      isTestingRingtone={isTestingRingtone}
-      ringtoneOptions={ringtoneOptions}
-      timeSlots={timeSlots}
-    />
+    <>
+      <AlertSettingsContent
+        settings={settings}
+        updateSettings={updateSettings}
+        testRingtone={testRingtone}
+        isTestingRingtone={isTestingRingtone}
+        ringtoneOptions={ringtoneOptions}
+        timeSlots={timeSlots}
+        startRecording={startRecording}
+        stopRecording={stopRecording}
+        playRecording={playRecording}
+        deleteRecording={deleteRecording}
+        isRecording={isRecording}
+        isPlayingRecording={isPlayingRecording}
+      />
+      <audio ref={audioRef} style={{ display: 'none' }} />
+    </>
   );
 }
 
@@ -189,7 +292,13 @@ function AlertSettingsContent({
   testRingtone,
   isTestingRingtone,
   ringtoneOptions,
-  timeSlots
+  timeSlots,
+  startRecording,
+  stopRecording,
+  playRecording,
+  deleteRecording,
+  isRecording,
+  isPlayingRecording
 }: {
   settings: AlertSettings;
   updateSettings: (newSettings: Partial<AlertSettings>) => void;
@@ -197,6 +306,12 @@ function AlertSettingsContent({
   isTestingRingtone: boolean;
   ringtoneOptions: Array<{ value: string; label: string; emoji: string }>;
   timeSlots: string[];
+  startRecording: () => void;
+  stopRecording: () => void;
+  playRecording: () => void;
+  deleteRecording: () => void;
+  isRecording: boolean;
+  isPlayingRecording: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -293,19 +408,129 @@ function AlertSettingsContent({
           </div>
 
           {/* Voice Reminders */}
-          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-            <div>
-              <div className="font-medium flex items-center">
-                <Volume2 className="w-4 h-4 mr-2 text-yellow-600" />
-                Voice Reminders
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div>
+                <div className="font-medium flex items-center">
+                  <Volume2 className="w-4 h-4 mr-2 text-yellow-600" />
+                  Voice Reminders
+                </div>
+                <div className="text-sm text-gray-600">Spoken reminder messages</div>
               </div>
-              <div className="text-sm text-gray-600">Spoken reminder messages</div>
+              <Switch
+                checked={settings.voiceReminderEnabled}
+                onCheckedChange={(checked) => updateSettings({ voiceReminderEnabled: checked })}
+                data-testid="toggle-voice-reminders"
+              />
             </div>
-            <Switch
-              checked={settings.voiceReminderEnabled}
-              onCheckedChange={(checked) => updateSettings({ voiceReminderEnabled: checked })}
-              data-testid="toggle-voice-reminders"
-            />
+
+            {/* Voice Recording Section */}
+            {settings.voiceReminderEnabled && (
+              <div className="p-4 bg-gradient-to-r from-purple/10 to-pink/10 rounded-lg border-2 border-purple/30">
+                <h4 className="font-fredoka text-base text-gray-800 mb-3 flex items-center">
+                  <Mic className="w-4 h-4 mr-2 text-purple" />
+                  🎤 Personal Voice Message
+                </h4>
+                
+                {!settings.voiceRecording ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Record your own voice reminder for a personal touch!
+                    </p>
+                    <Button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={`${isRecording 
+                        ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                        : 'bg-purple hover:bg-purple/80'
+                      } text-white`}
+                      data-testid={isRecording ? "button-stop-recording" : "button-start-recording"}
+                    >
+                      {isRecording ? (
+                        <>
+                          <Square className="w-4 h-4 mr-2" />
+                          Stop Recording
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="w-4 h-4 mr-2" />
+                          Start Recording
+                        </>
+                      )}
+                    </Button>
+                    {isRecording && (
+                      <p className="text-sm text-red-600 mt-2 animate-pulse">
+                        🔴 Recording... Speak your reminder message now
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-purple/20 rounded-full flex items-center justify-center mr-3">
+                          <Mic className="w-4 h-4 text-purple" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">
+                            {settings.voiceRecordingName || "Voice Recording"}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Personal reminder message
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={playRecording}
+                          disabled={isPlayingRecording}
+                          data-testid="button-play-recording"
+                        >
+                          {isPlayingRecording ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={deleteRecording}
+                          className="text-red-600 hover:text-red-700"
+                          data-testid="button-delete-recording"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className="w-full"
+                      data-testid="button-re-record"
+                    >
+                      {isRecording ? (
+                        <>
+                          <Square className="w-4 h-4 mr-2" />
+                          Stop Re-recording
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="w-4 h-4 mr-2" />
+                          Record New Message
+                        </>
+                      )}
+                    </Button>
+                    {isRecording && (
+                      <p className="text-sm text-red-600 text-center animate-pulse">
+                        🔴 Recording... Speak your new reminder message
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Ringtone Selection */}

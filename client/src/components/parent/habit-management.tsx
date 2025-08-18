@@ -36,6 +36,8 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
     voiceReminderEnabled: false,
     customRingtone: "default",
     reminderDuration: 5,
+    voiceRecording: undefined as string | undefined,
+    voiceRecordingName: undefined as string | undefined,
     timeRangeStart: "07:00",
     timeRangeEnd: "20:00",
   });
@@ -122,6 +124,8 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       voiceReminderEnabled: false,
       customRingtone: "default",
       reminderDuration: 5,
+      voiceRecording: undefined,
+      voiceRecordingName: undefined,
       timeRangeStart: "07:00",
       timeRangeEnd: "20:00",
     });
@@ -141,6 +145,8 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       voiceReminderEnabled: habit.voiceReminderEnabled || false,
       customRingtone: habit.customRingtone || "default",
       reminderDuration: (habit as any).reminderDuration || 5,
+      voiceRecording: (habit as any).voiceRecording || undefined,
+      voiceRecordingName: (habit as any).voiceRecordingName || undefined,
       timeRangeStart: habit.timeRangeStart || "07:00",
       timeRangeEnd: habit.timeRangeEnd || "20:00",
     });
@@ -382,11 +388,18 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     voiceReminderEnabled: habitForm.voiceReminderEnabled,
                     customRingtone: habitForm.customRingtone,
                     reminderDuration: habitForm.reminderDuration,
+                    voiceRecording: habitForm.voiceRecording,
+                    voiceRecordingName: habitForm.voiceRecordingName,
                     timeRangeStart: habitForm.timeRangeStart,
                     timeRangeEnd: habitForm.timeRangeEnd,
                   }}
                   onSettingsChange={(newSettings) => {
-                    setHabitForm({ ...habitForm, ...newSettings });
+                    setHabitForm({ 
+                      ...habitForm, 
+                      ...newSettings,
+                      voiceRecording: newSettings.voiceRecording || habitForm.voiceRecording,
+                      voiceRecordingName: newSettings.voiceRecordingName || habitForm.voiceRecordingName
+                    });
                   }}
                   isStandalone={false}
                 />
