@@ -264,4 +264,27 @@ export function isAuthenticated(req: any, res: any, next: any) {
   res.status(401).json({ message: "Not authenticated" });
 }
 
+// Child authentication middleware
+export function isChildAuthenticated(req: any, res: any, next: any) {
+  if (req.session.childId && req.session.isChildUser) {
+    return next();
+  }
+  res.status(401).json({ message: "Not authenticated as child" });
+}
+
+// Middleware that allows either parent or child authentication
+export function isParentOrChildAuthenticated(req: any, res: any, next: any) {
+  // Check if parent is authenticated
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Check if child is authenticated
+  if (req.session.childId && req.session.isChildUser) {
+    return next();
+  }
+  
+  res.status(401).json({ message: "Not authenticated" });
+}
+
 export { hashPassword, comparePasswords };

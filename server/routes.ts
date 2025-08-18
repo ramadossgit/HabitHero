@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, isChildAuthenticated, isParentOrChildAuthenticated } from "./auth";
 import { syncService } from "./sync-service";
 import { 
   insertChildSchema, 
@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Habits routes
-  app.get('/api/children/:childId/habits', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/habits', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const habits = await storage.getHabitsByChild(req.params.childId);
       res.json(habits);
@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Habit completions routes
-  app.get('/api/children/:childId/completions', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/completions', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const { startDate, endDate } = req.query;
       const completions = await storage.getHabitCompletions(
@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/children/:childId/completions/today', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/completions/today', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const completions = await storage.getTodaysCompletions(req.params.childId);
       res.json(completions);
@@ -270,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/habits/:habitId/complete', isAuthenticated, async (req, res) => {
+  app.post('/api/habits/:habitId/complete', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const habit = await storage.getHabit(req.params.habitId);
       if (!habit) {
@@ -304,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/habits/:habitId/streak/:childId', isAuthenticated, async (req, res) => {
+  app.get('/api/habits/:habitId/streak/:childId', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const streak = await storage.getHabitStreak(req.params.habitId, req.params.childId);
       res.json({ streak });
@@ -315,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Daily habit reload - remove pending/rejected completions to allow re-completion
-  app.post('/api/children/:childId/habits/reload', isAuthenticated, async (req, res) => {
+  app.post('/api/children/:childId/habits/reload', isParentOrChildAuthenticated, async (req, res) => {
     try {
       await storage.reloadDailyHabits(req.params.childId);
       res.json({ message: "Daily habits reloaded successfully" });
@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly progress summary
-  app.get('/api/children/:childId/progress/weekly', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/progress/weekly', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const weeklyProgress = await storage.getWeeklyProgress(req.params.childId);
       res.json(weeklyProgress);
@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rewards routes
-  app.get('/api/children/:childId/rewards', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/rewards', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const rewards = await storage.getRewardsByChild(req.params.childId);
       res.json(rewards);
@@ -383,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reward claims routes
-  app.get('/api/children/:childId/reward-claims', isAuthenticated, async (req, res) => {
+  app.get('/api/children/:childId/reward-claims', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const claims = await storage.getRewardClaims(req.params.childId);
       res.json(claims);
@@ -393,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/rewards/:rewardId/claim', isAuthenticated, async (req, res) => {
+  app.post('/api/rewards/:rewardId/claim', isParentOrChildAuthenticated, async (req, res) => {
     try {
       const reward = await storage.getRewardsByChild(req.body.childId);
       const targetReward = reward.find(r => r.id === req.params.rewardId);
