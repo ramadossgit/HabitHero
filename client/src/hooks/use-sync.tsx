@@ -2,6 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { useAuth } from "./useAuth";
+import { useChildAuth } from "./useChildAuth";
 import { useToast } from "./use-toast";
 
 type SyncContextType = {
@@ -55,8 +56,12 @@ const getDeviceInfo = () => {
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
+  const { child, isChildAuthenticated: childIsAuthenticated } = useChildAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Determine if user is authenticated as either parent or child
+  const isAnyAuthenticated = isAuthenticated || childIsAuthenticated;
   
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -81,11 +86,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // Get user's devices
   const { data: devicesData } = useQuery({
     queryKey: ["/api/sync/devices"],
-    enabled: isAuthenticated && !!user,
+    enabled: isAuthenticated && !!user, // Only parents can manage devices
     staleTime: 60000, // 1 minute
   });
 
-  const allDevices = devicesData?.devices || [];
+  const allDevices = (devicesData as any)?.devices || [];
 
   // Register device mutation
   const registerDeviceMutation = useMutation({
@@ -119,7 +124,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setSyncStatus('syncing');
       
       const lastSync = lastSyncTime ? lastSyncTime.toISOString() : undefined;
-      const response = await apiRequest("GET", `/api/sync/family-data${lastSync ? `?lastSyncTime=${lastSync}` : ''}`);
+      
+      // Use different endpoint based on user type
+      const endpoint = childIsAuthenticated 
+        ? `/api/sync/child-family-data${lastSync ? `?lastSyncTime=${lastSync}` : ''}`
+        : `/api/sync/family-data${lastSync ? `?lastSyncTime=${lastSync}` : ''}`;
+      
+      const response = await apiRequest("GET", endpoint);
       
       if (!response.ok) {
         throw new Error('Sync failed');
@@ -140,6 +151,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
       queryClient.invalidateQueries({ queryKey: ["/api/habits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+      
+      // Invalidate child-specific queries if authenticated as child
+      if (childIsAuthenticated && child) {
+        const childId = (child as any).id;
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/completions`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/completions/today`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/pending-habits`] });
+      }
       
       // Mark sync as completed on server
       if (currentDevice && syncData.syncEvents?.length > 0) {
@@ -166,7 +186,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Auto-register device when user logs in
+  // Auto-register device when user logs in (only for parents)
   useEffect(() => {
     if (isAuthenticated && user && !currentDevice) {
       const deviceInfo = getDeviceInfo();
@@ -176,7 +196,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   // Auto-sync when coming back online
   useEffect(() => {
-    if (isOnline && isAuthenticated && currentDevice) {
+    if (isOnline && isAnyAuthenticated && (currentDevice || childIsAuthenticated)) {
       // Delay sync to avoid conflicts
       const timer = setTimeout(() => {
         syncMutation.mutate();
@@ -184,11 +204,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       
       return () => clearTimeout(timer);
     }
-  }, [isOnline, isAuthenticated, currentDevice]);
+  }, [isOnline, isAnyAuthenticated, currentDevice, childIsAuthenticated]);
 
   // Periodic sync every 2 minutes when online and active
   useEffect(() => {
-    if (!isOnline || !isAuthenticated || !currentDevice) return;
+    if (!isOnline || !isAnyAuthenticated || (!currentDevice && !childIsAuthenticated)) return;
     
     const interval = setInterval(() => {
       if (!syncInProgress) {
@@ -197,7 +217,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }, 120000); // 2 minutes
     
     return () => clearInterval(interval);
-  }, [isOnline, isAuthenticated, currentDevice, syncInProgress]);
+  }, [isOnline, isAnyAuthenticated, currentDevice, childIsAuthenticated, syncInProgress]);
 
   // Load last sync time from storage
   useEffect(() => {
@@ -208,7 +228,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const triggerSync = () => {
-    if (isAuthenticated && currentDevice && !syncInProgress) {
+    if (isAnyAuthenticated && (currentDevice || childIsAuthenticated) && !syncInProgress) {
       syncMutation.mutate();
     }
   };

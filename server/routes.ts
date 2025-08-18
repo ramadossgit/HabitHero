@@ -966,6 +966,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync family data for children - get family updates from child perspective
+  app.get('/api/sync/child-family-data', isParentOrChildAuthenticated, async (req, res) => {
+    try {
+      const lastSyncTime = req.query.lastSyncTime 
+        ? new Date(req.query.lastSyncTime as string) 
+        : undefined;
+      
+      let parentId: string;
+      
+      // Get parent ID based on user type
+      if (req.user) {
+        // Parent user
+        parentId = req.user.id;
+      } else if (req.child) {
+        // Child user - get their parent ID
+        parentId = req.child.parentId;
+      } else {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const familyData = await syncService.syncFamilyData(parentId);
+      const pendingEvents = await syncService.getPendingSyncEvents(parentId, lastSyncTime);
+      
+      res.json({
+        ...familyData,
+        syncEvents: pendingEvents,
+        lastSyncTime: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('Sync child family data error:', error);
+      res.status(500).json({ message: "Failed to sync child family data" });
+    }
+  });
+
   // Mark sync completed
   app.post('/api/sync/mark-completed', isAuthenticated, async (req, res) => {
     try {
