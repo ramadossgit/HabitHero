@@ -258,6 +258,15 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6 pb-8">
+              
+              {/* Emergency test button to see if this part renders */}
+              <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg border-2 border-purple-500">
+                <p className="text-purple-800 dark:text-purple-200 font-bold">🔍 POSITION TEST: This should appear at the top of the form!</p>
+                <button type="button" className="mt-2 px-3 py-1 bg-purple-500 text-white rounded" onClick={() => alert('Test button works!')}>
+                  Test Button - Click Me!
+                </button>
+              </div>
+              
               <div>
                 <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name</Label>
                 <Input
@@ -277,6 +286,50 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   onChange={(e) => setHabitForm({ ...habitForm, description: e.target.value })}
                   placeholder="e.g., Keep your smile sparkling bright!"
                   className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              
+              {/* MOVED: Alert Settings - Early Position Test */}
+              <div className="p-6 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-coral/30 dark:border-coral/40">
+                <div className="mb-4">
+                  <h3 className="font-fredoka text-xl text-gray-800 dark:text-gray-100 flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-coral" />
+                    🔧 Reminder & Voice Settings (MOVED TO TOP)
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure alerts, voice recordings, and reminder preferences</p>
+                </div>
+                
+                {/* Debug test to see if this section renders */}
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500" style={{position: 'relative', zIndex: 9999}}>
+                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">🚨 DEBUG: This section should be visible! If you see this, the AlertSettings component below is the issue.</p>
+                </div>
+                
+                <div className="bg-red-100 dark:bg-red-900 p-2 rounded border-2 border-red-500">
+                  <p className="text-red-800 dark:text-red-200 text-sm">AlertSettings component should render below this line:</p>
+                </div>
+                
+                <AlertSettings
+                  initialSettings={{
+                    reminderEnabled: habitForm.reminderEnabled,
+                    reminderTime: habitForm.reminderTime,
+                    voiceReminderEnabled: habitForm.voiceReminderEnabled,
+                    customRingtone: habitForm.customRingtone,
+                    reminderDuration: habitForm.reminderDuration,
+                    voiceRecording: habitForm.voiceRecording,
+                    voiceRecordingName: habitForm.voiceRecordingName,
+                    timeRangeStart: habitForm.timeRangeStart,
+                    timeRangeEnd: habitForm.timeRangeEnd,
+                  }}
+                  onSettingsChange={(newSettings) => {
+                    setHabitForm({ 
+                      ...habitForm, 
+                      ...newSettings,
+                      voiceRecording: newSettings.voiceRecording || habitForm.voiceRecording,
+                      voiceRecordingName: newSettings.voiceRecordingName || habitForm.voiceRecordingName
+                    });
+                  }}
+                  isStandalone={false}
+                  title="Reminder & Voice Settings"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -352,49 +405,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 </div>
               </div>
 
-              {/* Alert Settings - Parent Voice Recording & Reminders */}
-              <div className="p-6 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-coral/30 dark:border-coral/40">
-                <div className="mb-4">
-                  <h3 className="font-fredoka text-xl text-gray-800 dark:text-gray-100 flex items-center">
-                    <Settings className="w-5 h-5 mr-2 text-coral" />
-                    🔧 Reminder & Voice Settings
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure alerts, voice recordings, and reminder preferences</p>
-                </div>
-                
-                {/* Debug test to see if this section renders */}
-                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500" style={{position: 'relative', zIndex: 9999}}>
-                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">🚨 DEBUG: This section should be visible! If you see this, the AlertSettings component below is the issue.</p>
-                </div>
-                
-                <div className="bg-red-100 dark:bg-red-900 p-2 rounded border-2 border-red-500">
-                  <p className="text-red-800 dark:text-red-200 text-sm">AlertSettings component should render below this line:</p>
-                </div>
-                
-                <AlertSettings
-                  initialSettings={{
-                    reminderEnabled: habitForm.reminderEnabled,
-                    reminderTime: habitForm.reminderTime,
-                    voiceReminderEnabled: habitForm.voiceReminderEnabled,
-                    customRingtone: habitForm.customRingtone,
-                    reminderDuration: habitForm.reminderDuration,
-                    voiceRecording: habitForm.voiceRecording,
-                    voiceRecordingName: habitForm.voiceRecordingName,
-                    timeRangeStart: habitForm.timeRangeStart,
-                    timeRangeEnd: habitForm.timeRangeEnd,
-                  }}
-                  onSettingsChange={(newSettings) => {
-                    setHabitForm({ 
-                      ...habitForm, 
-                      ...newSettings,
-                      voiceRecording: newSettings.voiceRecording || habitForm.voiceRecording,
-                      voiceRecordingName: newSettings.voiceRecordingName || habitForm.voiceRecordingName
-                    });
-                  }}
-                  isStandalone={false}
-                  title="Reminder & Voice Settings"
-                />
-              </div>
+              {/* Original Alert Settings section has been moved above */}
               <Button 
                 type="submit" 
                 className="w-full bg-sky text-white hover:bg-sky/80"
