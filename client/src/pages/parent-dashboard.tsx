@@ -966,6 +966,50 @@ function HabitAssignmentModal({
     },
   });
 
+  // Assign habit to child
+  const assignHabitMutation = useMutation({
+    mutationFn: async ({ childId, habitData }: { childId: string; habitData: any }) => {
+      await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Assigned!",
+        description: "Habit has been assigned to child successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to assign habit to child.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove habit assignment from child
+  const removeHabitMutation = useMutation({
+    mutationFn: async ({ habitId }: { habitId: string }) => {
+      await apiRequest("DELETE", `/api/habits/${habitId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Removed!",
+        description: "Habit has been removed from child.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove habit from child.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Group habits by unique name (master habits)
   const groupedHabits = React.useMemo(() => {
     if (!allHabits) return {};
@@ -1103,14 +1147,48 @@ function HabitAssignmentModal({
                                           }}
                                           disabled={toggleHabitStatusMutation.isPending}
                                           className="h-6 w-12 p-1 text-xs"
+                                          data-testid={`button-toggle-habit-${child.id}`}
                                         >
                                           {isActive ? '⏸️' : '▶️'}
                                         </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            removeHabitMutation.mutate({
+                                              habitId: childHabit!.id
+                                            });
+                                          }}
+                                          disabled={removeHabitMutation.isPending}
+                                          className="h-6 w-6 p-1 text-xs text-red-600 hover:bg-red-100"
+                                          data-testid={`button-remove-habit-${child.id}`}
+                                        >
+                                          ❌
+                                        </Button>
                                       </div>
                                     ) : (
-                                      <span className="text-xs text-gray-500 px-2 py-1 bg-gray-200 rounded">
-                                        Not Assigned
-                                      </span>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => {
+                                          assignHabitMutation.mutate({
+                                            childId: child.id,
+                                            habitData: {
+                                              name: masterHabit.name,
+                                              description: masterHabit.description,
+                                              icon: masterHabit.icon,
+                                              color: masterHabit.color,
+                                              frequency: masterHabit.frequency,
+                                              xpReward: masterHabit.xpReward,
+                                              isActive: true
+                                            }
+                                          });
+                                        }}
+                                        disabled={assignHabitMutation.isPending}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 h-7"
+                                        data-testid={`button-assign-habit-${child.id}`}
+                                      >
+                                        {assignHabitMutation.isPending ? 'Adding...' : 'Assign'}
+                                      </Button>
                                     )}
                                   </div>
                                 </div>
