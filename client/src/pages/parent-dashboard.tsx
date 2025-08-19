@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
@@ -160,7 +160,20 @@ export default function ParentDashboard() {
   const [newAvatarImage, setNewAvatarImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please choose an image under 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setNewAvatarImage(file);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -364,6 +377,57 @@ export default function ParentDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Custom Avatar Upload (Optional) */}
+                <div className="space-y-3">
+                  <label className="font-nunito font-bold text-gray-800 text-lg">📸 Custom Avatar (Optional)</label>
+                  <div className="border-4 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                    {imagePreview ? (
+                      <div className="space-y-3">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-coral"
+                        />
+                        <Button 
+                          onClick={() => {
+                            setImagePreview(null);
+                            const input = document.getElementById('avatar-upload') as HTMLInputElement;
+                            if (input) input.value = '';
+                          }}
+                          variant="outline"
+                          className="text-sm"
+                        >
+                          Remove Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <div className="text-gray-600">
+                          <p className="font-medium">Upload your child's photo</p>
+                          <p className="text-sm">JPG, PNG files up to 5MB</p>
+                        </div>
+                        <Button 
+                          onClick={() => document.getElementById('avatar-upload')?.click()}
+                          variant="outline"
+                          className="border-coral text-coral hover:bg-coral hover:text-white"
+                        >
+                          Choose Image
+                        </Button>
+                      </div>
+                    )}
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
                   </div>
                 </div>
 
