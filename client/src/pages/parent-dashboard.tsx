@@ -2718,6 +2718,7 @@ function ProgressReportsSection({ childId, showReports, setShowReports }: {
 // Reward Approval Section Component
 function RewardApprovalSection({ childId }: { childId: string }) {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: pendingRewards, isLoading } = useQuery({
     queryKey: [`/api/children/${childId}/pending-rewards`],
@@ -2779,9 +2780,17 @@ function RewardApprovalSection({ childId }: { childId: string }) {
 
   const pendingRewardsArray = Array.isArray(pendingRewards) ? pendingRewards : [];
   const transactionsArray = Array.isArray(rewardTransactions) ? rewardTransactions.slice(0, 5) : [];
-
+  
   const handleApprove = (transactionId: string) => {
-    approveRewardMutation.mutate({ transactionId, approvedBy: "parent" });
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive",
+      });
+      return;
+    }
+    approveRewardMutation.mutate({ transactionId, approvedBy: user.id });
   };
 
   const handleGiveBonus = (amount: number, description: string) => {
