@@ -361,6 +361,12 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure alerts, voice recordings, and reminder preferences</p>
                 </div>
+                
+                {/* Debug test to see if this section renders */}
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500">
+                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">DEBUG: This section should be visible!</p>
+                </div>
+                
                 <AlertSettings
                   initialSettings={{
                     reminderEnabled: habitForm.reminderEnabled,
