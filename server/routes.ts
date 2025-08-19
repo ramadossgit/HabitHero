@@ -357,14 +357,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Habit already completed today" });
       }
 
+      // Calculate reward points (10 points per habit completion)
+      const rewardPointsEarned = 10;
+
       const completionData = insertHabitCompletionSchema.parse({
         habitId: req.params.habitId,
         childId: habit.childId,
         date: today,
         xpEarned: habit.xpReward,
+        rewardPointsEarned,
+        status: 'approved', // Immediately approve to award points
+        requiresApproval: false, // No parent approval needed for immediate rewards
       });
 
       const completion = await storage.createHabitCompletion(completionData);
+      
+      // Immediately award reward points to child
+      await storage.updateChildRewardPoints(habit.childId, rewardPointsEarned);
+      
+      // Also create a reward transaction for tracking
+      await storage.createRewardTransaction({
+        childId: habit.childId,
+        type: 'earned',
+        amount: rewardPointsEarned,
+        source: 'habit_completion',
+        description: `Earned ${rewardPointsEarned} points for completing "${habit.name}"`,
+        requiresApproval: false,
+        isApproved: true,
+      });
       
       // Create real-time sync event to notify parents immediately
       try {
@@ -383,7 +403,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               childName: child.name,
               completionDate: completion.date,
               status: completion.status,
-              xpEarned: completion.xpEarned
+              xpEarned: completion.xpEarned,
+              rewardPointsEarned
             },
             processed: false
           });

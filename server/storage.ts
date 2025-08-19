@@ -60,6 +60,7 @@ export interface IStorage {
   updateChild(id: string, updates: Partial<InsertChild>): Promise<Child>;
   deleteChild(id: string): Promise<void>;
   updateChildXP(childId: string, xpGained: number): Promise<Child>;
+  updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child>;
   
   // Master habit operations (templates for assignment)
   getMasterHabitsByParent(parentId: string): Promise<MasterHabit[]>;
@@ -331,6 +332,24 @@ export class DatabaseStorage implements IStorage {
         xp: newXP >= 1000 ? newXP - 1000 : newXP,
         totalXp: newTotalXP,
         level: newLevel,
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+
+    return updatedChild;
+  }
+
+  async updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child> {
+    const [child] = await db.select().from(children).where(eq(children.id, childId));
+    if (!child) throw new Error("Child not found");
+
+    const newRewardPoints = child.rewardPoints + pointsGained;
+
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        rewardPoints: newRewardPoints,
         updatedAt: new Date(),
       })
       .where(eq(children.id, childId))
