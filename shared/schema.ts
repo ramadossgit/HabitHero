@@ -44,6 +44,14 @@ export const users = pgTable("users", {
     reminderTime: 15
   }),
   emailVerified: boolean("email_verified").default(false),
+  // Subscription fields
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status").default("trial"), // trial, active, cancelled, expired
+  subscriptionPlan: varchar("subscription_plan").default("trial"), // trial, monthly, quarterly, yearly, family
+  subscriptionStartDate: timestamp("subscription_start_date").defaultNow(),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  trialEndDate: timestamp("trial_end_date").default(sql`NOW() + INTERVAL '7 days'`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

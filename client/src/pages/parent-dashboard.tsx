@@ -16,6 +16,7 @@ import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
+import { TrialBanner } from "@/components/subscription/trial-banner";
 
 import type { Child, User, InsertChild, Habit, MasterHabit, Reward } from "@shared/schema";
 
@@ -649,6 +650,9 @@ export default function ParentDashboard() {
       </header>
       
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
+        {/* Trial Banner */}
+        <TrialBanner />
+        
         {/* Parent Profile Modal */}
         {showParentProfile && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

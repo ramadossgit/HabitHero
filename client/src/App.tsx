@@ -8,6 +8,7 @@ import { useChildAuth } from "@/hooks/useChildAuth";
 import { SyncProvider } from "@/hooks/use-sync";
 import Landing from "@/pages/landing";
 import ParentAuthPage from "@/pages/parent-auth-page";
+import SubscriptionPage from "@/pages/subscription";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ProgressReportsPage from "@/pages/progress-reports";
@@ -48,6 +49,9 @@ function Router() {
       {/* Parent Dashboard - Full Management Interface */}
       <Route path="/parent">
         {isAuthenticated ? <ParentDashboard /> : <ParentAuthPage />}
+      </Route>
+      <Route path="/subscription">
+        {isAuthenticated ? <SubscriptionPage /> : <ParentAuthPage />}
       </Route>
       <Route path="/progress-reports">
         {isAuthenticated ? <ProgressReportsPage /> : <ParentAuthPage />}

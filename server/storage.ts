@@ -124,6 +124,16 @@ export interface IStorage {
   getPendingRewardTransactions(childId: string): Promise<RewardTransaction[]>;
   createRewardTransaction(transaction: InsertRewardTransaction): Promise<RewardTransaction>;
   approveRewardTransaction(transactionId: string, approvedBy: string): Promise<RewardTransaction>;
+  
+  // Subscription operations
+  getUserById(userId: string): Promise<User | undefined>;
+  updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User>;
+  updateUserSubscription(userId: string, subscriptionData: {
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+    subscriptionEndDate?: Date;
+  }): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1046,6 +1056,34 @@ export class DatabaseStorage implements IStorage {
       status,
       dailyBreakdown
     };
+  }
+
+  // Subscription operations
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
+  async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ stripeCustomerId, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionPlan?: string;
+    subscriptionEndDate?: Date;
+  }): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...subscriptionData, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
 }
 

@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isChildAuthenticated, isParentOrChildAuthenticated } from "./auth";
 import { syncService } from "./sync-service";
+import { SubscriptionService } from "./subscription-service";
+import { SUBSCRIPTION_PLANS } from "@shared/subscription-plans";
+import Stripe from 'stripe';
 import { 
   insertChildSchema,
   insertMasterHabitSchema,
@@ -1099,6 +1102,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Deactivate device error:', error);
       res.status(500).json({ message: "Failed to deactivate device" });
+    }
+  });
+
+  // Subscription API routes
+  app.get('/api/subscription/plans', (req, res) => {
+    try {
+      res.json({ plans: SUBSCRIPTION_PLANS });
+    } catch (error: any) {
+      console.error('Error fetching subscription plans:', error);
+      res.status(500).json({ message: 'Failed to fetch subscription plans' });
+    }
+  });
+
+  app.get('/api/subscription/status', isAuthenticated, async (req, res) => {
+    try {
+      const user = await SubscriptionService.syncSubscriptionStatus(req.user!.id);
+      const subscriptionInfo = SubscriptionService.getSubscriptionInfo(user);
+      res.json(subscriptionInfo);
+    } catch (error: any) {
+      console.error('Error fetching subscription status:', error);
+      res.status(500).json({ message: 'Failed to fetch subscription status' });
+    }
+  });
+
+  app.post('/api/subscription/create', isAuthenticated, async (req, res) => {
+    try {
+      const { planId } = req.body;
+      
+      if (!planId) {
+        return res.status(400).json({ message: 'Plan ID is required' });
+      }
+
+      const result = await SubscriptionService.createSubscription(req.user!.id, planId);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error creating subscription:', error);
+      res.status(500).json({ message: error.message || 'Failed to create subscription' });
+    }
+  });
+
+  app.post('/api/subscription/cancel', isAuthenticated, async (req, res) => {
+    try {
+      const result = await SubscriptionService.cancelSubscription(req.user!.id);
+      res.json({ success: true, subscription: result });
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      res.status(500).json({ message: error.message || 'Failed to cancel subscription' });
+    }
+  });
+
+  app.post('/api/subscription/check-feature-access', isParentOrChildAuthenticated, async (req, res) => {
+    try {
+      const { feature } = req.body;
+      const userId = req.user?.id || req.session.parentId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      const user = await storage.getUserById(userId);
+      
+      const hasAccess = SubscriptionService.hasFeatureAccess(user, feature);
+      res.json({ hasAccess, user: SubscriptionService.getSubscriptionInfo(user) });
+    } catch (error: any) {
+      console.error('Error checking feature access:', error);
+      res.status(500).json({ message: 'Failed to check feature access' });
     }
   });
 
