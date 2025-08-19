@@ -373,7 +373,7 @@ export class DatabaseStorage implements IStorage {
       color: habits.color,
       isActive: habits.isActive,
       frequency: habits.frequency,
-      rewardPoints: habits.rewardPoints,
+      masterHabitId: habits.masterHabitId,
       reminderTime: habits.reminderTime,
       reminderEnabled: habits.reminderEnabled,
       voiceReminderEnabled: habits.voiceReminderEnabled,
