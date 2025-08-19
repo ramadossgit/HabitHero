@@ -17,6 +17,8 @@ import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
 import { TrialBanner } from "@/components/subscription/trial-banner";
+import TrialStatusBanner from "@/components/subscription/trial-status-banner";
+import SubscriptionManagementCard from "@/components/subscription/subscription-management-card";
 
 import type { Child, User, InsertChild, Habit, MasterHabit, Reward } from "@shared/schema";
 
@@ -650,8 +652,8 @@ export default function ParentDashboard() {
       </header>
       
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
-        {/* Trial Banner */}
-        <TrialBanner />
+        {/* Trial Status Banner */}
+        <TrialStatusBanner />
         
         {/* Parent Profile Modal */}
         {showParentProfile && (
@@ -873,8 +875,13 @@ export default function ParentDashboard() {
             </Card>
           </div>
 
-          {/* Parental Controls Section */}
+          {/* Subscription Management Section */}
           <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
+            <SubscriptionManagementCard />
+          </div>
+
+          {/* Parental Controls Section */}
+          <div className="bounce-in" style={{ animationDelay: '0.55s' }}>
             <Card 
               className="fun-card p-4 sm:p-8 border-4 border-red-500 cursor-pointer hover:scale-105 transition-transform"
               onClick={() => setShowParentControls(true)}

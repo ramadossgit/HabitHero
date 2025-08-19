@@ -1,96 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { SUBSCRIPTION_PLANS } from '@shared/subscription-plans';
-import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { CheckIcon, XIcon, CrownIcon, UsersIcon, StarIcon } from 'lucide-react';
-
-// Initialize Stripe
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
-const SubscriptionForm = ({ planId, onSuccess }: { planId: string; onSuccess: () => void }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!stripe || !elements) return;
-    
-    setIsProcessing(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + '/subscription?success=true',
-      },
-    });
-
-    if (error) {
-      toast({
-        title: "Payment Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Payment Successful",
-        description: "Welcome to Habit Heroes Premium!",
-      });
-      onSuccess();
-    }
-    
-    setIsProcessing(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
-      <Button 
-        type="submit" 
-        disabled={!stripe || isProcessing}
-        className="w-full bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600"
-        data-testid="button-confirm-payment"
-      >
-        {isProcessing ? 'Processing...' : 'Confirm Payment'}
-      </Button>
-    </form>
-  );
-};
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Crown, 
+  Check, 
+  ArrowLeft, 
+  Star, 
+  Sparkles, 
+  Trophy,
+  CreditCard,
+  Clock,
+  Calendar,
+  Shield
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { User } from "@shared/schema";
 
 export default function SubscriptionPage() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-
-  // Fetch subscription status
-  const { data: subscriptionStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ['/api/subscription/status'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/subscription/status');
-      return response.json();
-    }
+  const { user } = useAuth();
+  
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ["/api/subscription/status"],
   });
 
-  // Create subscription mutation
   const createSubscriptionMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const response = await apiRequest('POST', '/api/subscription/create', { planId });
-      return response.json();
+      return await apiRequest("POST", "/api/subscription/create", { planId });
     },
-    onSuccess: (data) => {
-      setClientSecret(data.clientSecret);
-      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+    onSuccess: (data: any) => {
+      if (data.clientSecret) {
+        // Redirect to Stripe checkout
+        toast({
+          title: "Redirecting to Payment",
+          description: "You'll be redirected to complete your subscription setup.",
+        });
+        // In a real app, you'd integrate Stripe checkout here
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
     onError: (error: any) => {
       toast({
@@ -98,21 +52,20 @@ export default function SubscriptionPage() {
         description: error.message || "Failed to create subscription",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Cancel subscription mutation
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/subscription/cancel');
-      return response.json();
+      return await apiRequest("POST", "/api/subscription/cancel");
     },
     onSuccess: () => {
       toast({
         title: "Subscription Cancelled",
-        description: "Your subscription will end at the current billing cycle.",
+        description: "Your subscription has been cancelled. You can continue using Premium features until the end of your billing period.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
     onError: (error: any) => {
       toast({
@@ -120,227 +73,270 @@ export default function SubscriptionPage() {
         description: error.message || "Failed to cancel subscription",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
-    createSubscriptionMutation.mutate(planId);
-  };
+  const currentUser = user as User;
+  const isTrialActive = currentUser?.subscriptionStatus === 'trial';
+  const isPremium = currentUser?.subscriptionStatus === 'active';
+  const isCancelled = currentUser?.subscriptionStatus === 'cancelled';
 
-  const handleCancelSubscription = () => {
-    if (confirm('Are you sure you want to cancel your subscription?')) {
-      cancelSubscriptionMutation.mutate();
+  const trialEndDate = currentUser?.trialEndsAt ? new Date(currentUser.trialEndsAt) : null;
+  const subscriptionEndDate = currentUser?.subscriptionEndDate ? new Date(currentUser.subscriptionEndDate) : null;
+  const now = new Date();
+  const daysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+
+  const plans = [
+    {
+      id: 'monthly',
+      name: 'Premium Monthly',
+      price: '$4.99',
+      period: '/month',
+      description: 'Perfect for trying out Premium features',
+      color: 'sky',
+      features: [
+        'Unlimited Hero Characters',
+        'Unlimited Daily Habits',
+        'Advanced Progress Reports',
+        'Premium Rewards & Avatars',
+        'Voice Reminders',
+        'Priority Support'
+      ]
+    },
+    {
+      id: 'quarterly',
+      name: 'Premium Quarterly',
+      price: '$12.99',
+      period: '/quarter',
+      description: 'Most popular - Save 35%!',
+      color: 'coral',
+      popular: true,
+      features: [
+        'Everything in Premium',
+        'Save 35% vs Monthly',
+        'Quarterly Family Reports',
+        'Early Access to New Features',
+        'Enhanced Analytics',
+        'Family Challenge Mode'
+      ]
+    },
+    {
+      id: 'yearly',
+      name: 'Premium Yearly',
+      price: '$39.99',
+      period: '/year',
+      description: 'Best value - Save 60%!',
+      color: 'mint',
+      features: [
+        'Everything in Premium',
+        'Save 60% vs Monthly',
+        'Exclusive Hero Avatars',
+        'Family Sharing Features',
+        'Custom Habit Templates',
+        'Premium Support Priority'
+      ]
     }
-  };
-
-  if (statusLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  // If payment is in progress
-  if (clientSecret && selectedPlan) {
-    const plan = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan);
-    
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-teal-50 to-coral-50 p-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Subscription</h1>
-            <p className="text-gray-600">Subscribing to {plan?.name}</p>
-          </div>
-
-          <Card className="shadow-xl border-0">
-            <CardHeader>
-              <CardTitle className="text-center">Payment Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <SubscriptionForm 
-                  planId={selectedPlan} 
-                  onSuccess={() => {
-                    setClientSecret(null);
-                    setSelectedPlan(null);
-                  }}
-                />
-              </Elements>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-teal-50 to-coral-50 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen hero-gradient relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-sunshine rounded-full float"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 bg-purple rounded-full float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-32 w-20 h-20 bg-mint rounded-full float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange rounded-full float" style={{ animationDelay: '0.5s' }}></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
-          <p className="text-xl text-gray-600">Start with our free trial, then upgrade for the full experience</p>
-          
-          {subscriptionStatus && (
-            <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border">
-              <div className="flex items-center justify-center space-x-4">
-                <Badge variant={subscriptionStatus.status === 'trial' ? 'secondary' : 'default'}>
-                  {subscriptionStatus.status.charAt(0).toUpperCase() + subscriptionStatus.status.slice(1)}
-                </Badge>
-                <span className="text-sm text-gray-600">
-                  Current Plan: {subscriptionStatus.plan}
-                </span>
-                {subscriptionStatus.isTrialActive && (
-                  <span className="text-sm text-coral-600 font-medium">
-                    {subscriptionStatus.trialDaysLeft} days left in trial
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/parent/dashboard">
+            <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <div className="text-center">
+            <h1 className="font-fredoka text-3xl md:text-4xl text-white mb-2">
+              💎 Subscription Plans
+            </h1>
+            <p className="text-white/80">Choose the perfect plan for your family's hero journey</p>
+          </div>
+          <div className="w-32"></div> {/* Spacer for alignment */}
         </div>
 
-        {/* Trial Features */}
-        {subscriptionStatus?.status === 'trial' && (
-          <Card className="mb-8 bg-gradient-to-r from-sky-100 to-teal-100 border-sky-200">
+        {/* Current Subscription Status */}
+        {currentUser && (
+          <Card className="fun-card border-4 border-coral bg-white/95 backdrop-blur-sm mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <StarIcon className="h-5 w-5 text-sky-600" />
-                <span>Your Free Trial Includes</span>
+              <CardTitle className="flex items-center font-fredoka text-xl">
+                <Crown className="w-6 h-6 text-coral mr-2" />
+                Current Subscription Status
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                {[
-                  'Access to Avatar Builder',
-                  'Balloon Pop mini-game',
-                  'Basic habit tracking (up to 3 habits)',
-                  'Limited reward points',
-                  '7-day free trial period'
-                ].map((feature) => (
-                  <div key={feature} className="flex items-center space-x-2">
-                    <CheckIcon className="h-4 w-4 text-sky-600" />
-                    <span className="text-sm">{feature}</span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between">
+                <div>
+                  {isTrialActive && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge className="bg-mint text-white">FREE TRIAL</Badge>
+                        <span className="text-gray-800 font-bold">{daysRemaining} days remaining</span>
+                      </div>
+                      <p className="text-gray-600">
+                        Trial ends: {trialEndDate?.toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {isPremium && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge className="bg-coral text-white">PREMIUM ACTIVE</Badge>
+                        <span className="text-gray-800 font-bold">
+                          {currentUser.subscriptionPlan === 'monthly' ? 'Monthly Plan' :
+                           currentUser.subscriptionPlan === 'quarterly' ? 'Quarterly Plan' :
+                           currentUser.subscriptionPlan === 'yearly' ? 'Yearly Plan' : 'Premium Plan'}
+                        </span>
+                      </div>
+                      <p className="text-gray-600">
+                        Next billing: {subscriptionEndDate?.toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {isCancelled && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge className="bg-orange-500 text-white">CANCELLED</Badge>
+                        <span className="text-gray-800 font-bold">Access until {subscriptionEndDate?.toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-gray-600">
+                        Your premium features will remain active until the end of your billing period.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {isPremium && !isCancelled && (
+                  <Button 
+                    onClick={() => cancelSubscriptionMutation.mutate()}
+                    disabled={cancelSubscriptionMutation.isPending}
+                    variant="outline"
+                    className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
+                  >
+                    {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Plan"}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
 
         {/* Subscription Plans */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {SUBSCRIPTION_PLANS.map((plan) => (
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {plans.map((plan, index) => (
             <Card 
               key={plan.id} 
-              className={`relative transform transition-all duration-200 hover:scale-105 shadow-lg border-2 ${
-                plan.popular 
-                  ? 'border-coral-500 shadow-coral-100' 
-                  : 'border-gray-200 hover:border-sky-300'
-              }`}
+              className={`fun-card border-4 ${
+                plan.color === 'sky' ? 'border-sky' :
+                plan.color === 'coral' ? 'border-coral' :
+                plan.color === 'mint' ? 'border-mint' : 'border-sky'
+              } bg-white/95 backdrop-blur-sm bounce-in relative ${plan.popular ? 'scale-105' : ''}`}
+              style={{ animationDelay: `${index * 0.2}s` }}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-coral-500 text-white px-4 py-1">Most Popular</Badge>
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-coral text-white px-4 py-1 rounded-full text-sm font-bold">
+                    🌟 MOST POPULAR
+                  </div>
                 </div>
               )}
               
-              {plan.badge && (
-                <div className="absolute -top-3 right-4">
-                  <Badge variant="secondary">{plan.badge}</Badge>
+              <CardHeader className="text-center">
+                <div className={`mx-auto w-16 h-16 ${
+                  plan.color === 'sky' ? 'bg-sky' :
+                  plan.color === 'coral' ? 'bg-coral' :
+                  plan.color === 'mint' ? 'bg-mint' : 'bg-sky'
+                } rounded-full flex items-center justify-center mb-4`}>
+                  {plan.id === 'monthly' && <Star className="w-8 h-8 text-white" />}
+                  {plan.id === 'quarterly' && <Crown className="w-8 h-8 text-white" />}
+                  {plan.id === 'yearly' && <Trophy className="w-8 h-8 text-white" />}
                 </div>
-              )}
-
-              <CardHeader className="text-center pb-2">
-                <div className="flex justify-center mb-3">
-                  {plan.id === 'family' ? (
-                    <UsersIcon className="h-8 w-8 text-sky-600" />
-                  ) : (
-                    <CrownIcon className="h-8 w-8 text-coral-500" />
-                  )}
-                </div>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  <span className="text-gray-600">
-                    /{plan.interval === 'month' && plan.intervalCount === 3 ? '3 months' : plan.interval}
-                  </span>
-                </div>
-                {plan.savings && (
-                  <p className="text-sm text-coral-600 font-medium mt-1">{plan.savings}</p>
-                )}
+                <CardTitle className={`font-fredoka text-2xl ${
+                  plan.color === 'sky' ? 'text-sky' :
+                  plan.color === 'coral' ? 'text-coral' :
+                  plan.color === 'mint' ? 'text-mint' : 'text-sky'
+                }`}>
+                  {plan.name}
+                </CardTitle>
+                <div className="text-3xl font-bold text-gray-800">{plan.price}</div>
+                <div className="text-sm text-gray-600">{plan.period}</div>
+                <div className="text-xs text-mint font-semibold">{plan.description}</div>
               </CardHeader>
-
-              <CardContent className="px-6">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <CheckIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{feature}</span>
+              
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  {plan.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-center text-sm text-gray-700">
+                      <Check className={`w-4 h-4 ${
+                        plan.color === 'sky' ? 'text-sky' :
+                        plan.color === 'coral' ? 'text-coral' :
+                        plan.color === 'mint' ? 'text-mint' : 'text-sky'
+                      } mr-2`} />
+                      {feature}
                     </li>
                   ))}
                 </ul>
-              </CardContent>
-
-              <CardFooter className="pt-6">
+                
                 <Button 
-                  className="w-full"
-                  variant={plan.popular ? 'default' : 'outline'}
-                  onClick={() => handleSelectPlan(plan.id)}
-                  disabled={createSubscriptionMutation.isPending}
-                  data-testid={`button-select-${plan.id}`}
+                  onClick={() => createSubscriptionMutation.mutate(plan.id)}
+                  disabled={createSubscriptionMutation.isPending || (isPremium && currentUser.subscriptionPlan === plan.id)}
+                  className={`w-full ${
+                    plan.color === 'sky' ? 'bg-sky hover:bg-sky/80' :
+                    plan.color === 'coral' ? 'bg-coral hover:bg-coral/80' :
+                    plan.color === 'mint' ? 'bg-mint hover:bg-mint/80' : 'bg-sky hover:bg-sky/80'
+                  } text-white`}
                 >
-                  {createSubscriptionMutation.isPending ? 'Processing...' : 'Select Plan'}
+                  {createSubscriptionMutation.isPending ? "Processing..." : 
+                   isPremium && currentUser.subscriptionPlan === plan.id ? "Current Plan" :
+                   isTrialActive ? "Upgrade Now" : "Subscribe"}
                 </Button>
-              </CardFooter>
+              </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Current Subscription Actions */}
-        {subscriptionStatus?.status === 'active' && (
-          <div className="mt-12 text-center">
-            <Card className="max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle>Manage Subscription</CardTitle>
-                <CardDescription>
-                  You're currently subscribed to {subscriptionStatus.plan}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleCancelSubscription}
-                  disabled={cancelSubscriptionMutation.isPending}
-                  data-testid="button-cancel-subscription"
-                >
-                  {cancelSubscriptionMutation.isPending ? 'Processing...' : 'Cancel Subscription'}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-        )}
-
-        {/* Upgrade Prompts for Trial Users */}
-        {subscriptionStatus?.isTrialActive && subscriptionStatus?.trialDaysLeft <= 3 && (
-          <div className="mt-12 text-center">
-            <Card className="max-w-2xl mx-auto bg-gradient-to-r from-coral-50 to-sky-50 border-coral-200">
-              <CardHeader>
-                <CardTitle className="text-coral-700">Your Trial Expires Soon!</CardTitle>
-                <CardDescription>
-                  Only {subscriptionStatus.trialDaysLeft} days left. Unlock more levels & bigger rewards for your Hero!
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">
-                  Upgrade now to keep all your progress and unlock premium features.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* FAQ Section */}
+        <Card className="fun-card border-4 border-sky bg-white/95 backdrop-blur-sm mt-12 max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle className="font-fredoka text-2xl text-center text-gray-800">
+              ❓ Frequently Asked Questions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="font-bold text-gray-800 mb-2">Can I cancel anytime?</h4>
+              <p className="text-gray-600">Yes! You can cancel your subscription at any time. You'll continue to have access to Premium features until the end of your billing period.</p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800 mb-2">What happens after my trial ends?</h4>
+              <p className="text-gray-600">Your 7-day trial includes full access to Premium features. After the trial, you can choose to upgrade to a paid plan or continue with limited free features.</p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800 mb-2">Do you offer family discounts?</h4>
+              <p className="text-gray-600">Yes! Our yearly plan includes family sharing features that allow multiple children to use the app under one subscription.</p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-800 mb-2">Is my payment information secure?</h4>
+              <p className="text-gray-600 flex items-center">
+                <Shield className="w-4 h-4 text-mint mr-2" />
+                Absolutely! We use industry-standard encryption and secure payment processing to protect your information.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -7,7 +7,10 @@ import {
   Heart, 
   Gamepad2, 
   Users, 
-  Shield 
+  Shield,
+  Crown,
+  Sparkles,
+  Check
 } from "lucide-react";
 
 export default function Landing() {
@@ -190,6 +193,157 @@ export default function Landing() {
                 <span className="float" style={{ animationDelay: '2s' }}>🐉</span>
               </div>
             </CardContent>
+          </div>
+        </div>
+        
+        {/* Subscription Plans Section */}
+        <div className="mt-24 mb-16">
+          <div className="text-center mb-12">
+            <h2 className="font-fredoka text-4xl md:text-5xl text-white mb-4 bounce-in">
+              💎 Choose Your Adventure Plan 💎
+            </h2>
+            <p className="text-white/90 text-xl mb-8">
+              Start with a free 7-day trial, then continue your hero journey!
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* Free Trial */}
+            <div className="fun-card border-4 border-mint bg-white/95 backdrop-blur-sm bounce-in">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-16 h-16 bg-mint rounded-full flex items-center justify-center mb-4">
+                  <Sparkles className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="font-fredoka text-2xl text-mint">
+                  🎮 Free Trial
+                </CardTitle>
+                <div className="text-3xl font-bold text-gray-800">FREE</div>
+                <div className="text-sm text-gray-600">7 days</div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-700">
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-mint mr-2" />
+                    1 Hero Character
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-mint mr-2" />
+                    5 Daily Habits
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-mint mr-2" />
+                    Basic Progress Tracking
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-mint mr-2" />
+                    Simple Rewards
+                  </li>
+                </ul>
+              </CardContent>
+            </div>
+
+            {/* Premium Monthly */}
+            <div className="fun-card border-4 border-coral bg-white/95 backdrop-blur-sm bounce-in scale-105 relative" style={{ animationDelay: '0.2s' }}>
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-coral text-white px-4 py-1 rounded-full text-sm font-bold">
+                  🌟 MOST POPULAR
+                </div>
+              </div>
+              <CardHeader className="text-center">
+                <div className="mx-auto w-16 h-16 bg-coral rounded-full flex items-center justify-center mb-4">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="font-fredoka text-2xl text-coral">
+                  👑 Premium Quarterly
+                </CardTitle>
+                <div className="text-3xl font-bold text-gray-800">$12.99</div>
+                <div className="text-sm text-gray-600">per quarter</div>
+                <div className="text-xs text-mint font-semibold">Save 35%!</div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-700">
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    3 Hero Characters
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    Unlimited Daily Habits
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    Advanced Progress Reports
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    Premium Rewards & Avatars
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    Voice Reminders
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-coral mr-2" />
+                    Priority Support
+                  </li>
+                </ul>
+              </CardContent>
+            </div>
+
+            {/* Premium Yearly */}
+            <div className="fun-card border-4 border-sky bg-white/95 backdrop-blur-sm bounce-in" style={{ animationDelay: '0.4s' }}>
+              <CardHeader className="text-center">
+                <div className="mx-auto w-16 h-16 bg-sky rounded-full flex items-center justify-center mb-4">
+                  <Trophy className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="font-fredoka text-2xl text-sky">
+                  🏆 Premium Yearly
+                </CardTitle>
+                <div className="text-3xl font-bold text-gray-800">$39.99</div>
+                <div className="text-sm text-gray-600">per year</div>
+                <div className="text-xs text-mint font-semibold">Best Value!</div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-gray-700">
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    5 Hero Characters
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    Everything in Premium
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    Exclusive Hero Avatars
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    Family Sharing Features
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    Custom Habit Templates
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-sky mr-2" />
+                    Premium Support
+                  </li>
+                </ul>
+              </CardContent>
+            </div>
+          </div>
+          
+          <div className="text-center mt-8">
+            <p className="text-white/80 text-lg mb-4">
+              Start your 7-day free trial today - no credit card required!
+            </p>
+            <Button 
+              className="super-button text-xl px-8 py-4 wiggle"
+              onClick={() => setLocation("/parent/auth")}
+            >
+              🚀 Start Free Trial Now!
+            </Button>
           </div>
         </div>
       </div>

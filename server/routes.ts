@@ -982,7 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deviceId: validatedData.deviceId,
         deviceName: validatedData.deviceName,
         deviceType: validatedData.deviceType as 'web' | 'ios' | 'android',
-        pushToken: validatedData.pushToken
+        pushToken: validatedData.pushToken || undefined
       });
       
       // Create sync event for device registration
@@ -1052,7 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user) {
         // Parent user
         parentId = req.user.id;
-      } else if (req.session.childId && req.session.isChildUser) {
+      } else if (req.session.childId && req.session.isChildUser && req.session.parentId) {
         // Child user - get their parent ID from session
         parentId = req.session.parentId;
       } else {
@@ -1168,6 +1168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to check feature access' });
     }
   });
+
+
 
   const httpServer = createServer(app);
   return httpServer;
