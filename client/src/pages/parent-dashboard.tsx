@@ -1251,6 +1251,27 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
+  const toggleHabitStatusMutation = useMutation({
+    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
+      await apiRequest("PATCH", `/api/habits/${habitId}`, { isActive });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Status Updated!",
+        description: "Habit status has been changed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update habit status.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddHabit = () => {
     if (!habitName.trim()) {
       toast({
@@ -1279,10 +1300,38 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
           <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
           <div>
             <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📋 Habit Management</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and track progress</p>
+            <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and control active/inactive status</p>
           </div>
         </div>
+        {habits && habits.length > 0 && (
+          <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-lg">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="font-medium text-green-800">
+                {habits.filter(h => h.isActive).length} Active
+              </span>
+            </div>
+            <div className="flex items-center space-x-1 bg-yellow-100 px-3 py-1 rounded-lg">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="font-medium text-yellow-800">
+                {habits.filter(h => !h.isActive).length} Inactive
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+      
+      {/* Status Explanation */}
+      {habits && habits.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <h4 className="font-semibold text-blue-800 mb-2">📱 Habit Status Guide</h4>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p>• <span className="font-medium">Active habits</span> appear in your child's daily habit list and sync to their device</p>
+            <p>• <span className="font-medium">Inactive habits</span> are hidden from children and won't sync to their devices</p>
+            <p>• Use the toggle buttons to quickly activate/deactivate habits as needed</p>
+          </div>
+        </div>
+      )}
       
       {isLoading ? (
         <div className="flex justify-center">
@@ -1332,8 +1381,23 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">{habit.icon}</div>
                     <div className="flex-1">
-                      <div className="font-bold text-gray-800">{habit.name}</div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <div className="font-bold text-gray-800">{habit.name}</div>
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${
+                          habit.isActive 
+                            ? 'bg-green-200 text-green-800' 
+                            : 'bg-yellow-200 text-yellow-800'
+                        }`}>
+                          {habit.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
                       <div className="text-sm text-gray-600">{habit.description}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {habit.isActive 
+                          ? "Appears in child's daily habit list" 
+                          : "Hidden from child - won't sync to their device"
+                        }
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1341,6 +1405,27 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                       <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
                       <div className="text-xs text-gray-500">Reward</div>
                     </div>
+                    <Button
+                      onClick={() => {
+                        toggleHabitStatusMutation.mutate({
+                          habitId: habit.id,
+                          isActive: !habit.isActive
+                        });
+                      }}
+                      disabled={toggleHabitStatusMutation.isPending}
+                      className={`px-3 py-1 text-xs font-medium ${
+                        habit.isActive 
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      {toggleHabitStatusMutation.isPending 
+                        ? "..." 
+                        : habit.isActive 
+                          ? "⏸️ Make Inactive" 
+                          : "▶️ Make Active"
+                      }
+                    </Button>
                     <Button
                       onClick={() => {
                         setEditingHabit(habit.id);
