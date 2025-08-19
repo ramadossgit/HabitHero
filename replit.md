@@ -8,6 +8,18 @@ Habit Heroes is a gamified habit tracking application designed for children and 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### UI Theme Consistency Update (August 19, 2025)
+- **Issue**: Login page used pink/purple gradient background that conflicted with main app's child-friendly mint/sky/coral theme
+- **Solution**: Updated hero-gradient CSS variable and login page styling to use consistent mint/sky/coral color scheme
+- **Changes Made**:
+  - Modified hero-gradient from pink/purple to mint→sky→turquoise→coral gradient
+  - Updated floating background elements to use main app colors (mint, sky, coral, turquoise)
+  - Changed login card border and accent colors from turquoise to sky blue
+  - Added Fredoka font consistency to buttons and enhanced child-friendly aesthetic
+  - Improved card styling with backdrop blur and proper shadow effects
+
 ## System Architecture
 
 ### Frontend Architecture

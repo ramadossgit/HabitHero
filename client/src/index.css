@@ -67,7 +67,7 @@
   
   /* Fun gradients */
   --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #A29BFE);
-  --hero-gradient: linear-gradient(135deg, #FF6B6B 0%, #FD79A8 25%, #A29BFE 50%, #4ECDC4 75%, #45B7D1 100%);
+  --hero-gradient: linear-gradient(135deg, #96CEB4 0%, #45B7D1 30%, #4ECDC4 60%, #FF6B6B 100%);
   --magic-gradient: radial-gradient(circle, #A29BFE 0%, #DDA0DD 50%, #FF6B6B 100%);
   
   /* Background patterns */
@@ -193,17 +193,17 @@
   /* Fun card effects */
   .fun-card {
     background: var(--card-bg);
-    border: 3px solid var(--coral);
+    border: 3px solid var(--sky);
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(255, 107, 107, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(69, 183, 209, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(0);
   }
   
   .fun-card:hover {
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(255, 107, 107, 0.3);
-    border-color: var(--purple);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(69, 183, 209, 0.3);
+    border-color: var(--mint);
   }
   
   /* Exciting title styling */
