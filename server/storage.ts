@@ -390,7 +390,7 @@ export class DatabaseStorage implements IStorage {
     return newHabit;
   }
 
-  async updateHabit(id: string, updates: Partial<Habit>): Promise<Habit> {
+  async updateHabit(id: string, updates: Partial<InsertHabit>): Promise<Habit> {
     const [updatedHabit] = await db
       .update(habits)
       .set({ ...updates, updatedAt: new Date() })
