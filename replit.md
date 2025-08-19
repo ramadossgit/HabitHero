@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Signup Flow Simplification (August 19, 2025)
+- **Change**: Removed "Join Existing Family" option from signup page
+- **Reason**: Simplified parent registration flow to only support creating new families
+- **Implementation**:
+  - Removed toggle button and join family form fields from parent-auth-page.tsx
+  - Cleaned up registration mutation to remove joinFamilyCode parameter
+  - Simplified validation logic to remove family code validation
+  - Updated registration success message to focus on new family creation
+
 ### UI Theme Consistency Update (August 19, 2025)
 - **Issue**: Login page used pink/purple gradient background that conflicted with main app's child-friendly mint/sky/coral theme
 - **Solution**: Updated hero-gradient CSS variable and login page styling to use consistent mint/sky/coral color scheme

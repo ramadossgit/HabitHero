@@ -43,11 +43,10 @@ export default function ParentAuthPage() {
     confirmPassword: "",
     firstName: "",
     lastName: "",
-    phoneNumber: "",
-    joinFamilyCode: ""
+    phoneNumber: ""
   });
 
-  const [showJoinFamily, setShowJoinFamily] = useState(false);
+
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
@@ -78,19 +77,15 @@ export default function ParentAuthPage() {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
-        phoneNumber: data.phoneNumber || null,
-        joinFamilyCode: data.joinFamilyCode || null
+        phoneNumber: data.phoneNumber || null
       });
       return await res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      const joinedFamily = showJoinFamily && registerData.joinFamilyCode;
       toast({
-        title: joinedFamily ? "Joined family successfully!" : "Account created!",
-        description: joinedFamily 
-          ? `Welcome to Habit Heroes! You've joined the family account.`
-          : "Welcome to Habit Heroes! Let's set up your first child.",
+        title: "Account created!",
+        description: "Welcome to Habit Heroes! Let's set up your first child.",
       });
       setShouldRedirect(true);
     },
@@ -149,15 +144,7 @@ export default function ParentAuthPage() {
       return;
     }
 
-    // Validate family code if joining existing family
-    if (showJoinFamily && (!registerData.joinFamilyCode || registerData.joinFamilyCode.length !== 6)) {
-      toast({
-        title: "Invalid family code",
-        description: "Please enter a valid 6-character family code",
-        variant: "destructive",
-      });
-      return;
-    }
+
 
     if (registerData.password !== registerData.confirmPassword) {
       toast({
@@ -372,47 +359,12 @@ export default function ParentAuthPage() {
                       </div>
 
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Family Setup</Label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowJoinFamily(!showJoinFamily)}
-                            className="text-turquoise hover:text-turquoise/80 text-sm"
-                            data-testid="button-toggle-join-family"
-                          >
-                            {showJoinFamily ? "Create New Family" : "Join Existing Family"}
-                          </Button>
+                        <Label className="text-sm font-medium">Family Setup</Label>
+                        <div className="p-3 bg-mint/5 border border-mint/20 rounded-lg">
+                          <p className="text-sm text-gray-600">
+                            🏠 Creating a new family? You'll get a unique family code that other parents can use to join your account.
+                          </p>
                         </div>
-                        
-                        {showJoinFamily && (
-                          <div className="space-y-2 p-3 bg-turquoise/5 border border-turquoise/20 rounded-lg">
-                            <Label htmlFor="register-joinFamily" className="text-sm text-turquoise font-medium">
-                              Family Code *
-                            </Label>
-                            <Input
-                              id="register-joinFamily"
-                              value={registerData.joinFamilyCode}
-                              onChange={(e) => setRegisterData({ ...registerData, joinFamilyCode: e.target.value.toUpperCase() })}
-                              placeholder="Enter 6-character family code"
-                              maxLength={6}
-                              className="font-mono text-center text-lg tracking-wider border-turquoise/40 focus:border-turquoise"
-                              data-testid="input-register-family-code"
-                            />
-                            <p className="text-xs text-gray-600">
-                              Ask a family member for their family code to join their account
-                            </p>
-                          </div>
-                        )}
-                        
-                        {!showJoinFamily && (
-                          <div className="p-3 bg-mint/5 border border-mint/20 rounded-lg">
-                            <p className="text-sm text-gray-600">
-                              🏠 Creating a new family? You'll get a unique family code that other parents can use to join your account.
-                            </p>
-                          </div>
-                        )}
                       </div>
 
                       <div className="space-y-2">
