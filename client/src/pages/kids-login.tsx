@@ -20,10 +20,7 @@ export default function KidsLogin() {
       return await apiRequest("POST", "/api/auth/child-login", credentials);
     },
     onSuccess: () => {
-      toast({
-        title: "Welcome back, Hero!",
-        description: "Ready for your next adventure?",
-      });
+      // Removed welcome back message to reduce popup notifications
       // Invalidate auth queries to refresh authentication state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/child"] });
       setTimeout(() => {

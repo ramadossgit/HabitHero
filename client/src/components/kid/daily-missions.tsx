@@ -77,10 +77,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
       await apiRequest("POST", `/api/children/${childId}/habits/reload`, {});
     },
     onSuccess: () => {
-      toast({
-        title: "Daily Habits Reloaded! 🔄",
-        description: "You can now work on your habits again!",
-      });
+      // Silent reload - no popup notification to avoid annoyance
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId] });
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId, "completions"] });
     },
