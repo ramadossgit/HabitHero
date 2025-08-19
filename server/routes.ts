@@ -216,6 +216,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         childId: req.params.childId,
       });
       const habit = await storage.createHabit(habitData);
+      
+      // Create sync event for real-time updates to child devices
+      try {
+        const child = await storage.getChild(req.params.childId);
+        if (child && child.parentId) {
+          await syncService.createSyncEvent({
+            userId: child.parentId,
+            eventType: 'habit_created',
+            entityType: 'habits',
+            entityId: habit.id,
+            eventData: {
+              habitId: habit.id,
+              habitName: habit.name,
+              childId: child.id,
+              childName: child.name,
+              description: habit.description,
+              xpReward: habit.xpReward
+            },
+            processed: false,
+            deviceOrigin: req.headers['x-device-id'] as string || 'unknown'
+          });
+          console.log(`Created sync event for new habit: ${habit.name} for child ${child.name}`);
+        }
+      } catch (syncError) {
+        console.error('Failed to create sync event for habit creation:', syncError);
+        // Don't fail the request if sync fails
+      }
+      
       res.json(habit);
     } catch (error) {
       console.error("Error creating habit:", error);

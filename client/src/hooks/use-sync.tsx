@@ -200,7 +200,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
   }, [isOnline, isAnyAuthenticated, currentDevice, childIsAuthenticated]);
 
-  // Periodic sync every 2 minutes when online and active
+  // Periodic sync every 30 seconds when online and active for faster updates
   useEffect(() => {
     if (!isOnline || !isAnyAuthenticated || (!currentDevice && !childIsAuthenticated)) return;
     
@@ -208,7 +208,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       if (!syncInProgress) {
         syncMutation.mutate();
       }
-    }, 120000); // 2 minutes
+    }, 30000); // 30 seconds for faster real-time updates
     
     return () => clearInterval(interval);
   }, [isOnline, isAnyAuthenticated, currentDevice, childIsAuthenticated, syncInProgress]);
