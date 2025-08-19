@@ -499,26 +499,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Reward not found" });
       }
 
-      const claimData = insertRewardClaimSchema.parse({
-        rewardId: req.params.rewardId,
+      // Create a reward transaction that requires approval
+      const transactionData = insertRewardTransactionSchema.parse({
         childId: req.body.childId,
+        type: 'earned',
+        amount: targetReward.cost || 10, // Default to 10 points if no cost specified
+        source: 'reward_claim',
+        description: `Claimed reward: ${targetReward.name}`,
+        requiresApproval: true,
+        isApproved: false,
       });
 
-      const claim = await storage.createRewardClaim(claimData);
-      res.json(claim);
+      const transaction = await storage.createRewardTransaction(transactionData);
+      res.json(transaction);
     } catch (error) {
       console.error("Error claiming reward:", error);
       res.status(500).json({ message: "Failed to claim reward" });
     }
   });
 
-  app.patch('/api/reward-claims/:id/approve', isAuthenticated, async (req, res) => {
+  // Approve reward transaction route
+  app.post('/api/reward-transactions/:transactionId/approve', isAuthenticated, async (req, res) => {
     try {
-      const claim = await storage.approveRewardClaim(req.params.id);
-      res.json(claim);
+      const { approvedBy } = req.body;
+      const transaction = await storage.approveRewardTransaction(req.params.transactionId, approvedBy);
+      res.json(transaction);
     } catch (error) {
-      console.error("Error approving reward claim:", error);
-      res.status(500).json({ message: "Failed to approve reward claim" });
+      console.error("Error approving reward transaction:", error);
+      res.status(500).json({ message: "Failed to approve reward transaction" });
+    }
+  });
+
+  // Create reward transaction route
+  app.post('/api/children/:childId/reward-transactions', isAuthenticated, async (req, res) => {
+    try {
+      const transactionData = insertRewardTransactionSchema.parse({
+        ...req.body,
+        childId: req.params.childId,
+      });
+
+      const transaction = await storage.createRewardTransaction(transactionData);
+      res.json(transaction);
+    } catch (error) {
+      console.error("Error creating reward transaction:", error);
+      res.status(500).json({ message: "Failed to create reward transaction" });
     }
   });
 
