@@ -291,11 +291,9 @@ export default function ParentDashboard() {
                     Back to Home
                   </Button>
                 </Link>
-                <img 
-                  src={(user as User)?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=60&h=60"} 
-                  alt="Parent Profile" 
-                  className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover"
-                />
+                <div className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center text-white font-bold text-lg">
+                  {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
+                </div>
               </div>
             </div>
           </div>
@@ -583,7 +581,7 @@ export default function ParentDashboard() {
               </div>
               <div className="text-center mb-4">
                 <img 
-                  src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=96`} 
+                  src={`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="%23ff6b6b"/><text x="48" y="60" text-anchor="middle" fill="white" font-size="36" font-family="Arial">${((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}</text></svg>`)}`} 
                   alt="Parent Profile" 
                   className="w-24 h-24 rounded-full mx-auto mb-3 border-4 border-sunshine"
                 />
