@@ -10,16 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### Profile Display Fix & Blue Theme Restoration (August 19, 2025)
+### Profile Display Fix & Theme Updates (August 19, 2025)
 - **Profile Issue**: Fixed random person image appearing in new parent profiles
 - **Solution**: Replaced UI Avatars service with user initials-based avatar system
-- **Theme Issue**: Reverted UI theme from mint/sky/coral back to blue color scheme
+- **Theme Changes**: Updated theme colors based on user preferences
 - **Implementation**:
   - Updated profile displays to show user initials instead of random generated faces
-  - Modified hero-gradient to use blue color palette (royal, sky, turquoise, ocean)
-  - Changed login page background from purple/pink to blue hero gradient
-  - Updated profile modal headers to use blue theme colors
-  - Enhanced profile avatars with proper fallback to user initials
+  - Modified hero-gradient to use preferred mint/sky/coral color palette
+  - Changed login page background to use hero gradient with mint/sky/coral/turquoise colors
+  - Updated profile modal headers and avatars to use coral color scheme
+  - Enhanced profile avatars with proper fallback to user initials displaying in coral background
 
 ### Signup Flow Simplification (August 19, 2025)
 - **Change**: Removed "Join Existing Family" option and "already logged in" alert from signup page

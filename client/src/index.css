@@ -54,24 +54,21 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Custom colors for Habit Heroes - Blue theme with vibrant accents */
-  --coral: #FF6B6B; /* Bright coral for accent actions */
+  /* Custom colors for Habit Heroes - Kid-friendly and vibrant */
+  --coral: #FF6B6B; /* Bright coral for primary actions */
   --turquoise: #4ECDC4; /* Fun turquoise for secondary elements */
-  --sky: #45B7D1; /* Bright sky blue for primary actions */
+  --sky: #45B7D1; /* Bright sky blue for info */
   --mint: #96CEB4; /* Soft mint for success */
   --sunshine: #FFEAA7; /* Bright yellow for warnings/highlights */
   --purple: #A29BFE; /* Magical purple for special elements */
   --orange: #FD79A8; /* Playful pink-orange */
   --lime: #00D2D3; /* Electric lime for energy */
   --lavender: #DDA0DD; /* Soft lavender for calm elements */
-  --navy: #2C3E50; /* Deep navy for backgrounds */
-  --royal: #3498DB; /* Royal blue for primary elements */
-  --ocean: #1ABC9C; /* Ocean blue-green for accents */
   
-  /* Fun gradients - Blue theme */
-  --rainbow-gradient: linear-gradient(45deg, #3498DB, #45B7D1, #4ECDC4, #1ABC9C, #FFEAA7, #A29BFE);
-  --hero-gradient: linear-gradient(135deg, #3498DB 0%, #45B7D1 30%, #4ECDC4 60%, #1ABC9C 100%);
-  --magic-gradient: radial-gradient(circle, #A29BFE 0%, #45B7D1 50%, #3498DB 100%);
+  /* Fun gradients */
+  --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #A29BFE);
+  --hero-gradient: linear-gradient(135deg, #96CEB4 0%, #45B7D1 30%, #4ECDC4 60%, #FF6B6B 100%);
+  --magic-gradient: radial-gradient(circle, #A29BFE 0%, #DDA0DD 50%, #FF6B6B 100%);
   
   /* Background patterns */
   --light-bg: #F8F9FA;

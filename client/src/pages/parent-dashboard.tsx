@@ -507,7 +507,7 @@ export default function ParentDashboard() {
                   />
                 ) : (
                   <div 
-                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-primary flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold"
+                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold"
                     onClick={() => setShowParentProfile(!showParentProfile)}
                   >
                     {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
