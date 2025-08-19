@@ -970,6 +970,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update master habit status
+  app.patch("/api/master-habits/:habitId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { habitId } = req.params;
+      const updates = req.body;
+      const updatedHabit = await storage.updateMasterHabit(habitId, updates);
+      res.json(updatedHabit);
+    } catch (error: any) {
+      console.error("Error updating master habit:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // =====================
   // SYNC API ENDPOINTS
   // =====================

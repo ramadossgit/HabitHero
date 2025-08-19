@@ -86,6 +86,7 @@ export const masterHabits = pgTable("master_habits", {
   xpReward: integer("xp_reward").notNull().default(50),
   color: varchar("color").notNull().default("turquoise"),
   frequency: varchar("frequency").notNull().default("daily"),
+  isActive: boolean("is_active").notNull().default(true),
   reminderTime: integer("reminder_time").default(15),
   reminderEnabled: boolean("reminder_enabled").default(true),
   voiceReminderEnabled: boolean("voice_reminder_enabled").default(false),

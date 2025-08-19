@@ -1202,11 +1202,20 @@ function HabitAssignmentModal({
                                             }
                                           });
                                         }}
-                                        disabled={assignHabitMutation.isPending}
-                                        className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 h-7"
+                                        disabled={assignHabitMutation.isPending || !masterHabit.isActive}
+                                        className={`text-xs px-3 py-1 h-7 ${
+                                          !masterHabit.isActive 
+                                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                        }`}
                                         data-testid={`button-assign-habit-${child.id}`}
                                       >
-                                        {assignHabitMutation.isPending ? 'Adding...' : 'Assign'}
+                                        {assignHabitMutation.isPending 
+                                          ? 'Adding...' 
+                                          : !masterHabit.isActive 
+                                            ? 'Inactive' 
+                                            : 'Assign'
+                                        }
                                       </Button>
                                     )}
                                   </div>
@@ -1377,6 +1386,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
+  // For child habit status updates (assignment-level)
   const toggleHabitStatusMutation = useMutation({
     mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
       await apiRequest("PATCH", `/api/habits/${habitId}`, { isActive });
@@ -1388,11 +1398,34 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
       queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh master habits
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to update habit status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // For master habit status updates (template-level)
+  const toggleMasterHabitStatusMutation = useMutation({
+    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
+      await apiRequest("PATCH", `/api/master-habits/${habitId}`, { isActive });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Master Habit Status Updated!",
+        description: "Master habit status has been changed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh master habits
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update master habit status.",
         variant: "destructive",
       });
     },
@@ -1531,19 +1564,19 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                     </div>
                     <Button
                       onClick={() => {
-                        toggleHabitStatusMutation.mutate({
+                        toggleMasterHabitStatusMutation.mutate({
                           habitId: habit.id,
                           isActive: !habit.isActive
                         });
                       }}
-                      disabled={toggleHabitStatusMutation.isPending}
+                      disabled={toggleMasterHabitStatusMutation.isPending}
                       className={`px-3 py-1 text-xs font-medium ${
                         habit.isActive 
                           ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
                           : 'bg-green-500 hover:bg-green-600 text-white'
                       }`}
                     >
-                      {toggleHabitStatusMutation.isPending 
+                      {toggleMasterHabitStatusMutation.isPending 
                         ? "..." 
                         : habit.isActive 
                           ? "⏸️ Make Inactive" 
