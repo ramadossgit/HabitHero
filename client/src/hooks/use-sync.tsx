@@ -102,10 +102,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       console.log('Device registered successfully:', device);
       setCurrentDevice(device);
       queryClient.invalidateQueries({ queryKey: ["/api/sync/devices"] });
-      toast({
-        title: "Device Registered",
-        description: "This device is now synced with your family account",
-      });
+      // Silently register device without showing toast to user
     },
     onError: (error: any) => {
       console.error('Device registration failed:', error);
@@ -169,10 +166,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         });
       }
       
-      toast({
-        title: "Sync Complete",
-        description: `Updated ${syncData.children?.length || 0} children, ${syncData.habits?.length || 0} habits`,
-      });
+      // Silently complete sync without showing toast to user
     },
     onError: (error: any) => {
       console.error('Sync failed:', error);

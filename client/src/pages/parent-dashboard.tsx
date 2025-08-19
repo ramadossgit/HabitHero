@@ -495,7 +495,7 @@ export default function ParentDashboard() {
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
                 <div className="text-xs text-white/80">Total Family XP</div>
-                <div className="font-bold text-xl text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
+                <div className="font-bold text-xl text-sunshine">{(children?.reduce((total: number, c: any) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
               </div>
               {/* Profile Avatar - Always show when user is authenticated */}
               {user && (
