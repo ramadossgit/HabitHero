@@ -30,6 +30,7 @@ export default function ParentDashboard() {
   const [showParentControls, setShowParentControls] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [showHabitAssignment, setShowHabitAssignment] = useState(false);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -783,7 +784,14 @@ export default function ParentDashboard() {
         <div className="space-y-8">
           {/* Habit Management Section */}
           <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <HabitManagementSection childId={child?.id || ''} showAddHabit={showAddHabit} setShowAddHabit={setShowAddHabit} />
+            <HabitManagementSection 
+              childId={child?.id || ''} 
+              showAddHabit={showAddHabit} 
+              setShowAddHabit={setShowAddHabit}
+              showHabitAssignment={showHabitAssignment}
+              setShowHabitAssignment={setShowHabitAssignment}
+              children={children || []}
+            />
           </div>
 
           {/* Habit Approval Section */}
@@ -901,15 +909,342 @@ export default function ParentDashboard() {
         onClose={() => setShowOnboarding(false)}
         onComplete={handleOnboardingComplete}
       />
+      
+      {/* Habit Assignment Modal */}
+      {showHabitAssignment && (
+        <HabitAssignmentModal 
+          isOpen={showHabitAssignment}
+          onClose={() => setShowHabitAssignment(false)}
+          children={children || []}
+        />
+      )}
+    </div>
+  );
+}
+
+// Habit Assignment Modal Component - Allows parents to manage habits across all children
+function HabitAssignmentModal({ isOpen, onClose, children }: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  children: Child[]; 
+}) {
+  const { toast } = useToast();
+  const [selectedSourceChild, setSelectedSourceChild] = useState<string>("");
+  const [selectedTargetChildren, setSelectedTargetChildren] = useState<string[]>([]);
+  const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
+
+  // Get habits for the selected source child
+  const { data: sourceChildHabits } = useQuery<Habit[]>({
+    queryKey: [`/api/children/${selectedSourceChild}/habits`],
+    enabled: !!selectedSourceChild,
+  });
+
+  // Get all habits for all children to show what each child has
+  const allChildrenHabits = useQuery({
+    queryKey: ["all-children-habits"],
+    queryFn: async () => {
+      const habitsData: { [childId: string]: Habit[] } = {};
+      for (const child of children) {
+        const response = await fetch(`/api/children/${child.id}/habits`);
+        if (response.ok) {
+          habitsData[child.id] = await response.json();
+        }
+      }
+      return habitsData;
+    },
+    enabled: isOpen && children.length > 0,
+  });
+
+  const copyHabitsMutation = useMutation({
+    mutationFn: async ({ habitIds, targetChildIds }: { habitIds: string[]; targetChildIds: string[] }) => {
+      const copyPromises: Promise<any>[] = [];
+      
+      for (const habitId of habitIds) {
+        const sourceHabit = sourceChildHabits?.find(h => h.id === habitId);
+        if (!sourceHabit) continue;
+        
+        for (const targetChildId of targetChildIds) {
+          // Check if child already has this habit
+          const targetChildHabits = allChildrenHabits.data?.[targetChildId] || [];
+          const hasHabit = targetChildHabits.some(h => 
+            h.name.toLowerCase() === sourceHabit.name.toLowerCase()
+          );
+          
+          if (!hasHabit) {
+            copyPromises.push(
+              apiRequest("POST", `/api/children/${targetChildId}/habits`, {
+                name: sourceHabit.name,
+                description: sourceHabit.description,
+                icon: sourceHabit.icon,
+                xpReward: sourceHabit.xpReward,
+                color: sourceHabit.color,
+                frequency: sourceHabit.frequency,
+                isActive: true,
+              })
+            );
+          }
+        }
+      }
+      
+      await Promise.all(copyPromises);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habits Copied Successfully! 🎯",
+        description: "Selected habits have been added to the chosen children.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["all-children-habits"] });
+      setSelectedHabits([]);
+      setSelectedTargetChildren([]);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to copy habits. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeHabitMutation = useMutation({
+    mutationFn: async ({ habitId }: { habitId: string }) => {
+      await apiRequest("DELETE", `/api/habits/${habitId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Removed Successfully! 🗑️",
+        description: "The habit has been removed from the child.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["all-children-habits"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCopyHabits = () => {
+    if (selectedHabits.length === 0) {
+      toast({
+        title: "No Habits Selected",
+        description: "Please select at least one habit to copy.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (selectedTargetChildren.length === 0) {
+      toast({
+        title: "No Children Selected",
+        description: "Please select at least one child to copy habits to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    copyHabitsMutation.mutate({
+      habitIds: selectedHabits,
+      targetChildIds: selectedTargetChildren,
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="font-fredoka text-2xl text-gray-800">🎯 Individual Habit Assignment</h3>
+              <p className="text-gray-600">Copy habits between children or remove specific habits</p>
+            </div>
+            <Button variant="ghost" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {children.length < 2 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">You need at least 2 children to manage individual habit assignments.</p>
+              <p className="text-sm text-gray-500 mt-2">Add more children to use this feature.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Source Child Selection */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Step 1: Select child to copy habits FROM
+                </label>
+                <Select value={selectedSourceChild} onValueChange={setSelectedSourceChild}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a child..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {children.map((child) => (
+                      <SelectItem key={child.id} value={child.id}>
+                        {child.name} ({allChildrenHabits.data?.[child.id]?.length || 0} habits)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Habit Selection */}
+              {selectedSourceChild && sourceChildHabits && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Step 2: Select habits to copy
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-lg p-3">
+                    {sourceChildHabits.map((habit) => (
+                      <label key={habit.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedHabits.includes(habit.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedHabits([...selectedHabits, habit.id]);
+                            } else {
+                              setSelectedHabits(selectedHabits.filter(id => id !== habit.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-turquoise"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{habit.icon}</span>
+                          <div>
+                            <div className="font-medium text-sm">{habit.name}</div>
+                            <div className="text-xs text-gray-500">{habit.xpReward} XP</div>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Target Children Selection */}
+              {selectedHabits.length > 0 && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Step 3: Select children to copy habits TO
+                  </label>
+                  <div className="space-y-2">
+                    {children
+                      .filter(child => child.id !== selectedSourceChild)
+                      .map((child) => (
+                        <label key={child.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedTargetChildren.includes(child.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTargetChildren([...selectedTargetChildren, child.id]);
+                              } else {
+                                setSelectedTargetChildren(selectedTargetChildren.filter(id => id !== child.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-turquoise"
+                          />
+                          <div className="flex items-center space-x-3">
+                            <img 
+                              src={child.avatarUrl || '/placeholder-avatar.png'} 
+                              alt={child.name}
+                              className="w-8 h-8 rounded-full"
+                            />
+                            <div>
+                              <div className="font-medium">{child.name}</div>
+                              <div className="text-sm text-gray-500">
+                                Currently has {allChildrenHabits.data?.[child.id]?.length || 0} habits
+                              </div>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Button */}
+              {selectedTargetChildren.length > 0 && (
+                <Button
+                  onClick={handleCopyHabits}
+                  disabled={copyHabitsMutation.isPending}
+                  className="w-full bg-turquoise hover:bg-turquoise/80 text-white py-3 text-lg font-bold"
+                >
+                  {copyHabitsMutation.isPending ? "Copying Habits..." : 
+                    `Copy ${selectedHabits.length} habit(s) to ${selectedTargetChildren.length} child(ren)`
+                  }
+                </Button>
+              )}
+
+              {/* Current Habit Overview */}
+              <div className="mt-8 border-t pt-6">
+                <h4 className="font-bold text-gray-800 mb-4">Current Habit Overview</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {children.map((child) => (
+                    <Card key={child.id} className="p-4 border-2 border-sky/30">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <img 
+                          src={child.avatarUrl || '/placeholder-avatar.png'} 
+                          alt={child.name}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <div className="font-bold text-gray-800">{child.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {allChildrenHabits.data?.[child.id]?.length || 0} habits
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {allChildrenHabits.data?.[child.id]?.map((habit) => (
+                          <div key={habit.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                            <div className="flex items-center space-x-2">
+                              <span>{habit.icon}</span>
+                              <span className="font-medium">{habit.name}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                if (confirm(`Remove "${habit.name}" from ${child.name}?`)) {
+                                  removeHabitMutation.mutate({ habitId: habit.id });
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )) || (
+                          <div className="text-sm text-gray-500 italic">No habits assigned</div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
 
 // Habit Management Section Component
-function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: { 
+function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children }: { 
   childId: string; 
   showAddHabit: boolean; 
-  setShowAddHabit: (show: boolean) => void; 
+  setShowAddHabit: (show: boolean) => void;
+  showHabitAssignment: boolean; 
+  setShowHabitAssignment: (show: boolean) => void;
+  children: Child[];
 }) {
   const { toast } = useToast();
   const [habitName, setHabitName] = useState("");
@@ -1019,11 +1354,13 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
 
   return (
     <Card className="fun-card p-4 sm:p-8 border-4 border-turquoise">
-      <div className="flex items-center mb-4 sm:mb-6">
-        <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
-        <div>
-          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📋 Habit Management</h3>
-          <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and track progress</p>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="flex items-center">
+          <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
+          <div>
+            <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📋 Habit Management</h3>
+            <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and track progress</p>
+          </div>
         </div>
       </div>
       
@@ -1115,12 +1452,29 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit }: {
           ))}
           
           {!showAddHabit ? (
-            <Button 
-              onClick={() => setShowAddHabit(true)}
-              className="w-full bg-turquoise hover:bg-turquoise/80 text-white font-bold"
-            >
-              + Add New Habit
-            </Button>
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <Button 
+                  onClick={() => setShowAddHabit(true)}
+                  className="bg-turquoise hover:bg-turquoise/80 text-white font-bold"
+                >
+                  + Add New Habit
+                </Button>
+                <Button 
+                  onClick={() => setShowHabitAssignment(true)}
+                  className="bg-sky hover:bg-sky/80 text-white font-bold"
+                  disabled={!children || children.length < 2}
+                >
+                  🔄 Manage Assignments
+                </Button>
+              </div>
+              
+              {children && children.length < 2 && (
+                <div className="text-sm text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
+                  💡 Add more children to use the individual habit assignment feature
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-4 p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
               <h4 className="font-bold text-gray-800">Create New Habit</h4>
