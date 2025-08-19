@@ -51,7 +51,8 @@ export const users = pgTable("users", {
   subscriptionPlan: varchar("subscription_plan").default("trial"), // trial, monthly, quarterly, yearly, family
   subscriptionStartDate: timestamp("subscription_start_date").defaultNow(),
   subscriptionEndDate: timestamp("subscription_end_date"),
-  trialEndDate: timestamp("trial_end_date").default(sql`NOW() + INTERVAL '7 days'`),
+  subscriptionCanceledAt: timestamp("subscription_canceled_at"),
+  trialEndsAt: timestamp("trial_ends_at").default(sql`NOW() + INTERVAL '7 days'`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
