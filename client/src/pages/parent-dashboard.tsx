@@ -498,12 +498,21 @@ export default function ParentDashboard() {
                 <div className="font-bold text-xl text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
               </div>
               <div className="relative">
-                <img 
-                  src={(user as User)?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((user as User)?.email || 'Parent')}&background=ff6b6b&color=fff&size=48`} 
-                  alt="Parent Profile" 
-                  className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setShowParentProfile(!showParentProfile)}
-                />
+                {(user as User)?.profileImageUrl ? (
+                  <img 
+                    src={(user as User)?.profileImageUrl || ''} 
+                    alt="Parent Profile" 
+                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setShowParentProfile(!showParentProfile)}
+                  />
+                ) : (
+                  <div 
+                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-primary flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold"
+                    onClick={() => setShowParentProfile(!showParentProfile)}
+                  >
+                    {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
+                  </div>
+                )}
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
                   <Settings className="w-2 h-2 text-white" />
                 </div>
@@ -696,7 +705,7 @@ export default function ParentDashboard() {
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
             <Card className="fun-card p-3 sm:p-6 text-center border-4 border-coral">
               <Star className="w-8 h-8 sm:w-12 sm:h-12 text-coral mx-auto mb-2 sm:mb-3" />
-              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child.level}</div>
+              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child?.level || 1}</div>
               <div className="text-gray-600 font-bold text-xs sm:text-base">Current Level</div>
             </Card>
           </div>
@@ -706,7 +715,7 @@ export default function ParentDashboard() {
         <div className="space-y-8">
           {/* Habit Management Section */}
           <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <HabitManagementSection childId={child.id} showAddHabit={showAddHabit} setShowAddHabit={setShowAddHabit} />
+            <HabitManagementSection childId={child?.id || ''} showAddHabit={showAddHabit} setShowAddHabit={setShowAddHabit} />
           </div>
 
           {/* Habit Approval Section */}
@@ -735,12 +744,12 @@ export default function ParentDashboard() {
 
           {/* Reward Settings Section */}
           <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
-            <RewardSettingsSection childId={child.id} showAddReward={showAddReward} setShowAddReward={setShowAddReward} />
+            <RewardSettingsSection childId={child?.id || ''} showAddReward={showAddReward} setShowAddReward={setShowAddReward} />
           </div>
 
           {/* Reward Approval Section */}
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-            <RewardApprovalSection childId={child.id} />
+            <RewardApprovalSection childId={child?.id || ''} />
           </div>
 
           {/* Progress Reports Section */}

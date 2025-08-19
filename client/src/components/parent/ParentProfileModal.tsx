@@ -68,7 +68,7 @@ export default function ParentProfileModal({ isOpen, onClose, user }: ParentProf
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white">
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-sky to-royal text-white">
           <div className="flex items-center gap-3">
             <User className="w-6 h-6" />
             <div>
@@ -85,14 +85,20 @@ export default function ParentProfileModal({ isOpen, onClose, user }: ParentProf
           {/* Profile Photo Section */}
           <div className="text-center">
             <div className="relative inline-block">
-              <img
-                src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent((firstName + ' ' + lastName) || email || 'Parent')}&background=ff6b6b&color=fff&size=96`}
-                alt="Profile"
-                className="w-24 h-24 rounded-full border-4 border-coral avatar-glow object-cover mx-auto"
-              />
+              {user?.profileImageUrl ? (
+                <img
+                  src={user?.profileImageUrl}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full border-4 border-primary avatar-glow object-cover mx-auto"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full border-4 border-primary avatar-glow bg-primary flex items-center justify-center mx-auto text-white font-bold text-2xl">
+                  {(firstName?.[0] || lastName?.[0] || email?.[0] || 'P').toUpperCase()}
+                </div>
+              )}
               <Button
                 size="sm"
-                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-coral hover:bg-coral/80"
+                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-sky hover:bg-sky/80"
               >
                 <Camera className="w-4 h-4" />
               </Button>

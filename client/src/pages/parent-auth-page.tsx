@@ -168,7 +168,7 @@ export default function ParentAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
+    <div className="min-h-screen hero-gradient">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8 items-center min-h-screen">
           {/* Hero Section */}
