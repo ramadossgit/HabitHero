@@ -316,13 +316,13 @@ function AlertSettingsContent({
   return (
     <div className="space-y-6">
       {/* Main Reminder Toggle */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg border-2 border-coral/30">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-coral/30 dark:border-coral/40">
         <div>
-          <h3 className="font-fredoka text-lg text-gray-800 flex items-center">
+          <h3 className="font-fredoka text-lg text-gray-800 dark:text-gray-100 flex items-center">
             <Bell className="w-5 h-5 mr-2 text-coral" />
-            Daily Reminders
+            🔔 Daily Reminders
           </h3>
-          <p className="text-sm text-gray-600">Get notified when it's time for habits</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Get notified when it's time for habits</p>
         </div>
         <Switch
           checked={settings.reminderEnabled}
@@ -358,9 +358,9 @@ function AlertSettingsContent({
 
           {/* Reminder Duration */}
           <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-base font-medium">
+            <Label className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
               <Timer className="w-4 h-4 text-coral" />
-              Reminder Duration: {settings.reminderDuration} minutes
+              ⏱️ Reminder Duration: {settings.reminderDuration} minutes
             </Label>
             <div className="px-3">
               <Slider
@@ -372,13 +372,13 @@ function AlertSettingsContent({
                 className="w-full"
                 data-testid="slider-reminder-duration"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <span>1 min</span>
                 <span>15 min</span>
                 <span>30 min</span>
               </div>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               How long reminders will continue if not acknowledged
             </p>
           </div>
@@ -386,36 +386,38 @@ function AlertSettingsContent({
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="timeRangeStart">Active From</Label>
+              <Label htmlFor="timeRangeStart" className="text-gray-700 dark:text-gray-300">🌅 Active From</Label>
               <Input
                 id="timeRangeStart"
                 type="time"
                 value={settings.timeRangeStart}
                 onChange={(e) => updateSettings({ timeRangeStart: e.target.value })}
                 data-testid="input-time-start"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="timeRangeEnd">Active Until</Label>
+              <Label htmlFor="timeRangeEnd" className="text-gray-700 dark:text-gray-300">🌙 Active Until</Label>
               <Input
                 id="timeRangeEnd"
                 type="time"
                 value={settings.timeRangeEnd}
                 onChange={(e) => updateSettings({ timeRangeEnd: e.target.value })}
                 data-testid="input-time-end"
+                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
 
           {/* Voice Reminders */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
               <div>
-                <div className="font-medium flex items-center">
+                <div className="font-medium flex items-center text-gray-800 dark:text-gray-100">
                   <Volume2 className="w-4 h-4 mr-2 text-yellow-600" />
-                  Voice Reminders
+                  🔊 Voice Reminders
                 </div>
-                <div className="text-sm text-gray-600">Spoken reminder messages</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Spoken reminder messages</div>
               </div>
               <Switch
                 checked={settings.voiceReminderEnabled}
@@ -426,15 +428,15 @@ function AlertSettingsContent({
 
             {/* Voice Recording Section */}
             {settings.voiceReminderEnabled && (
-              <div className="p-4 bg-gradient-to-r from-purple/10 to-pink/10 rounded-lg border-2 border-purple/30">
-                <h4 className="font-fredoka text-base text-gray-800 mb-3 flex items-center">
+              <div className="p-4 bg-gradient-to-r from-purple/10 to-pink/10 dark:from-purple/20 dark:to-pink/20 rounded-lg border-2 border-purple/30 dark:border-purple/40">
+                <h4 className="font-fredoka text-base text-gray-800 dark:text-gray-100 mb-3 flex items-center">
                   <Mic className="w-4 h-4 mr-2 text-purple" />
                   🎤 Personal Voice Message
                 </h4>
                 
                 {!settings.voiceRecording ? (
                   <div className="text-center py-4">
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                       Record your own voice reminder for a personal touch!
                     </p>
                     <Button

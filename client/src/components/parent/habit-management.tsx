@@ -232,9 +232,9 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
   }
 
   return (
-    <Card className="p-6 shadow-lg">
+    <Card className="p-6 shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-fredoka text-2xl text-gray-800 flex items-center">
+        <h3 className="font-fredoka text-2xl text-gray-800 dark:text-gray-100 flex items-center">
           <CheckSquare className="text-sky mr-3" />
           <span className="emoji mr-2">🎯</span> Manage Habits
         </h3>
@@ -251,37 +251,39 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle className="text-xl font-fredoka text-gray-800">
+              <DialogTitle className="text-xl font-fredoka text-gray-800 dark:text-gray-100">
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pb-6">
               <div>
-                <Label htmlFor="name">Habit Name</Label>
+                <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name</Label>
                 <Input
                   id="name"
                   value={habitForm.name}
                   onChange={(e) => setHabitForm({ ...habitForm, name: e.target.value })}
                   placeholder="e.g., Brush Teeth"
                   required
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Description</Label>
                 <Input
                   id="description"
                   value={habitForm.description}
                   onChange={(e) => setHabitForm({ ...habitForm, description: e.target.value })}
                   placeholder="e.g., Keep your smile sparkling bright!"
+                  className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="icon">Icon</Label>
+                  <Label htmlFor="icon" className="text-gray-700 dark:text-gray-300">Icon</Label>
                   <Select value={habitForm.icon} onValueChange={(value) => setHabitForm({ ...habitForm, icon: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -303,9 +305,9 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="color">Color</Label>
+                  <Label htmlFor="color" className="text-gray-700 dark:text-gray-300">Color</Label>
                   <Select value={habitForm.color} onValueChange={(value) => setHabitForm({ ...habitForm, color: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -320,7 +322,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="xpReward" className="flex items-center">
+                  <Label htmlFor="xpReward" className="flex items-center text-gray-700 dark:text-gray-300">
                     <span className="emoji mr-1">⚡</span> XP Reward
                   </Label>
                   <Input
@@ -330,10 +332,11 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     onChange={(e) => setHabitForm({ ...habitForm, xpReward: parseInt(e.target.value) || 0 })}
                     min="10"
                     max="200"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="rewardPoints" className="flex items-center">
+                  <Label htmlFor="rewardPoints" className="flex items-center text-gray-700 dark:text-gray-300">
                     <Gift className="w-4 h-4 mr-2 text-coral" />
                     <span className="emoji mr-1">🎁</span> Reward Points
                   </Label>
@@ -344,6 +347,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     onChange={(e) => setHabitForm({ ...habitForm, rewardPoints: parseInt(e.target.value) || 0 })}
                     min="1"
                     max="50"
+                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
@@ -392,7 +396,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
           const colorClass = getColorClasses(habit.color);
           
           return (
-            <div key={habit.id} className="p-4 border border-gray-200 rounded-lg hover:border-mint transition-colors">
+            <div key={habit.id} className="p-4 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg hover:border-mint dark:hover:border-mint transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="flex items-center mr-3">
@@ -400,11 +404,11 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     <IconComponent className={`${colorClass} w-5 h-5`} />
                   </div>
                   <div>
-                    <h4 className="font-bold flex items-center">
+                    <h4 className="font-bold flex items-center text-gray-800 dark:text-gray-100">
                       {habit.name}
                       {habit.isActive && <span className="emoji ml-2 text-green-500">✅</span>}
                     </h4>
-                    <p className="text-sm text-gray-600 flex items-center">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                       <span className="emoji mr-1">📅</span> Daily • <span className="emoji mr-1">⚡</span> {habit.xpReward} XP • <span className="emoji mr-1">🎁</span> {habit.rewardPoints} pts • {habit.description}
                     </p>
                   </div>
@@ -447,12 +451,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
 
         <Button
           variant="outline"
-          className="w-full p-4 border-2 border-dashed border-gray-300 text-gray-500 hover:border-sky hover:text-sky"
+          className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-sky hover:text-sky dark:hover:border-sky dark:hover:text-sky bg-white dark:bg-gray-800"
           onClick={() => {
             setEditingHabit(null);
             resetForm();
             setIsDialogOpen(true);
           }}
+          data-testid="button-add-new-habit"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add New Habit
