@@ -363,30 +363,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllHabitsByParent(parentId: string): Promise<Habit[]> {
-    return await db.select({
-      id: habits.id,
-      childId: habits.childId,
-      name: habits.name,
-      description: habits.description,
-      icon: habits.icon,
-      xpReward: habits.xpReward,
-      color: habits.color,
-      isActive: habits.isActive,
-      frequency: habits.frequency,
-      masterHabitId: habits.masterHabitId,
-      reminderTime: habits.reminderTime,
-      reminderEnabled: habits.reminderEnabled,
-      voiceReminderEnabled: habits.voiceReminderEnabled,
-      customRingtone: habits.customRingtone,
-      reminderDuration: habits.reminderDuration,
-      voiceRecording: habits.voiceRecording,
-      voiceRecordingName: habits.voiceRecordingName,
-      timeRangeStart: habits.timeRangeStart,
-      timeRangeEnd: habits.timeRangeEnd,
-      createdAt: habits.createdAt,
-      updatedAt: habits.updatedAt,
-      childName: children.name,
-    })
+    return await db.select()
     .from(habits)
     .leftJoin(children, eq(habits.childId, children.id))
     .where(eq(children.parentId, parentId))

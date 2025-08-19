@@ -1302,6 +1302,28 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
+  const updateMasterHabitMutation = useMutation({
+    mutationFn: async (data: { masterHabitId: string; updates: any }) => {
+      await apiRequest("PATCH", `/api/habits/master/${data.masterHabitId}`, data.updates);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Master Habit Updated! 🎯",
+        description: "Master habit has been updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      setEditingHabit(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update master habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const editHabitMutation = useMutation({
     mutationFn: async (data: { habitId: string; updates: any }) => {
       await apiRequest("PATCH", `/api/habits/${data.habitId}`, data.updates);
@@ -1443,8 +1465,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                   <div className="flex space-x-2">
                     <Button
                       onClick={() => {
-                        editHabitMutation.mutate({
-                          habitId: habit.id,
+                        updateMasterHabitMutation.mutate({
+                          masterHabitId: habit.id,
                           updates: {
                             name: editHabitName,
                             description: editHabitDescription,
@@ -1454,7 +1476,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                           }
                         });
                       }}
-                      disabled={editHabitMutation.isPending}
+                      disabled={updateMasterHabitMutation.isPending}
                       className="bg-green-500 hover:bg-green-600 text-white"
                     >
                       {editHabitMutation.isPending ? "Saving..." : "💾 Save"}
@@ -1640,10 +1662,10 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
               <div className="flex space-x-2">
                 <Button 
                   onClick={handleAddHabit}
-                  disabled={createHabitMutation.isPending}
+                  disabled={createMasterHabitMutation.isPending}
                   className="flex-1 bg-turquoise hover:bg-turquoise/80 text-white"
                 >
-                  {createHabitMutation.isPending ? "Creating..." : "🎯 Create Habit"}
+                  {createMasterHabitMutation.isPending ? "Creating..." : "🎯 Create Master Habit"}
                 </Button>
                 <Button 
                   onClick={() => setShowAddHabit(false)}

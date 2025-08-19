@@ -77,7 +77,6 @@ export const masterHabits = pgTable("master_habits", {
   xpReward: integer("xp_reward").notNull().default(50),
   color: varchar("color").notNull().default("turquoise"),
   frequency: varchar("frequency").notNull().default("daily"),
-  rewardPoints: integer("reward_points").notNull().default(0),
   reminderTime: integer("reminder_time").default(15),
   reminderEnabled: boolean("reminder_enabled").default(true),
   voiceReminderEnabled: boolean("voice_reminder_enabled").default(false),
@@ -103,7 +102,6 @@ export const habits = pgTable("habits", {
   color: varchar("color").notNull().default("mint"),
   isActive: boolean("is_active").notNull().default(true),
   frequency: varchar("frequency").notNull().default("daily"), // daily, weekly
-  rewardPoints: integer("reward_points").notNull().default(5), // Points awarded for completion
   reminderTime: varchar("reminder_time"), // HH:MM format for scheduled reminders
   reminderEnabled: boolean("reminder_enabled").notNull().default(false),
   voiceReminderEnabled: boolean("voice_reminder_enabled").notNull().default(false),
