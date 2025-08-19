@@ -29,11 +29,11 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
   const calculateHealthStatus = (): HealthStatus => {
     if (habits.length === 0) {
       return {
-        level: "okay",
-        score: 50,
+        level: "critical",
+        score: 0,
         message: "Ready to start your hero journey!",
-        color: "from-blue-400 to-blue-600",
-        icon: <Target className="w-6 h-6" />,
+        color: "from-gray-400 to-gray-500",
+        icon: <Target className="w-6 h-6 text-white" />,
         animation: "bounce"
       };
     }

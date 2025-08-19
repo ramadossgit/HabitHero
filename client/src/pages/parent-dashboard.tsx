@@ -473,7 +473,7 @@ export default function ParentDashboard() {
 
   // Calculate real statistics
   const completionRate = weeklyProgress && child ? 
-    Math.round(((weeklyProgress as any).completedHabits / Math.max((weeklyProgress as any).totalHabits, 1)) * 100) : 0;
+    ((weeklyProgress as any).totalHabits === 0 ? 0 : Math.round(((weeklyProgress as any).completedHabits / (weeklyProgress as any).totalHabits) * 100)) : 0;
 
   // Calculate current streak - consecutive days with at least one completed habit
   const calculateCurrentStreak = () => {
