@@ -151,7 +151,7 @@ export default function SubscriptionPage() {
       <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Link href="/parent/dashboard">
+          <Link href="/parent">
             <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
