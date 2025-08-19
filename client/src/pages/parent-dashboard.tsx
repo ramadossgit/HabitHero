@@ -497,26 +497,29 @@ export default function ParentDashboard() {
                 <div className="text-xs text-white/80">Total Family XP</div>
                 <div className="font-bold text-xl text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
               </div>
-              <div className="relative">
-                {(user as User)?.profileImageUrl ? (
-                  <img 
-                    src={(user as User)?.profileImageUrl || ''} 
-                    alt="Parent Profile" 
-                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
-                    onClick={() => setShowParentProfile(!showParentProfile)}
-                  />
-                ) : (
-                  <div 
-                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold"
-                    onClick={() => setShowParentProfile(!showParentProfile)}
-                  >
-                    {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
+              {/* Profile Avatar - Always show when user is authenticated */}
+              {user && (
+                <div className="relative">
+                  {(user as User)?.profileImageUrl ? (
+                    <img 
+                      src={(user as User)?.profileImageUrl || ''} 
+                      alt="Parent Profile" 
+                      className="w-12 h-12 rounded-full border-4 border-white avatar-glow object-cover cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => setShowParentProfile(!showParentProfile)}
+                    />
+                  ) : (
+                    <div 
+                      className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold text-lg"
+                      onClick={() => setShowParentProfile(!showParentProfile)}
+                    >
+                      {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
+                    <Settings className="w-2 h-2 text-white" />
                   </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
-                  <Settings className="w-2 h-2 text-white" />
                 </div>
-              </div>
+              )}
             </div>
           </div>
           
