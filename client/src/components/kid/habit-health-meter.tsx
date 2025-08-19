@@ -43,7 +43,9 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
       c.completedAt && new Date(c.completedAt).toDateString() === today && c.status === 'approved'
     );
     
-    const completionRate = (todayCompletions.length / habits.length) * 100;
+    // Calculate unique habits completed today (prevent duplicate counting)
+    const uniqueHabitsCompleted = new Set(todayCompletions.map(c => c.habitId)).size;
+    const completionRate = Math.min(100, (uniqueHabitsCompleted / habits.length) * 100);
     
     // Give encouraging scores even for single task completion
     if (completionRate >= 90) {
@@ -73,13 +75,13 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
         icon: <Zap className="w-6 h-6 text-white" />,
         animation: "wiggle"
       };
-    } else if (todayCompletions.length > 0) {
+    } else if (uniqueHabitsCompleted > 0) {
       // Show encouraging progress for any completion
       const encouragingScore = Math.max(completionRate, 40); // Minimum 40% for any completion
       return {
         level: "okay",
         score: encouragingScore,
-        message: `⚡ Great job! ${childName} completed ${todayCompletions.length} habit${todayCompletions.length > 1 ? 's' : ''}!`,
+        message: `⚡ Great job! ${childName} completed ${uniqueHabitsCompleted} habit${uniqueHabitsCompleted > 1 ? 's' : ''}!`,
         color: "from-yellow-400 to-orange-500",
         icon: <Zap className="w-6 h-6 text-white" />,
         animation: "pulse"
