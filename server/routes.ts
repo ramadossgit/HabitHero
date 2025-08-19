@@ -209,6 +209,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all habits for all children (for parent habit assignment)
+  app.get('/api/habits/all', isAuthenticated, async (req, res) => {
+    try {
+      const habits = await storage.getAllHabitsByParent(req.user!.id);
+      res.json(habits);
+    } catch (error) {
+      console.error("Error fetching all habits:", error);
+      res.status(500).json({ message: "Failed to fetch habits" });
+    }
+  });
+
   app.post('/api/children/:childId/habits', isAuthenticated, async (req, res) => {
     try {
       const habitData = insertHabitSchema.parse({

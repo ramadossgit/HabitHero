@@ -60,6 +60,7 @@ export interface IStorage {
   
   // Habit operations
   getHabitsByChild(childId: string): Promise<Habit[]>;
+  getAllHabitsByParent(parentId: string): Promise<Habit[]>;
   getHabit(id: string): Promise<Habit | undefined>;
   createHabit(habit: InsertHabit): Promise<Habit>;
   updateHabit(id: string, updates: Partial<InsertHabit>): Promise<Habit>;
@@ -321,6 +322,37 @@ export class DatabaseStorage implements IStorage {
   // Habit operations
   async getHabitsByChild(childId: string): Promise<Habit[]> {
     return await db.select().from(habits).where(eq(habits.childId, childId));
+  }
+
+  async getAllHabitsByParent(parentId: string): Promise<Habit[]> {
+    return await db.select({
+      id: habits.id,
+      childId: habits.childId,
+      name: habits.name,
+      description: habits.description,
+      icon: habits.icon,
+      xpReward: habits.xpReward,
+      color: habits.color,
+      isActive: habits.isActive,
+      frequency: habits.frequency,
+      rewardPoints: habits.rewardPoints,
+      reminderTime: habits.reminderTime,
+      reminderEnabled: habits.reminderEnabled,
+      voiceReminderEnabled: habits.voiceReminderEnabled,
+      customRingtone: habits.customRingtone,
+      reminderDuration: habits.reminderDuration,
+      voiceRecording: habits.voiceRecording,
+      voiceRecordingName: habits.voiceRecordingName,
+      timeRangeStart: habits.timeRangeStart,
+      timeRangeEnd: habits.timeRangeEnd,
+      createdAt: habits.createdAt,
+      updatedAt: habits.updatedAt,
+      childName: children.name,
+    })
+    .from(habits)
+    .leftJoin(children, eq(habits.childId, children.id))
+    .where(eq(children.parentId, parentId))
+    .orderBy(desc(habits.createdAt));
   }
 
   async getHabit(id: string): Promise<Habit | undefined> {

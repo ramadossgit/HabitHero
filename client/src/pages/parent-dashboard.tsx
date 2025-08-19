@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -925,145 +925,73 @@ export default function ParentDashboard() {
   );
 }
 
-// Habit Assignment Modal Component - Allows parents to manage habits across all children
-function HabitAssignmentModal({ isOpen, onClose, children }: { 
+// New Habit Assignment Modal Component - Shows all habits with Active/Inactive status
+function HabitAssignmentModal({ 
+  isOpen, 
+  onClose, 
+  children 
+}: { 
   isOpen: boolean; 
   onClose: () => void; 
-  children: Child[]; 
+  children: Child[];
 }) {
   const { toast } = useToast();
-  const [selectedSourceChild, setSelectedSourceChild] = useState<string>("");
-  const [selectedTargetChildren, setSelectedTargetChildren] = useState<string[]>([]);
-  const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
+  const queryClient = useQueryClient();
 
-  // Get habits for the selected source child
-  const { data: sourceChildHabits } = useQuery<Habit[]>({
-    queryKey: [`/api/children/${selectedSourceChild}/habits`],
-    enabled: !!selectedSourceChild,
+  // Get all habits for parent with child names
+  const { data: allHabits, isLoading } = useQuery<(Habit & { childName?: string })[]>({
+    queryKey: ["/api/habits/all"],
+    enabled: isOpen
   });
 
-  // Get all habits for all children to show what each child has
-  const allChildrenHabits = useQuery({
-    queryKey: ["all-children-habits"],
-    queryFn: async () => {
-      const habitsData: { [childId: string]: Habit[] } = {};
-      for (const child of children) {
-        const response = await fetch(`/api/children/${child.id}/habits`);
-        if (response.ok) {
-          habitsData[child.id] = await response.json();
-        }
-      }
-      return habitsData;
-    },
-    enabled: isOpen && children.length > 0,
-  });
-
-  const copyHabitsMutation = useMutation({
-    mutationFn: async ({ habitIds, targetChildIds }: { habitIds: string[]; targetChildIds: string[] }) => {
-      const copyPromises: Promise<any>[] = [];
-      
-      for (const habitId of habitIds) {
-        const sourceHabit = sourceChildHabits?.find(h => h.id === habitId);
-        if (!sourceHabit) continue;
-        
-        for (const targetChildId of targetChildIds) {
-          // Check if child already has this habit
-          const targetChildHabits = allChildrenHabits.data?.[targetChildId] || [];
-          const hasHabit = targetChildHabits.some(h => 
-            h.name.toLowerCase() === sourceHabit.name.toLowerCase()
-          );
-          
-          if (!hasHabit) {
-            copyPromises.push(
-              apiRequest("POST", `/api/children/${targetChildId}/habits`, {
-                name: sourceHabit.name,
-                description: sourceHabit.description,
-                icon: sourceHabit.icon,
-                xpReward: sourceHabit.xpReward,
-                color: sourceHabit.color,
-                frequency: sourceHabit.frequency,
-                isActive: true,
-              })
-            );
-          }
-        }
-      }
-      
-      await Promise.all(copyPromises);
+  // Toggle habit active/inactive status
+  const toggleHabitStatusMutation = useMutation({
+    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
+      await apiRequest("PATCH", `/api/habits/${habitId}`, { isActive });
     },
     onSuccess: () => {
       toast({
-        title: "Habits Copied Successfully! 🎯",
-        description: "Selected habits have been added to the chosen children.",
+        title: "Habit Status Updated!",
+        description: "Habit status has been changed successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["all-children-habits"] });
-      setSelectedHabits([]);
-      setSelectedTargetChildren([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to copy habits. Please try again.",
+        description: "Failed to update habit status.",
         variant: "destructive",
       });
     },
   });
 
-  const removeHabitMutation = useMutation({
-    mutationFn: async ({ habitId }: { habitId: string }) => {
-      await apiRequest("DELETE", `/api/habits/${habitId}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Removed Successfully! 🗑️",
-        description: "The habit has been removed from the child.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["all-children-habits"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to remove habit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleCopyHabits = () => {
-    if (selectedHabits.length === 0) {
-      toast({
-        title: "No Habits Selected",
-        description: "Please select at least one habit to copy.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Group habits by unique name (master habits)
+  const groupedHabits = React.useMemo(() => {
+    if (!allHabits) return {};
     
-    if (selectedTargetChildren.length === 0) {
-      toast({
-        title: "No Children Selected",
-        description: "Please select at least one child to copy habits to.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    copyHabitsMutation.mutate({
-      habitIds: selectedHabits,
-      targetChildIds: selectedTargetChildren,
+    const groups: Record<string, (Habit & { childName?: string })[]> = {};
+    allHabits.forEach(habit => {
+      const key = habit.name.toLowerCase();
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(habit);
     });
-  };
+    
+    return groups;
+  }, [allHabits]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="font-fredoka text-2xl text-gray-800">🎯 Individual Habit Assignment</h3>
-              <p className="text-gray-600">Copy habits between children or remove specific habits</p>
+              <h3 className="font-fredoka text-2xl text-gray-800">🎯 Habit Assignment Center</h3>
+              <p className="text-gray-600">Manage which habits are active for each child</p>
             </div>
             <Button variant="ghost" onClick={onClose}>
               <X className="w-5 h-5" />
@@ -1075,161 +1003,150 @@ function HabitAssignmentModal({ isOpen, onClose, children }: {
               <p className="text-gray-600">You need at least 2 children to manage individual habit assignments.</p>
               <p className="text-sm text-gray-500 mt-2">Add more children to use this feature.</p>
             </div>
+          ) : isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turquoise mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading habits...</p>
+            </div>
           ) : (
             <div className="space-y-6">
-              {/* Source Child Selection */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Step 1: Select child to copy habits FROM
-                </label>
-                <Select value={selectedSourceChild} onValueChange={setSelectedSourceChild}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a child..." />
-                  </SelectTrigger>
-                  <SelectContent>
+              {/* Children Header */}
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-gradient-to-r from-turquoise/10 to-sky/10 p-4 rounded-lg">
+                  <h4 className="font-bold text-gray-800 mb-3">👥 Your Children ({children.length})</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {children.map((child) => (
-                      <SelectItem key={child.id} value={child.id}>
-                        {child.name} ({allChildrenHabits.data?.[child.id]?.length || 0} habits)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Habit Selection */}
-              {selectedSourceChild && sourceChildHabits && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Step 2: Select habits to copy
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto border rounded-lg p-3">
-                    {sourceChildHabits.map((habit) => (
-                      <label key={habit.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-                        <input
-                          type="checkbox"
-                          checked={selectedHabits.includes(habit.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedHabits([...selectedHabits, habit.id]);
-                            } else {
-                              setSelectedHabits(selectedHabits.filter(id => id !== habit.id));
-                            }
-                          }}
-                          className="w-4 h-4 text-turquoise"
-                        />
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">{habit.icon}</span>
-                          <div>
-                            <div className="font-medium text-sm">{habit.name}</div>
-                            <div className="text-xs text-gray-500">{habit.xpReward} XP</div>
-                          </div>
+                      <div key={child.id} className="flex items-center space-x-2 bg-white/50 p-2 rounded">
+                        <div className="w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center font-bold text-sm">
+                          {child.name.charAt(0).toUpperCase()}
                         </div>
-                      </label>
+                        <div>
+                          <div className="font-medium text-sm">{child.name}</div>
+                          <div className="text-xs text-gray-500">Level {child.level}</div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Target Children Selection */}
-              {selectedHabits.length > 0 && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Step 3: Select children to copy habits TO
-                  </label>
-                  <div className="space-y-2">
-                    {children
-                      .filter(child => child.id !== selectedSourceChild)
-                      .map((child) => (
-                        <label key={child.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                          <input
-                            type="checkbox"
-                            checked={selectedTargetChildren.includes(child.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedTargetChildren([...selectedTargetChildren, child.id]);
-                              } else {
-                                setSelectedTargetChildren(selectedTargetChildren.filter(id => id !== child.id));
-                              }
-                            }}
-                            className="w-4 h-4 text-turquoise"
-                          />
-                          <div className="flex items-center space-x-3">
-                            <img 
-                              src={child.avatarUrl || '/placeholder-avatar.png'} 
-                              alt={child.name}
-                              className="w-8 h-8 rounded-full"
-                            />
-                            <div>
-                              <div className="font-medium">{child.name}</div>
-                              <div className="text-sm text-gray-500">
-                                Currently has {allChildrenHabits.data?.[child.id]?.length || 0} habits
+              {/* Habits Assignment Grid */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-gray-800">📋 Habit Assignment Overview</h4>
+                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  <p><strong>Active habits</strong> appear in children's daily habit list</p>
+                  <p><strong>Inactive habits</strong> are hidden from children and won't sync to their devices</p>
+                </div>
+
+                {Object.keys(groupedHabits).length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg">
+                    <p className="text-gray-600">No habits created yet</p>
+                    <p className="text-sm text-gray-500 mt-1">Create habits in the Habit Management section first</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(groupedHabits).map(([habitName, habitInstances]) => {
+                      const masterHabit = habitInstances[0];
+                      return (
+                        <Card key={habitName} className="p-4 border-2 border-gray-200">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-2xl">{masterHabit.icon}</span>
+                              <div>
+                                <h5 className="font-bold text-gray-800">{masterHabit.name}</h5>
+                                <p className="text-sm text-gray-600">{masterHabit.description || 'No description'}</p>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {masterHabit.xpReward} XP • {masterHabit.frequency} • {masterHabit.color}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </label>
-                      ))}
+
+                          {/* Child Assignment Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {children.map((child) => {
+                              const childHabit = habitInstances.find(h => h.childId === child.id);
+                              const hasHabit = !!childHabit;
+                              const isActive = childHabit?.isActive ?? false;
+
+                              return (
+                                <div key={child.id} className={`p-3 rounded-lg border-2 ${
+                                  hasHabit 
+                                    ? isActive 
+                                      ? 'border-green-300 bg-green-50' 
+                                      : 'border-yellow-300 bg-yellow-50'
+                                    : 'border-gray-200 bg-gray-50'
+                                }`}>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-6 h-6 rounded-full bg-coral text-white flex items-center justify-center font-bold text-xs">
+                                        {child.name.charAt(0).toUpperCase()}
+                                      </div>
+                                      <span className="font-medium text-sm">{child.name}</span>
+                                    </div>
+                                    
+                                    {hasHabit ? (
+                                      <div className="flex items-center space-x-2">
+                                        <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                          isActive ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+                                        }`}>
+                                          {isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            toggleHabitStatusMutation.mutate({
+                                              habitId: childHabit!.id,
+                                              isActive: !isActive
+                                            });
+                                          }}
+                                          disabled={toggleHabitStatusMutation.isPending}
+                                          className="h-6 w-12 p-1 text-xs"
+                                        >
+                                          {isActive ? '⏸️' : '▶️'}
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-500 px-2 py-1 bg-gray-200 rounded">
+                                        Not Assigned
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Action Button */}
-              {selectedTargetChildren.length > 0 && (
-                <Button
-                  onClick={handleCopyHabits}
-                  disabled={copyHabitsMutation.isPending}
-                  className="w-full bg-turquoise hover:bg-turquoise/80 text-white py-3 text-lg font-bold"
-                >
-                  {copyHabitsMutation.isPending ? "Copying Habits..." : 
-                    `Copy ${selectedHabits.length} habit(s) to ${selectedTargetChildren.length} child(ren)`
-                  }
-                </Button>
-              )}
-
-              {/* Current Habit Overview */}
-              <div className="mt-8 border-t pt-6">
-                <h4 className="font-bold text-gray-800 mb-4">Current Habit Overview</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {children.map((child) => (
-                    <Card key={child.id} className="p-4 border-2 border-sky/30">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <img 
-                          src={child.avatarUrl || '/placeholder-avatar.png'} 
-                          alt={child.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <div>
-                          <div className="font-bold text-gray-800">{child.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {allChildrenHabits.data?.[child.id]?.length || 0} habits
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {allChildrenHabits.data?.[child.id]?.map((habit) => (
-                          <div key={habit.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                            <div className="flex items-center space-x-2">
-                              <span>{habit.icon}</span>
-                              <span className="font-medium">{habit.name}</span>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                if (confirm(`Remove "${habit.name}" from ${child.name}?`)) {
-                                  removeHabitMutation.mutate({ habitId: habit.id });
-                                }
-                              }}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )) || (
-                          <div className="text-sm text-gray-500 italic">No habits assigned</div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+              {/* Summary Stats */}
+              <div className="border-t pt-4 mt-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="p-3 bg-turquoise/10 rounded-lg">
+                    <div className="text-xl font-bold text-gray-800">{Object.keys(groupedHabits).length}</div>
+                    <div className="text-sm text-gray-600">Total Habits</div>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <div className="text-xl font-bold text-gray-800">
+                      {allHabits?.filter(h => h.isActive).length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Active Habits</div>
+                  </div>
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <div className="text-xl font-bold text-gray-800">
+                      {allHabits?.filter(h => !h.isActive).length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Inactive Habits</div>
+                  </div>
+                  <div className="p-3 bg-coral/10 rounded-lg">
+                    <div className="text-xl font-bold text-gray-800">{children.length}</div>
+                    <div className="text-sm text-gray-600">Children</div>
+                  </div>
                 </div>
               </div>
             </div>
