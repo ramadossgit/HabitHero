@@ -227,25 +227,7 @@ export default function ParentAuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Show alert if user is already authenticated */}
-                {isAuthenticated && (
-                  <Alert className="mb-4">
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="flex items-center justify-between">
-                      <span>You're already logged in. </span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => logoutMutation.mutate()}
-                        disabled={logoutMutation.isPending}
-                        className="ml-2"
-                      >
-                        <LogOut className="w-4 h-4 mr-1" />
-                        {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                )}
+
                 <Tabs defaultValue="login" className="space-y-4">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login" className="flex items-center space-x-2">
