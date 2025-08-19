@@ -45,6 +45,7 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
     
     const completionRate = (todayCompletions.length / habits.length) * 100;
     
+    // Give encouraging scores even for single task completion
     if (completionRate >= 90) {
       return {
         level: "excellent",
@@ -72,14 +73,16 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
         icon: <Zap className="w-6 h-6 text-white" />,
         animation: "wiggle"
       };
-    } else if (completionRate >= 25) {
+    } else if (todayCompletions.length > 0) {
+      // Show encouraging progress for any completion
+      const encouragingScore = Math.max(completionRate, 40); // Minimum 40% for any completion
       return {
-        level: "needs-work",
-        score: completionRate,
-        message: `💪 Keep trying! ${childName} can do this!`,
-        color: "from-orange-400 to-red-500",
-        icon: <Heart className="w-6 h-6 text-white" />,
-        animation: "shake"
+        level: "okay",
+        score: encouragingScore,
+        message: `⚡ Great job! ${childName} completed ${todayCompletions.length} habit${todayCompletions.length > 1 ? 's' : ''}!`,
+        color: "from-yellow-400 to-orange-500",
+        icon: <Zap className="w-6 h-6 text-white" />,
+        animation: "pulse"
       };
     } else {
       return {
@@ -116,7 +119,7 @@ export default function HabitHealthMeter({ habits, completions, childName }: Hab
     c.completedAt && new Date(c.completedAt).toDateString() === new Date().toDateString() && c.status === 'pending'
   ).length;
 
-  const remainingHabits = habits.length - completedToday - pendingToday;
+  const remainingHabits = Math.max(0, habits.length - completedToday - pendingToday);
 
   return (
     <Card className="fun-card relative overflow-hidden">
