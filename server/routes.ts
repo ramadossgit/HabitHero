@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isChildAuthenticated, isParentOrChildAuthenticated } from "./auth";
 import { syncService } from "./sync-service";
 import { 
-  insertChildSchema, 
+  insertChildSchema,
+  insertMasterHabitSchema,
   insertHabitSchema, 
   insertHabitCompletionSchema,
   insertRewardSchema,
@@ -209,7 +210,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all habits for all children (for parent habit assignment)
+  // Master habits routes (for habit assignment center)
+  app.get('/api/habits/master', isAuthenticated, async (req, res) => {
+    try {
+      const masterHabits = await storage.getMasterHabitsByParent(req.user!.id);
+      res.json(masterHabits);
+    } catch (error) {
+      console.error("Error fetching master habits:", error);
+      res.status(500).json({ message: "Failed to fetch master habits" });
+    }
+  });
+
+  app.post('/api/habits/master', isAuthenticated, async (req, res) => {
+    try {
+      const masterHabitData = insertMasterHabitSchema.parse({
+        ...req.body,
+        parentId: req.user!.id,
+      });
+      const masterHabit = await storage.createMasterHabit(masterHabitData);
+      res.json(masterHabit);
+    } catch (error) {
+      console.error("Error creating master habit:", error);
+      res.status(500).json({ message: "Failed to create master habit" });
+    }
+  });
+
+  // Get all child-specific habit assignments (for parent habit assignment overview)
   app.get('/api/habits/all', isAuthenticated, async (req, res) => {
     try {
       const habits = await storage.getAllHabitsByParent(req.user!.id);

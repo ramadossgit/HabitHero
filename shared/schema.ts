@@ -67,10 +67,35 @@ export const children = pgTable("children", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Habits that children can complete
+// Master habits created by parents (can be assigned to multiple children)
+export const masterHabits = pgTable("master_habits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentId: varchar("parent_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  icon: varchar("icon").notNull().default("⚡"),
+  xpReward: integer("xp_reward").notNull().default(50),
+  color: varchar("color").notNull().default("turquoise"),
+  frequency: varchar("frequency").notNull().default("daily"),
+  rewardPoints: integer("reward_points").notNull().default(0),
+  reminderTime: integer("reminder_time").default(15),
+  reminderEnabled: boolean("reminder_enabled").default(true),
+  voiceReminderEnabled: boolean("voice_reminder_enabled").default(false),
+  customRingtone: varchar("custom_ringtone").default("default"),
+  reminderDuration: integer("reminder_duration").default(30),
+  voiceRecording: text("voice_recording"),
+  voiceRecordingName: varchar("voice_recording_name"),
+  timeRangeStart: varchar("time_range_start").default("09:00"),
+  timeRangeEnd: varchar("time_range_end").default("21:00"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Child-specific habit assignments (links master habits to children)
 export const habits = pgTable("habits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  masterHabitId: varchar("master_habit_id").references(() => masterHabits.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
   description: text("description"),
   icon: varchar("icon").notNull(),
@@ -349,6 +374,12 @@ export const insertChildSchema = createInsertSchema(children).omit({
   updatedAt: true,
 });
 
+export const insertMasterHabitSchema = createInsertSchema(masterHabits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertHabitSchema = createInsertSchema(habits).omit({
   id: true,
   createdAt: true,
@@ -427,6 +458,8 @@ export type SyncLog = typeof syncLogs.$inferSelect;
 export type InsertSyncLog = typeof syncLogs.$inferInsert;
 export type SyncEvent = typeof syncEvents.$inferSelect;
 export type InsertSyncEvent = typeof syncEvents.$inferInsert;
+export type MasterHabit = typeof masterHabits.$inferSelect;
+export type InsertMasterHabit = z.infer<typeof insertMasterHabitSchema>;
 export type Habit = typeof habits.$inferSelect;
 export type InsertHabit = z.infer<typeof insertHabitSchema>;
 export type HabitCompletion = typeof habitCompletions.$inferSelect;

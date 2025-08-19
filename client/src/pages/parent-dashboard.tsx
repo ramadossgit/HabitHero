@@ -17,7 +17,7 @@ import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
 
-import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
+import type { Child, User, InsertChild, Habit, MasterHabit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
   const { toast } = useToast();
@@ -938,8 +938,14 @@ function HabitAssignmentModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get all habits for parent with child names
-  const { data: allHabits, isLoading } = useQuery<(Habit & { childName?: string })[]>({
+  // Get all master habits for parent
+  const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
+    queryKey: ["/api/habits/master"],
+    enabled: isOpen
+  });
+
+  // Get current child habit assignments
+  const { data: allHabits } = useQuery<(Habit & { childName?: string })[]>({
     queryKey: ["/api/habits/all"],
     enabled: isOpen
   });
@@ -1010,32 +1016,17 @@ function HabitAssignmentModal({
     },
   });
 
-  // Create master habits list - get unique habits by name and properties
-  const masterHabits = React.useMemo(() => {
-    if (!allHabits || allHabits.length === 0) return [];
-    
-    const habitMap = new Map<string, Habit>();
-    allHabits.forEach(habit => {
-      const key = `${habit.name.toLowerCase()}-${habit.icon}-${habit.color}`;
-      if (!habitMap.has(key)) {
-        habitMap.set(key, habit);
-      }
-    });
-    
-    return Array.from(habitMap.values());
-  }, [allHabits]);
-
-  // Group current habit assignments by master habit
-  const groupedHabits = React.useMemo(() => {
+  // Group current habit assignments by master habit ID
+  const habitAssignmentsByMaster = React.useMemo(() => {
     if (!allHabits) return {};
     
     const groups: Record<string, (Habit & { childName?: string })[]> = {};
     allHabits.forEach(habit => {
-      const key = `${habit.name.toLowerCase()}-${habit.icon}-${habit.color}`;
-      if (!groups[key]) {
-        groups[key] = [];
+      const masterHabitId = habit.masterHabitId || 'legacy-' + habit.id; // Handle legacy habits
+      if (!groups[masterHabitId]) {
+        groups[masterHabitId] = [];
       }
-      groups[key].push(habit);
+      groups[masterHabitId].push(habit);
     });
     
     return groups;
@@ -1097,19 +1088,18 @@ function HabitAssignmentModal({
                   <p><strong>Inactive habits</strong> are hidden from children and won't sync to their devices</p>
                 </div>
 
-                {masterHabits.length === 0 ? (
+                {!masterHabits || masterHabits.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <p className="text-gray-600">No habits created yet</p>
+                    <p className="text-gray-600">No master habits created yet</p>
                     <p className="text-sm text-gray-500 mt-1">Create habits in the Habit Management section first</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {masterHabits.map((masterHabit) => {
-                      const habitKey = `${masterHabit.name.toLowerCase()}-${masterHabit.icon}-${masterHabit.color}`;
-                      const habitInstances = groupedHabits[habitKey] || [];
+                      const habitAssignments = habitAssignmentsByMaster[masterHabit.id] || [];
                       
                       return (
-                        <Card key={habitKey} className="p-4 border-2 border-gray-200">
+                        <Card key={masterHabit.id} className="p-4 border-2 border-gray-200">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <span className="text-2xl">{masterHabit.icon}</span>
@@ -1126,7 +1116,7 @@ function HabitAssignmentModal({
                           {/* Child Assignment Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {children.map((child) => {
-                              const childHabit = habitInstances.find(h => h.childId === child.id);
+                              const childHabit = habitAssignments.find(h => h.childId === child.id);
                               const hasHabit = !!childHabit;
                               const isActive = childHabit?.isActive ?? false;
 
@@ -1190,6 +1180,7 @@ function HabitAssignmentModal({
                                           assignHabitMutation.mutate({
                                             childId: child.id,
                                             habitData: {
+                                              masterHabitId: masterHabit.id,
                                               name: masterHabit.name,
                                               description: masterHabit.description,
                                               icon: masterHabit.icon,
@@ -1223,7 +1214,7 @@ function HabitAssignmentModal({
               <div className="border-t pt-4 mt-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div className="p-3 bg-turquoise/10 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">{masterHabits.length}</div>
+                    <div className="text-xl font-bold text-gray-800">{masterHabits?.length || 0}</div>
                     <div className="text-sm text-gray-600">Total Habits</div>
                   </div>
                   <div className="p-3 bg-green-100 rounded-lg">
@@ -1274,20 +1265,27 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   const [editHabitXP, setEditHabitXP] = useState("50");
   const [editHabitColor, setEditHabitColor] = useState("turquoise");
 
-  const { data: habits, isLoading } = useQuery<Habit[]>({
+  // Get master habits for this parent
+  const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
+    queryKey: ["/api/habits/master"],
+  });
+
+  // Also get child-specific habits for this specific child (for display)
+  const { data: childHabits } = useQuery<Habit[]>({
     queryKey: [`/api/children/${childId}/habits`],
   });
 
-  const createHabitMutation = useMutation({
+  const createMasterHabitMutation = useMutation({
     mutationFn: async (habitData: any) => {
-      await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
+      await apiRequest("POST", `/api/habits/master`, habitData);
     },
     onSuccess: () => {
       toast({
-        title: "Habit Created! 🎯",
-        description: "New habit has been added successfully!",
+        title: "Master Habit Created! 🎯",
+        description: "New master habit template created! Use Assignment Center to assign to children.",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
       setHabitName("");
       setHabitDescription("");
       setHabitIcon("⚡");
@@ -1298,7 +1296,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create habit. Please try again.",
+        description: "Failed to create master habit. Please try again.",
         variant: "destructive",
       });
     },
@@ -1376,15 +1374,13 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
       return;
     }
-    createHabitMutation.mutate({
-      childId,
+    createMasterHabitMutation.mutate({
       name: habitName.trim(),
       description: habitDescription.trim(),
       icon: habitIcon,
       xpReward: parseInt(habitXP),
       color: habitColor,
       frequency: "daily",
-      isActive: true,
     });
   };
 
@@ -1398,18 +1394,18 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
             <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and control active/inactive status</p>
           </div>
         </div>
-        {habits && habits.length > 0 && (
+        {masterHabits && masterHabits.length > 0 && (
           <div className="flex items-center space-x-4 text-sm">
             <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-lg">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="font-medium text-green-800">
-                {habits.filter(h => h.isActive).length} Active
+                {masterHabits.length} Master Habits
               </span>
             </div>
-            <div className="flex items-center space-x-1 bg-yellow-100 px-3 py-1 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="font-medium text-yellow-800">
-                {habits.filter(h => !h.isActive).length} Inactive
+            <div className="flex items-center space-x-1 bg-blue-100 px-3 py-1 rounded-lg">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="font-medium text-blue-800">
+                {childHabits?.filter(h => h.isActive).length || 0} Assigned
               </span>
             </div>
           </div>
@@ -1417,13 +1413,13 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       </div>
       
       {/* Status Explanation */}
-      {habits && habits.length > 0 && (
+      {masterHabits && masterHabits.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-semibold text-blue-800 mb-2">📱 Habit Status Guide</h4>
+          <h4 className="font-semibold text-blue-800 mb-2">🎯 Master Habit System</h4>
           <div className="text-sm text-blue-700 space-y-1">
-            <p>• <span className="font-medium">Active habits</span> appear in your child's daily habit list and sync to their device</p>
-            <p>• <span className="font-medium">Inactive habits</span> are hidden from children and won't sync to their devices</p>
-            <p>• Use the toggle buttons to quickly activate/deactivate habits as needed</p>
+            <p>• <span className="font-medium">Master habits</span> are templates you can assign to any child</p>
+            <p>• Use the <span className="font-medium">Assignment Center</span> to assign master habits to specific children</p>
+            <p>• Each child can have different habits active/inactive independently</p>
           </div>
         </div>
       )}
@@ -1434,7 +1430,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
         </div>
       ) : (
         <div className="space-y-4">
-          {habits?.map((habit) => (
+          {masterHabits?.map((habit) => (
             <div key={habit.id} className="p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
               {editingHabit === habit.id ? (
                 <div className="space-y-3">

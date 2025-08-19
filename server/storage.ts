@@ -1,6 +1,7 @@
 import {
   users,
   children,
+  masterHabits,
   habits,
   habitCompletions,
   rewards,
@@ -15,6 +16,8 @@ import {
   type UpsertUser,
   type Child,
   type InsertChild,
+  type MasterHabit,
+  type InsertMasterHabit,
   type Habit,
   type InsertHabit,
   type HabitCompletion,
@@ -58,7 +61,14 @@ export interface IStorage {
   deleteChild(id: string): Promise<void>;
   updateChildXP(childId: string, xpGained: number): Promise<Child>;
   
-  // Habit operations
+  // Master habit operations (templates for assignment)
+  getMasterHabitsByParent(parentId: string): Promise<MasterHabit[]>;
+  getMasterHabit(id: string): Promise<MasterHabit | undefined>;
+  createMasterHabit(masterHabit: InsertMasterHabit): Promise<MasterHabit>;
+  updateMasterHabit(id: string, updates: Partial<InsertMasterHabit>): Promise<MasterHabit>;
+  deleteMasterHabit(id: string): Promise<void>;
+  
+  // Habit operations (child-specific assignments)
   getHabitsByChild(childId: string): Promise<Habit[]>;
   getAllHabitsByParent(parentId: string): Promise<Habit[]>;
   getHabit(id: string): Promise<Habit | undefined>;
@@ -319,7 +329,35 @@ export class DatabaseStorage implements IStorage {
     return updatedChild;
   }
 
-  // Habit operations
+  // Master habit operations 
+  async getMasterHabitsByParent(parentId: string): Promise<MasterHabit[]> {
+    return await db.select().from(masterHabits).where(eq(masterHabits.parentId, parentId)).orderBy(desc(masterHabits.createdAt));
+  }
+
+  async getMasterHabit(id: string): Promise<MasterHabit | undefined> {
+    const [masterHabit] = await db.select().from(masterHabits).where(eq(masterHabits.id, id));
+    return masterHabit;
+  }
+
+  async createMasterHabit(masterHabit: InsertMasterHabit): Promise<MasterHabit> {
+    const [newMasterHabit] = await db.insert(masterHabits).values(masterHabit).returning();
+    return newMasterHabit;
+  }
+
+  async updateMasterHabit(id: string, updates: Partial<InsertMasterHabit>): Promise<MasterHabit> {
+    const [updatedMasterHabit] = await db
+      .update(masterHabits)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(masterHabits.id, id))
+      .returning();
+    return updatedMasterHabit;
+  }
+
+  async deleteMasterHabit(id: string): Promise<void> {
+    await db.delete(masterHabits).where(eq(masterHabits.id, id));
+  }
+
+  // Habit operations (child-specific assignments)
   async getHabitsByChild(childId: string): Promise<Habit[]> {
     return await db.select().from(habits).where(eq(habits.childId, childId));
   }
