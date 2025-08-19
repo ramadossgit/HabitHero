@@ -858,8 +858,8 @@ export default function ParentDashboard() {
                   <div className="text-sm text-gray-600">Day Streak</div>
                 </div>
                 <div className="text-center p-4 bg-sunshine/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{badgesEarned}</div>
-                  <div className="text-sm text-gray-600">Badges</div>
+                  <div className="text-2xl font-bold text-gray-800">{habits?.filter(h => h.isActive).length || 0}</div>
+                  <div className="text-sm text-gray-600">Active Habits</div>
                 </div>
                 <div className="text-center p-4 bg-coral/10 rounded-lg">
                   <div className="text-2xl font-bold text-gray-800">{child?.level || 1}</div>
