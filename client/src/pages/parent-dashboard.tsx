@@ -91,10 +91,21 @@ export default function ParentDashboard() {
       setImagePreview("");
     },
     onError: (error) => {
-      console.error("Hero creation error callback:", error);
+      console.log("Hero creation error callback:", error);
+      let errorMessage = "Something went wrong";
+      
+      // Handle specific error types
+      if (error.message?.includes("413") || error.message?.includes("too large")) {
+        errorMessage = "Image file is too large. Please choose a smaller image (under 5MB).";
+      } else if (error.message?.includes("400")) {
+        errorMessage = "Invalid image format. Please use JPG or PNG files.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Creation failed",
-        description: error.message || "Something went wrong",
+        title: "Failed to create hero",
+        description: errorMessage,
         variant: "destructive",
       });
     },
