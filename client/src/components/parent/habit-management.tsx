@@ -251,7 +251,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
+          <DialogContent className="!max-w-4xl !max-h-[90vh] !w-[90vw] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-fredoka text-gray-800 dark:text-gray-100">
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
@@ -260,10 +260,10 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
             <form onSubmit={handleSubmit} className="space-y-6 pb-8">
               
               {/* Emergency test button to see if this part renders */}
-              <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg border-2 border-purple-500">
-                <p className="text-purple-800 dark:text-purple-200 font-bold">🔍 POSITION TEST: This should appear at the top of the form!</p>
-                <button type="button" className="mt-2 px-3 py-1 bg-purple-500 text-white rounded" onClick={() => alert('Test button works!')}>
-                  Test Button - Click Me!
+              <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg border-2 border-purple-500 mb-4">
+                <p className="text-purple-800 dark:text-purple-200 font-bold">🔍 DIALOG FIX TEST: This should now be visible at the top!</p>
+                <button type="button" className="mt-2 px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600" onClick={() => alert('Dialog sizing fixed! Button works!')}>
+                  Click to Test Dialog Fix!
                 </button>
               </div>
               
