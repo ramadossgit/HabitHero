@@ -251,13 +251,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-fredoka text-gray-800 dark:text-gray-100">
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pb-6">
+            <form onSubmit={handleSubmit} className="space-y-6 pb-8">
               <div>
                 <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name</Label>
                 <Input
@@ -363,8 +363,12 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 </div>
                 
                 {/* Debug test to see if this section renders */}
-                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500">
-                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">DEBUG: This section should be visible!</p>
+                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500" style={{position: 'relative', zIndex: 9999}}>
+                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">🚨 DEBUG: This section should be visible! If you see this, the AlertSettings component below is the issue.</p>
+                </div>
+                
+                <div className="bg-red-100 dark:bg-red-900 p-2 rounded border-2 border-red-500">
+                  <p className="text-red-800 dark:text-red-200 text-sm">AlertSettings component should render below this line:</p>
                 </div>
                 
                 <AlertSettings

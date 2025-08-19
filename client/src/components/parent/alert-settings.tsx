@@ -65,6 +65,54 @@ export default function AlertSettings({
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Emergency simple render test
+  if (!isStandalone) {
+    return (
+      <div className="p-4 bg-green-100 dark:bg-green-900 border-2 border-green-500 rounded-lg">
+        <h3 className="text-green-800 dark:text-green-200 font-bold text-lg mb-2">
+          ✅ EMERGENCY TEST: AlertSettings Component is Working!
+        </h3>
+        <p className="text-green-700 dark:text-green-300 mb-4">
+          This proves the component can render. Now I'll add the full functionality back.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span>Reminders Enabled</span>
+            <Switch
+              checked={settings.reminderEnabled}
+              onCheckedChange={(checked) => {
+                const newSettings = { ...settings, reminderEnabled: checked };
+                setSettings(newSettings);
+                onSettingsChange(newSettings);
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <label>Reminder Time</label>
+            <Select 
+              value={settings.reminderTime} 
+              onValueChange={(value) => {
+                const newSettings = { ...settings, reminderTime: value };
+                setSettings(newSettings);
+                onSettingsChange(newSettings);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="07:00">7:00 AM</SelectItem>
+                <SelectItem value="08:00">8:00 AM</SelectItem>
+                <SelectItem value="18:00">6:00 PM</SelectItem>
+                <SelectItem value="19:00">7:00 PM</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const updateSettings = (newSettings: Partial<AlertSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
