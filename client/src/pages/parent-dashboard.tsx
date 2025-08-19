@@ -858,7 +858,7 @@ export default function ParentDashboard() {
                   <div className="text-sm text-gray-600">Day Streak</div>
                 </div>
                 <div className="text-center p-4 bg-sunshine/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{habits?.filter(h => h.isActive).length || 0}</div>
+                  <div className="text-2xl font-bold text-gray-800">{(habits as any[])?.filter(h => h.isActive).length || 0}</div>
                   <div className="text-sm text-gray-600">Active Habits</div>
                 </div>
                 <div className="text-center p-4 bg-coral/10 rounded-lg">
@@ -1010,13 +1010,28 @@ function HabitAssignmentModal({
     },
   });
 
-  // Group habits by unique name (master habits)
+  // Create master habits list - get unique habits by name and properties
+  const masterHabits = React.useMemo(() => {
+    if (!allHabits || allHabits.length === 0) return [];
+    
+    const habitMap = new Map<string, Habit>();
+    allHabits.forEach(habit => {
+      const key = `${habit.name.toLowerCase()}-${habit.icon}-${habit.color}`;
+      if (!habitMap.has(key)) {
+        habitMap.set(key, habit);
+      }
+    });
+    
+    return Array.from(habitMap.values());
+  }, [allHabits]);
+
+  // Group current habit assignments by master habit
   const groupedHabits = React.useMemo(() => {
     if (!allHabits) return {};
     
     const groups: Record<string, (Habit & { childName?: string })[]> = {};
     allHabits.forEach(habit => {
-      const key = habit.name.toLowerCase();
+      const key = `${habit.name.toLowerCase()}-${habit.icon}-${habit.color}`;
       if (!groups[key]) {
         groups[key] = [];
       }
@@ -1082,17 +1097,19 @@ function HabitAssignmentModal({
                   <p><strong>Inactive habits</strong> are hidden from children and won't sync to their devices</p>
                 </div>
 
-                {Object.keys(groupedHabits).length === 0 ? (
+                {masterHabits.length === 0 ? (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <p className="text-gray-600">No habits created yet</p>
                     <p className="text-sm text-gray-500 mt-1">Create habits in the Habit Management section first</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Object.entries(groupedHabits).map(([habitName, habitInstances]) => {
-                      const masterHabit = habitInstances[0];
+                    {masterHabits.map((masterHabit) => {
+                      const habitKey = `${masterHabit.name.toLowerCase()}-${masterHabit.icon}-${masterHabit.color}`;
+                      const habitInstances = groupedHabits[habitKey] || [];
+                      
                       return (
-                        <Card key={habitName} className="p-4 border-2 border-gray-200">
+                        <Card key={habitKey} className="p-4 border-2 border-gray-200">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <span className="text-2xl">{masterHabit.icon}</span>
@@ -1206,20 +1223,20 @@ function HabitAssignmentModal({
               <div className="border-t pt-4 mt-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div className="p-3 bg-turquoise/10 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">{Object.keys(groupedHabits).length}</div>
+                    <div className="text-xl font-bold text-gray-800">{masterHabits.length}</div>
                     <div className="text-sm text-gray-600">Total Habits</div>
                   </div>
                   <div className="p-3 bg-green-100 rounded-lg">
                     <div className="text-xl font-bold text-gray-800">
-                      {allHabits?.filter(h => h.isActive).length || 0}
+                      {allHabits?.filter((h: any) => h.isActive).length || 0}
                     </div>
-                    <div className="text-sm text-gray-600">Active Habits</div>
+                    <div className="text-sm text-gray-600">Active Assignments</div>
                   </div>
                   <div className="p-3 bg-yellow-100 rounded-lg">
                     <div className="text-xl font-bold text-gray-800">
-                      {allHabits?.filter(h => !h.isActive).length || 0}
+                      {allHabits?.filter((h: any) => !h.isActive).length || 0}
                     </div>
-                    <div className="text-sm text-gray-600">Inactive Habits</div>
+                    <div className="text-sm text-gray-600">Inactive Assignments</div>
                   </div>
                   <div className="p-3 bg-coral/10 rounded-lg">
                     <div className="text-xl font-bold text-gray-800">{children.length}</div>
