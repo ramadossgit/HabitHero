@@ -210,13 +210,14 @@ export default function ParentDashboard() {
   ];
 
   const getAvatarImage = (type: string) => {
-    const images = {
-      robot: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
-      princess: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
-      ninja: "https://images.unsplash.com/photo-1555952517-2e8e729e0b44?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
-      animal: "https://images.unsplash.com/photo-1425082661705-1834bfd09dca?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200",
+    // Generate cartoon-style SVG avatars instead of human photos
+    const avatarSvgs = {
+      robot: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#4ECDC4" rx="20"/><rect x="40" y="60" width="120" height="80" fill="#2C3E50" rx="10"/><circle cx="70" cy="90" r="8" fill="#E74C3C"/><circle cx="130" cy="90" r="8" fill="#E74C3C"/><rect x="85" y="110" width="30" height="15" fill="#F39C12" rx="5"/><rect x="60" y="150" width="80" height="30" fill="#34495E" rx="5"/></svg>`)}`,
+      princess: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FFB6C1" rx="20"/><circle cx="100" cy="90" r="40" fill="#FDD5BA"/><circle cx="85" cy="80" r="3" fill="#333"/><circle cx="115" cy="80" r="3" fill="#333"/><path d="M90 95 Q100 105 110 95" stroke="#E91E63" stroke-width="2" fill="none"/><polygon points="70,50 100,30 130,50 120,70 80,70" fill="#FFD700"/><circle cx="100" cy="45" r="5" fill="#FF69B4"/></svg>`)}`,
+      ninja: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2C3E50" rx="20"/><circle cx="100" cy="100" r="50" fill="#34495E"/><rect x="60" y="70" width="80" height="30" fill="#1A252F"/><circle cx="85" cy="85" r="4" fill="#E74C3C"/><circle cx="115" cy="85" r="4" fill="#E74C3C"/><rect x="75" y="120" width="50" height="20" fill="#E67E22" rx="10"/></svg>`)}`,
+      animal: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#F39C12" rx="20"/><circle cx="100" cy="110" r="45" fill="#E67E22"/><circle cx="75" cy="85" r="15" fill="#D35400"/><circle cx="125" cy="85" r="15" fill="#D35400"/><circle cx="85" cy="95" r="3" fill="#000"/><circle cx="115" cy="95" r="3" fill="#000"/><ellipse cx="100" cy="110" rx="8" ry="6" fill="#000"/><path d="M100 116 Q90 125 80 120 M100 116 Q110 125 120 120" stroke="#000" stroke-width="2" fill="none"/></svg>`)}`
     };
-    return images[type as keyof typeof images] || images.robot;
+    return avatarSvgs[type as keyof typeof avatarSvgs] || avatarSvgs.robot;
   };
 
   // This will be handled by the App.tsx routing logic
