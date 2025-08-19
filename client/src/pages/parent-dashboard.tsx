@@ -16,7 +16,7 @@ import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
-import VoiceCommandHandler from "@/components/parent/VoiceCommandHandler";
+
 import type { Child, User, InsertChild, Habit, Reward } from "@shared/schema";
 
 export default function ParentDashboard() {
@@ -817,11 +817,6 @@ export default function ParentDashboard() {
         isOpen={showParentProfile}
         onClose={() => setShowParentProfile(false)}
         user={user as User}
-      />
-
-      <VoiceCommandHandler 
-        children={children || []}
-        voiceCommandsEnabled={(user as User)?.voiceCommandsEnabled || false}
       />
 
       <OnboardingTutorial 

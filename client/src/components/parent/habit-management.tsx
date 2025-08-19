@@ -348,38 +348,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 </div>
               </div>
 
-              {/* Time Range Settings */}
-              <div className="p-4 bg-gray-50 rounded-lg border-2 border-sky/30">
-                <h4 className="font-fredoka text-lg text-gray-800 mb-3 flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-sky" />
-                  🕐 Time Range Settings
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="timeRangeStart">Start Time</Label>
-                    <Input
-                      id="timeRangeStart"
-                      type="time"
-                      value={habitForm.timeRangeStart}
-                      onChange={(e) => setHabitForm({ ...habitForm, timeRangeStart: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="timeRangeEnd">End Time</Label>
-                    <Input
-                      id="timeRangeEnd"
-                      type="time"
-                      value={habitForm.timeRangeEnd}
-                      onChange={(e) => setHabitForm({ ...habitForm, timeRangeEnd: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  Child can complete this habit between {habitForm.timeRangeStart} and {habitForm.timeRangeEnd}
-                </p>
-              </div>
-
-              {/* Alert Settings - New Component */}
+              {/* Alert Settings - Parent Voice Recording & Reminders */}
               <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg border-2 border-coral/30">
                 <AlertSettings
                   initialSettings={{
@@ -402,6 +371,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     });
                   }}
                   isStandalone={false}
+                  title="Reminder & Voice Settings"
                 />
               </div>
               <Button 
