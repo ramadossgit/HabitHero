@@ -13,13 +13,14 @@ Preferred communication style: Simple, everyday language.
 ### Profile Display Fix & Theme Updates (August 19, 2025)
 - **Profile Issue**: Fixed random person image appearing in new parent profiles
 - **Solution**: Replaced UI Avatars service with user initials-based avatar system
-- **Theme Changes**: Updated theme colors based on user preferences
+- **Theme Changes**: Updated theme colors based on user preferences and removed default template habits
 - **Implementation**:
   - Updated profile displays to show user initials instead of random generated faces
-  - Modified hero-gradient to use preferred mint/sky/coral color palette
+  - Modified CSS primary/secondary/accent colors to use mint/sky/coral palette instead of blue
   - Changed login page background to use hero gradient with mint/sky/coral/turquoise colors
   - Updated profile modal headers and avatars to use coral color scheme
   - Enhanced profile avatars with proper fallback to user initials displaying in coral background
+  - Removed default template habits for new child accounts - parents now choose all habits manually
 
 ### Signup Flow Simplification (August 19, 2025)
 - **Change**: Removed "Join Existing Family" option and "already logged in" alert from signup page

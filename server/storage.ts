@@ -251,21 +251,7 @@ export class DatabaseStorage implements IStorage {
 
     const [newChild] = await db.insert(children).values(childWithCredentials).returning();
     
-    // Create default habits for new child
-    const defaultHabits = [
-      { name: "Brush Teeth", description: "Keep your smile sparkling bright!", icon: "tooth", xpReward: 50, color: "mint" },
-      { name: "Make Bed", description: "Start the day organized!", icon: "bed", xpReward: 40, color: "sky" },
-      { name: "Help Parents", description: "Be a helpful family hero!", icon: "heart", xpReward: 60, color: "turquoise" },
-      { name: "Reading Time", description: "Unlock new adventures!", icon: "book", xpReward: 70, color: "coral" },
-      { name: "Drink Water", description: "Stay hydrated like a hero!", icon: "tint", xpReward: 30, color: "sky" },
-    ];
-
-    for (const habit of defaultHabits) {
-      await db.insert(habits).values({
-        childId: newChild.id,
-        ...habit,
-      });
-    }
+    // No default habits - let parents decide what habits to add
 
     // Create default parental controls
     await db.insert(parentalControls).values({
