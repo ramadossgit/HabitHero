@@ -405,7 +405,7 @@ export default function ParentDashboard() {
                         />
                         <Button 
                           onClick={() => {
-                            setImagePreview(null);
+                            setImagePreview("");
                             const input = document.getElementById('avatar-upload') as HTMLInputElement;
                             if (input) input.value = '';
                           }}
@@ -438,7 +438,10 @@ export default function ParentDashboard() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={handleImageUpload}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                      }}
                     />
                   </div>
                 </div>
@@ -1593,7 +1596,7 @@ function KidsManagementSection({
   setNewAvatarType: (type: string) => void;
   avatarTypes: any[];
   imagePreview: string;
-  handleImageUpload: (file: File) => void;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
