@@ -24,12 +24,12 @@
   --destructive-foreground: hsl(0, 0%, 100%);
   --border: hsl(201.4286, 30.4348%, 90.9804%);
   --input: hsl(200, 23.0769%, 97.4510%);
-  --ring: #45B7D1;
-  --chart-1: hsl(203.8863, 88.2845%, 53.1373%);
-  --chart-2: hsl(159.7826, 100%, 36.0784%);
-  --chart-3: hsl(42.0290, 92.8251%, 56.2745%);
-  --chart-4: hsl(147.1429, 78.5047%, 41.9608%);
-  --chart-5: hsl(341.4894, 75.2000%, 50.9804%);
+  --ring: #4ECDC4;
+  --chart-1: #FF6B6B;
+  --chart-2: #4ECDC4;
+  --chart-3: #FFD93D;
+  --chart-4: #96CEB4;
+  --chart-5: #A29BFE;
   --sidebar: hsl(180, 6.6667%, 97.0588%);
   --sidebar-foreground: hsl(210, 25%, 7.8431%);
   --sidebar-primary: #FF6B6B;
@@ -57,7 +57,7 @@
   /* Custom colors for Habit Heroes - Kid-friendly and vibrant */
   --coral: #FF6B6B; /* Bright coral for primary actions */
   --turquoise: #4ECDC4; /* Fun turquoise for secondary elements */
-  --sky: #45B7D1; /* Bright sky blue for info */
+  --sky: #4ECDC4; /* Bright turquoise for info */
   --mint: #96CEB4; /* Soft mint for success */
   --sunshine: #FFEAA7; /* Bright yellow for warnings/highlights */
   --purple: #A29BFE; /* Magical purple for special elements */
@@ -66,8 +66,8 @@
   --lavender: #DDA0DD; /* Soft lavender for calm elements */
   
   /* Fun gradients */
-  --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #A29BFE);
-  --hero-gradient: linear-gradient(135deg, #96CEB4 0%, #45B7D1 30%, #4ECDC4 60%, #FF6B6B 100%);
+  --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #96CEB4, #FFD93D, #FFEAA7, #A29BFE);
+  --hero-gradient: linear-gradient(135deg, #96CEB4 0%, #4ECDC4 30%, #FFD93D 60%, #FF6B6B 100%);
   --magic-gradient: radial-gradient(circle, #A29BFE 0%, #DDA0DD 50%, #FF6B6B 100%);
   
   /* Background patterns */
@@ -83,30 +83,30 @@
   --card-foreground: hsl(0, 0%, 85.0980%);
   --popover: hsl(0, 0%, 0%);
   --popover-foreground: hsl(200, 6.6667%, 91.1765%);
-  --primary: hsl(203.7736, 87.6033%, 52.5490%);
+  --primary: #FF6B6B;
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(195.0000, 15.3846%, 94.9020%);
-  --secondary-foreground: hsl(210, 25%, 7.8431%);
+  --secondary: #96CEB4;
+  --secondary-foreground: hsl(0, 0%, 100%);
   --muted: hsl(0, 0%, 9.4118%);
   --muted-foreground: hsl(210, 3.3898%, 46.2745%);
-  --accent: hsl(205.7143, 70%, 7.8431%);
-  --accent-foreground: hsl(203.7736, 87.6033%, 52.5490%);
+  --accent: #4ECDC4;
+  --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(356.3033, 90.5579%, 54.3137%);
   --destructive-foreground: hsl(0, 0%, 100%);
   --border: hsl(210, 5.2632%, 14.9020%);
   --input: hsl(207.6923, 27.6596%, 18.4314%);
-  --ring: hsl(202.8169, 89.1213%, 53.1373%);
-  --chart-1: hsl(203.8863, 88.2845%, 53.1373%);
-  --chart-2: hsl(159.7826, 100%, 36.0784%);
-  --chart-3: hsl(42.0290, 92.8251%, 56.2745%);
-  --chart-4: hsl(147.1429, 78.5047%, 41.9608%);
-  --chart-5: hsl(341.4894, 75.2000%, 50.9804%);
+  --ring: #4ECDC4;
+  --chart-1: #FF6B6B;
+  --chart-2: #4ECDC4;
+  --chart-3: #FFD93D;
+  --chart-4: #96CEB4;
+  --chart-5: #A29BFE;
   --sidebar: hsl(228, 9.8039%, 10%);
   --sidebar-foreground: hsl(0, 0%, 85.0980%);
-  --sidebar-primary: hsl(202.8169, 89.1213%, 53.1373%);
+  --sidebar-primary: #FF6B6B;
   --sidebar-primary-foreground: hsl(0, 0%, 100%);
-  --sidebar-accent: hsl(205.7143, 70%, 7.8431%);
-  --sidebar-accent-foreground: hsl(203.7736, 87.6033%, 52.5490%);
+  --sidebar-accent: #4ECDC4;
+  --sidebar-accent-foreground: hsl(0, 0%, 100%);
   --sidebar-border: hsl(205.7143, 15.7895%, 26.0784%);
   --sidebar-ring: #45B7D1;
   --font-sans: 'Nunito', sans-serif;
