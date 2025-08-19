@@ -55,7 +55,7 @@ export default function HeroCustomization({ child }: HeroCustomizationProps) {
     return avatarSvgs[avatarType as keyof typeof avatarSvgs] || avatarSvgs.robot;
   };
 
-  const unlockedAvatars = child.unlockedAvatars as string[] || ["robot"];
+  const unlockedAvatars = child.unlockedAvatars as string[] || [];
   const unlockedGear = child.unlockedGear as string[] || [];
 
   const availableAvatarTypes = [

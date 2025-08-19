@@ -65,7 +65,7 @@ export default function ParentDashboard() {
         xp: 0,
         totalXp: 0,
         rewardPoints: 0,
-        unlockedAvatars: [heroData.avatarType],
+        unlockedAvatars: [],
         unlockedGear: [],
       });
       

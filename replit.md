@@ -36,6 +36,8 @@ Preferred communication style: Simple, everyday language.
 - **Profile Issue Fixed**: Completely removed random profile images appearing for parent accounts
 - **Solution**: Replaced all external image services (UI Avatars, Unsplash) with user initials-based system
 - **Hero Avatar Updates**: Replaced human photos with cartoon-style SVG avatars for child safety
+- **Custom Avatar Upload**: Added image upload functionality with 10MB server limit and proper error handling
+- **Avatar Unlocking System**: Fixed children starting with unlocked avatars - now children must earn reward points to unlock avatars
 - **Implementation**:
   - Updated profile displays to show user initials instead of random generated faces from external APIs
   - Created custom SVG cartoon avatars (robot, princess, ninja, animal) replacing Unsplash human photos
@@ -43,6 +45,8 @@ Preferred communication style: Simple, everyday language.
   - Removed all external image dependencies for profile and hero avatars
   - Fixed profile button clickability and modal functionality for parent settings
   - Ensured child-friendly cartoon characters instead of realistic human images throughout app
+  - Added custom avatar upload with file validation and 5MB frontend limit
+  - Corrected avatar unlocking system so children start with no unlocked avatars and must earn them through rewards
 
 ## System Architecture
 
