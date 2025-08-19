@@ -93,10 +93,10 @@ export default function RewardsSection({ childId }: RewardsSectionProps) {
   };
 
   return (
-    <Card className="p-6 shadow-lg">
+    <Card className="p-6 fun-card">
       <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-        <Gift className="text-turquoise mr-3" />
-        Your Rewards
+        <Gift className="text-coral mr-3" />
+        🎁 Your Rewards
       </h3>
 
       {/* Available Mini-Games */}

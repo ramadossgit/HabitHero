@@ -205,11 +205,11 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
           return (
             <Card 
               key={habit.id}
-              className={`mission-card p-6 shadow-lg border-2 ${
-                status === 'approved' ? 'border-mint bg-mint/5' : 
-                status === 'pending' ? 'border-yellow-400 bg-yellow-50' :
-                status === 'rejected' ? 'border-red-400 bg-red-50' :
-                'border-transparent hover:' + colorClasses.split('hover:')[1].split(' ')[0]
+              className={`mission-card p-6 fun-card border-2 transform hover:scale-105 transition-all duration-300 ${
+                status === 'approved' ? 'border-mint bg-mint/10 shadow-mint/30' : 
+                status === 'pending' ? 'border-yellow-400 bg-yellow-50 shadow-yellow-400/30' :
+                status === 'rejected' ? 'border-coral bg-coral/10 shadow-coral/30' :
+                'border-sky/30 hover:border-sky hover:shadow-sky/30'
               } cursor-pointer`}
             >
               <div className="flex items-center justify-between mb-4">
@@ -217,12 +217,12 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <IconComponent className={`${iconColor} text-2xl w-6 h-6`} />
                 </div>
                 <div className="text-right space-y-1">
-                  <div className="bg-white text-black px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-gray-200">
-                    +{habit.xpReward} XP
+                  <div className="bg-gradient-to-r from-sky to-mint text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                    ⚡ +{habit.xpReward} XP
                   </div>
                   {habit.rewardPoints && (
-                    <div className="bg-coral text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                      +{habit.rewardPoints} 🎁
+                    <div className="bg-gradient-to-r from-coral to-orange-400 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                      🎁 +{habit.rewardPoints}
                     </div>
                   )}
                 </div>

@@ -232,7 +232,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
   }
 
   return (
-    <Card className="p-6 shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+    <Card className="p-6 fun-card bg-white dark:bg-gray-800">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-fredoka text-2xl text-gray-800 dark:text-gray-100 flex items-center">
           <CheckSquare className="text-sky mr-3" />
@@ -251,7 +251,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               Add Habit
             </Button>
           </DialogTrigger>
-          <DialogContent className="!max-w-4xl !max-h-[90vh] !w-[90vw] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-6">
+          <DialogContent className="fun-card max-w-4xl max-h-[90vh] w-[90vw] overflow-y-auto bg-white dark:bg-gray-800 p-6">
             <DialogHeader>
               <DialogTitle className="text-xl font-fredoka text-gray-800 dark:text-gray-100">
                 {editingHabit ? "Edit Habit" : "Create New Habit"}
@@ -259,13 +259,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6 pb-8">
               
-              {/* Emergency test button to see if this part renders */}
-              <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg border-2 border-purple-500 mb-4">
-                <p className="text-purple-800 dark:text-purple-200 font-bold">🔍 DIALOG FIX TEST: This should now be visible at the top!</p>
-                <button type="button" className="mt-2 px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600" onClick={() => alert('Dialog sizing fixed! Button works!')}>
-                  Click to Test Dialog Fix!
-                </button>
-              </div>
+
               
               <div>
                 <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name</Label>
@@ -289,23 +283,14 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 />
               </div>
               
-              {/* MOVED: Alert Settings - Early Position Test */}
-              <div className="p-6 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-coral/30 dark:border-coral/40">
+              {/* Alert Settings */}
+              <div className="p-6 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-sky/30 dark:border-sky/40">
                 <div className="mb-4">
                   <h3 className="font-fredoka text-xl text-gray-800 dark:text-gray-100 flex items-center">
-                    <Settings className="w-5 h-5 mr-2 text-coral" />
-                    🔧 Reminder & Voice Settings (MOVED TO TOP)
+                    <Settings className="w-5 h-5 mr-2 text-sky" />
+                    Reminder & Voice Settings
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure alerts, voice recordings, and reminder preferences</p>
-                </div>
-                
-                {/* Debug test to see if this section renders */}
-                <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-4 border-2 border-yellow-500" style={{position: 'relative', zIndex: 9999}}>
-                  <p className="text-yellow-800 dark:text-yellow-200 font-bold">🚨 DEBUG: This section should be visible! If you see this, the AlertSettings component below is the issue.</p>
-                </div>
-                
-                <div className="bg-red-100 dark:bg-red-900 p-2 rounded border-2 border-red-500">
-                  <p className="text-red-800 dark:text-red-200 text-sm">AlertSettings component should render below this line:</p>
                 </div>
                 
                 <AlertSettings

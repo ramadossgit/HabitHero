@@ -99,10 +99,10 @@ export default function ProgressReports({ childId }: ProgressReportsProps) {
     : 0;
 
   return (
-    <Card className="p-6 shadow-lg mb-8">
+    <Card className="p-6 fun-card mb-8">
       <h3 className="font-fredoka text-2xl text-gray-800 mb-6 flex items-center">
-        <BarChart3 className="text-coral mr-3" />
-        Progress Reports
+        <BarChart3 className="text-sky mr-3" />
+        📊 Progress Reports
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

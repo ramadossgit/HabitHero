@@ -115,11 +115,11 @@ export default function WeeklyProgress({ childId }: WeeklyProgressProps) {
     : 0;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full fun-card">
       <CardHeader>
         <CardTitle className="font-fredoka text-xl flex items-center">
-          <Calendar className="w-6 h-6 mr-2 text-purple-600" />
-          This Week's Progress
+          <Calendar className="w-6 h-6 mr-2 text-sky" />
+          📅 This Week's Progress
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -140,9 +140,9 @@ export default function WeeklyProgress({ childId }: WeeklyProgressProps) {
 
         {/* Weekly Summary Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="text-2xl font-bold text-green-600">{weeklyProgress.completedHabits}</div>
-            <div className="text-sm text-green-700">Completed</div>
+          <div className="text-center p-3 bg-mint/20 rounded-lg border border-mint">
+            <div className="text-2xl font-bold text-mint">{weeklyProgress.completedHabits}</div>
+            <div className="text-sm text-mint font-bold">Completed</div>
           </div>
           <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
             <div className="text-2xl font-bold text-yellow-600">{weeklyProgress.pendingHabits}</div>
