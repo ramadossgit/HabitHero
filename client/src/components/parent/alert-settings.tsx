@@ -266,7 +266,7 @@ export default function AlertSettings({
   }
 
   return (
-    <>
+    <div className="space-y-4">
       <AlertSettingsContent
         settings={settings}
         updateSettings={updateSettings}
@@ -282,7 +282,7 @@ export default function AlertSettings({
         isPlayingRecording={isPlayingRecording}
       />
       <audio ref={audioRef} style={{ display: 'none' }} />
-    </>
+    </div>
   );
 }
 
@@ -335,18 +335,18 @@ function AlertSettingsContent({
         <div className="space-y-6">
           {/* Reminder Time */}
           <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-base font-medium">
+            <Label className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
               <Clock className="w-4 h-4 text-coral" />
-              Reminder Time
+              ⏰ Reminder Time
             </Label>
             <Select 
               value={settings.reminderTime} 
               onValueChange={(value) => updateSettings({ reminderTime: value })}
             >
-              <SelectTrigger data-testid="select-reminder-time">
+              <SelectTrigger data-testid="select-reminder-time" className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                 <SelectValue placeholder="Select reminder time" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                 {timeSlots.map((time) => (
                   <SelectItem key={time} value={time}>
                     {time}
@@ -467,16 +467,16 @@ function AlertSettingsContent({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                    <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-purple/20 rounded-full flex items-center justify-center mr-3">
                           <Mic className="w-4 h-4 text-purple" />
                         </div>
                         <div>
-                          <div className="font-medium text-sm">
+                          <div className="font-medium text-sm text-gray-800 dark:text-gray-100">
                             {settings.voiceRecordingName || "Voice Recording"}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
                             Personal reminder message
                           </div>
                         </div>
@@ -537,18 +537,18 @@ function AlertSettingsContent({
 
           {/* Ringtone Selection */}
           <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-base font-medium">
+            <Label className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
               <Volume2 className="w-4 h-4 text-coral" />
-              Reminder Sound
+              🔊 Reminder Sound
             </Label>
             <Select 
               value={settings.customRingtone} 
               onValueChange={(value) => updateSettings({ customRingtone: value })}
             >
-              <SelectTrigger data-testid="select-ringtone">
+              <SelectTrigger data-testid="select-ringtone" className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
                 {ringtoneOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     <span className="mr-2">{option.emoji}</span>
@@ -580,15 +580,17 @@ function AlertSettingsContent({
           </Button>
 
           {/* Settings Summary */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-800 mb-2">Current Settings Summary</h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              <div>• Daily at {settings.reminderTime || "selected time"}</div>
-              <div>• Duration: {settings.reminderDuration} minutes</div>
-              <div>• Active: {settings.timeRangeStart} - {settings.timeRangeEnd}</div>
-              <div>• {settings.voiceReminderEnabled ? "With voice message" : "Sound only"}</div>
-              <div>• Ringtone: {ringtoneOptions.find(r => r.value === settings.customRingtone)?.label}</div>
-              <div>• Works even when app is closed</div>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+            <h4 className="font-medium text-gray-800 dark:text-gray-100 mb-2 flex items-center">
+              📋 Current Settings Summary
+            </h4>
+            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <div>⏰ Daily at {settings.reminderTime || "selected time"}</div>
+              <div>⏱️ Duration: {settings.reminderDuration} minutes</div>
+              <div>📅 Active: {settings.timeRangeStart} - {settings.timeRangeEnd}</div>
+              <div>🔊 {settings.voiceReminderEnabled ? "With voice message" : "Sound only"}</div>
+              <div>🎵 Ringtone: {ringtoneOptions.find(r => r.value === settings.customRingtone)?.label}</div>
+              <div>📱 Works even when app is closed</div>
             </div>
           </div>
         </div>

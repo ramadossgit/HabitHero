@@ -353,7 +353,14 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               </div>
 
               {/* Alert Settings - Parent Voice Recording & Reminders */}
-              <div className="p-4 bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg border-2 border-coral/30">
+              <div className="p-6 bg-gradient-to-r from-mint/10 to-sky/10 dark:from-mint/20 dark:to-sky/20 rounded-lg border-2 border-coral/30 dark:border-coral/40">
+                <div className="mb-4">
+                  <h3 className="font-fredoka text-xl text-gray-800 dark:text-gray-100 flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-coral" />
+                    🔧 Reminder & Voice Settings
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Configure alerts, voice recordings, and reminder preferences</p>
+                </div>
                 <AlertSettings
                   initialSettings={{
                     reminderEnabled: habitForm.reminderEnabled,
