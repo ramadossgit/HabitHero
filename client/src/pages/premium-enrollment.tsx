@@ -72,7 +72,7 @@ const features = [
 
 export default function PremiumEnrollment() {
   const [selectedPlan, setSelectedPlan] = useState("quarterly");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -122,7 +122,7 @@ export default function PremiumEnrollment() {
           variant: "destructive",
         });
       }
-      setIsProcessing(false);
+      setProcessingPlan(null);
     },
     onError: (error: any) => {
       console.error("Subscription creation failed:", error);
@@ -131,17 +131,17 @@ export default function PremiumEnrollment() {
         description: error.message || "Failed to create subscription. Please try again.",
         variant: "destructive",
       });
-      setIsProcessing(false);
+      setProcessingPlan(null);
     },
   });
 
   const handleEnroll = async (planId: string) => {
-    setIsProcessing(true);
+    setProcessingPlan(planId);
     try {
       await createSubscriptionMutation.mutateAsync(planId);
     } catch (error) {
       console.error("Enrollment failed:", error);
-      setIsProcessing(false);
+      setProcessingPlan(null);
     }
   };
 
@@ -246,9 +246,9 @@ export default function PremiumEnrollment() {
                     e.stopPropagation();
                     handleEnroll(plan.id);
                   }}
-                  disabled={isProcessing}
+                  disabled={processingPlan === plan.id}
                 >
-                  {isProcessing && selectedPlan === plan.id ? (
+                  {processingPlan === plan.id ? (
                     <div className="flex items-center">
                       <Zap className="w-4 h-4 mr-2 animate-spin" />
                       Processing...
