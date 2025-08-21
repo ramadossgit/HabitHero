@@ -1,9 +1,11 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, ArrowRight, Calendar, Trophy, Gamepad2, Star } from "lucide-react";
+import { Crown, Check, ArrowRight, Calendar, Trophy, Gamepad2, Star, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionStatus {
   status: string;
@@ -12,14 +14,66 @@ interface SubscriptionStatus {
 }
 
 export default function PremiumSuccess() {
+  const [isCompleting, setIsCompleting] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: subscriptionStatus } = useQuery<SubscriptionStatus>({
+  const { data: subscriptionStatus, refetch } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
     enabled: !!user,
   });
+
+  const completeSubscriptionMutation = useMutation({
+    mutationFn: async (paymentIntentId: string) => {
+      const response = await apiRequest("POST", "/api/subscription/complete", { paymentIntentId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('Subscription completed successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+      toast({
+        title: "Success!",
+        description: "Your Premium subscription is now active!",
+      });
+      setIsCompleting(false);
+    },
+    onError: (error: any) => {
+      console.error('Failed to complete subscription:', error);
+      toast({
+        title: "Error",
+        description: "Failed to activate subscription. Please contact support.",
+        variant: "destructive",
+      });
+      setIsCompleting(false);
+    }
+  });
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentIntentId = urlParams.get('payment_intent_id');
+    
+    if (paymentIntentId && !isCompleting && subscriptionStatus?.status !== 'active') {
+      setIsCompleting(true);
+      completeSubscriptionMutation.mutate(paymentIntentId);
+    }
+  }, [subscriptionStatus?.status, isCompleting, completeSubscriptionMutation]);
+
+  // Show loading state while completing subscription
+  if (isCompleting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-mint/10 via-sky/10 to-coral/10 p-4 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Loader2 className="w-16 h-16 text-coral animate-spin mx-auto mb-4" />
+          <h2 className="font-fredoka text-2xl text-gray-800 mb-2">Activating Your Premium Subscription</h2>
+          <p className="text-gray-600">Please wait while we complete your subscription activation...</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-mint/10 via-sky/10 to-coral/10 p-4">

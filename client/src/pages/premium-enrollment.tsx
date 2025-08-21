@@ -99,11 +99,11 @@ export default function PremiumEnrollment() {
           throw new Error('Stripe failed to load');
         }
 
-        // Redirect to Stripe Checkout
+        // Redirect to Stripe Checkout with the paymentIntentId in the URL
         const result = await stripe.confirmPayment({
           clientSecret: data.clientSecret,
           confirmParams: {
-            return_url: `${window.location.origin}/premium-success`,
+            return_url: `${window.location.origin}/premium-success?payment_intent_id=${data.paymentIntentId}`,
           },
         });
 

@@ -1324,6 +1324,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/subscription/complete', isAuthenticated, async (req, res) => {
+    try {
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: 'Payment Intent ID is required' });
+      }
+
+      const result = await SubscriptionService.completeSubscription(paymentIntentId);
+      res.json({ success: true, subscription: result });
+    } catch (error: any) {
+      console.error('Error completing subscription:', error);
+      res.status(500).json({ message: error.message || 'Failed to complete subscription' });
+    }
+  });
+
   app.post('/api/subscription/cancel', isAuthenticated, async (req, res) => {
     try {
       const result = await SubscriptionService.cancelSubscription(req.user!.id);

@@ -53,21 +53,36 @@ export class SubscriptionService {
         }
       }
 
+      // Create a PaymentIntent directly instead of relying on subscription invoice
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.floor(plan.price * 100), // Convert to cents
+        currency: plan.currency,
+        customer: customer.id,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        setup_future_usage: 'off_session', // Allow saving payment method for future use
+        metadata: {
+          userId: userId,
+          planId: planId,
+          type: 'subscription_payment'
+        }
+      });
+
       // Create price if it doesn't exist (in production, create these manually in Stripe)
       const priceId = await this.getOrCreatePrice(plan);
 
+      // Create subscription but don't trigger immediate payment (will be completed via PaymentIntent)
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
-        expand: ['latest_invoice.payment_intent'],
-        trial_period_days: user.subscriptionStatus === 'trial' ? 0 : undefined,
-        // Add automatic tax collection
-        automatic_tax: { enabled: false },
-        // Ensure we collect payment immediately
-        payment_settings: {
-          save_default_payment_method: 'on_subscription',
-        },
+        // Start with trial to prevent immediate charge, we'll handle payment separately
+        trial_period_days: 1,
+        metadata: {
+          userId: userId,
+          planId: planId,
+          paymentIntentId: paymentIntent.id
+        }
       });
 
       // Update user subscription info  
@@ -78,40 +93,102 @@ export class SubscriptionService {
         
       await storage.updateUserSubscription(userId, {
         stripeSubscriptionId: subscription.id,
-        subscriptionStatus: subscription.status === 'trialing' || subscription.status === 'active' ? 'active' : 'cancelled',
+        subscriptionStatus: 'pending', // Will be updated after successful payment
         subscriptionPlan: planId,
         subscriptionEndDate: subscriptionEndDate
       });
 
-      const latestInvoice = subscription.latest_invoice as any;
-      const clientSecret = latestInvoice?.payment_intent?.client_secret;
-      
-      console.log('Subscription created:', {
+      console.log('Subscription and PaymentIntent created:', {
         subscriptionId: subscription.id,
+        paymentIntentId: paymentIntent.id,
         status: subscription.status,
-        hasInvoice: !!latestInvoice,
-        hasPaymentIntent: !!latestInvoice?.payment_intent,
-        hasClientSecret: !!clientSecret
+        clientSecret: paymentIntent.client_secret
       });
-      
-      if (!clientSecret) {
-        console.error('No client secret found in subscription creation:', {
-          subscription: subscription.id,
-          latest_invoice: latestInvoice?.id,
-          payment_intent: latestInvoice?.payment_intent?.id,
-          subscription_status: subscription.status
-        });
-      }
       
       return {
         subscriptionId: subscription.id,
-        clientSecret: clientSecret,
-        status: subscription.status
+        clientSecret: paymentIntent.client_secret,
+        status: subscription.status,
+        paymentIntentId: paymentIntent.id
       };
     } catch (error) {
       console.error('Error creating subscription:', error);
       throw error;
     }
+  }
+
+  // Complete subscription after successful payment
+  static async completeSubscription(paymentIntentId: string) {
+    try {
+      // Retrieve the PaymentIntent to get metadata
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error('Payment not completed');
+      }
+
+      const userId = paymentIntent.metadata.userId;
+      const planId = paymentIntent.metadata.planId;
+      
+      if (!userId || !planId) {
+        throw new Error('Missing payment metadata');
+      }
+
+      // Get the user and their current subscription
+      const user = await storage.getUserById(userId);
+      if (!user?.stripeSubscriptionId) {
+        throw new Error('No subscription found for user');
+      }
+
+      // Update the subscription to remove trial and activate immediately
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        trial_end: 'now', // End trial immediately
+        proration_behavior: 'none', // Don't prorate since we already charged
+      });
+
+      // Update subscription status in database
+      const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+      const subscriptionEndDate = plan ? this.calculateEndDate(plan) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      
+      await storage.updateUserSubscription(userId, {
+        subscriptionStatus: 'active',
+        subscriptionEndDate: subscriptionEndDate
+      });
+
+      console.log('Subscription activated successfully:', {
+        userId,
+        subscriptionId: subscription.id,
+        planId,
+        status: subscription.status
+      });
+
+      return subscription;
+    } catch (error) {
+      console.error('Error completing subscription:', error);
+      throw error;
+    }
+  }
+
+  // Calculate subscription end date based on plan
+  private static calculateEndDate(plan: SubscriptionPlan): Date {
+    const now = new Date();
+    const result = new Date(now);
+    
+    switch (plan.interval) {
+      case 'month':
+        result.setMonth(result.getMonth() + (plan.intervalCount || 1));
+        break;
+      case 'quarter':
+        result.setMonth(result.getMonth() + 3);
+        break;
+      case 'year':
+        result.setFullYear(result.getFullYear() + (plan.intervalCount || 1));
+        break;
+      default:
+        result.setMonth(result.getMonth() + 1); // Default to 1 month
+    }
+    
+    return result;
   }
 
   // Get or create Stripe price for plan
