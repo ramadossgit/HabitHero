@@ -1110,7 +1110,7 @@ function HabitAssignmentModal({
                       const habitAssignments = habitAssignmentsByMaster[masterHabit.id] || [];
                       
                       return (
-                        <Card key={masterHabit.id} className="p-4 border-2 border-gray-200">
+                        <Card key={masterHabit.id} className="p-6 border-2 border-gray-200 shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <span className="text-2xl">{masterHabit.icon}</span>
@@ -1132,7 +1132,7 @@ function HabitAssignmentModal({
                               const isActive = childHabit?.isActive ?? false;
 
                               return (
-                                <div key={child.id} className={`p-3 rounded-lg border-2 ${
+                                <div key={child.id} className={`p-4 rounded-lg border-2 min-h-[100px] ${
                                   hasHabit 
                                     ? isActive 
                                       ? 'border-green-300 bg-green-50' 
@@ -1148,75 +1148,91 @@ function HabitAssignmentModal({
                                     </div>
                                     
                                     {hasHabit ? (
-                                      <div className="flex items-center space-x-2">
-                                        <span className={`text-xs font-medium px-2 py-1 rounded ${
-                                          isActive ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
-                                        }`}>
-                                          {isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => {
-                                            toggleHabitStatusMutation.mutate({
-                                              habitId: childHabit!.id,
-                                              isActive: !isActive
-                                            });
-                                          }}
-                                          disabled={toggleHabitStatusMutation.isPending}
-                                          className="h-6 w-12 p-1 text-xs"
-                                          data-testid={`button-toggle-habit-${child.id}`}
-                                        >
-                                          {isActive ? '⏸️' : '▶️'}
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => {
-                                            removeHabitMutation.mutate({
-                                              habitId: childHabit!.id
-                                            });
-                                          }}
-                                          disabled={removeHabitMutation.isPending}
-                                          className="h-6 w-6 p-1 text-xs text-red-600 hover:bg-red-100"
-                                          data-testid={`button-remove-habit-${child.id}`}
-                                        >
-                                          ❌
-                                        </Button>
+                                      <div className="flex flex-col space-y-2 mt-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                            isActive ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+                                          }`}>
+                                            {isActive ? 'Active' : 'Inactive'}
+                                          </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            onClick={() => {
+                                              toggleHabitStatusMutation.mutate({
+                                                habitId: childHabit!.id,
+                                                isActive: !isActive
+                                              });
+                                            }}
+                                            disabled={toggleHabitStatusMutation.isPending}
+                                            className={`flex-1 text-xs px-3 py-2 min-h-[32px] ${
+                                              isActive 
+                                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                                                : 'bg-green-500 hover:bg-green-600 text-white'
+                                            }`}
+                                            data-testid={`button-toggle-habit-${child.id}`}
+                                          >
+                                            {toggleHabitStatusMutation.isPending 
+                                              ? 'Updating...' 
+                                              : isActive 
+                                                ? '⏸️ Deactivate' 
+                                                : '▶️ Activate'
+                                            }
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => {
+                                              if (confirm(`Remove this habit from ${child.name}?`)) {
+                                                removeHabitMutation.mutate({
+                                                  habitId: childHabit!.id
+                                                });
+                                              }
+                                            }}
+                                            disabled={removeHabitMutation.isPending}
+                                            className="text-xs px-3 py-2 min-h-[32px] min-w-[70px]"
+                                            data-testid={`button-remove-habit-${child.id}`}
+                                          >
+                                            {removeHabitMutation.isPending ? 'Removing...' : '🗑️ Remove'}
+                                          </Button>
+                                        </div>
                                       </div>
                                     ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => {
-                                          assignHabitMutation.mutate({
-                                            childId: child.id,
-                                            habitData: {
-                                              masterHabitId: masterHabit.id,
-                                              name: masterHabit.name,
-                                              description: masterHabit.description,
-                                              icon: masterHabit.icon,
-                                              color: masterHabit.color,
-                                              frequency: masterHabit.frequency,
-                                              xpReward: masterHabit.xpReward,
-                                              isActive: true
-                                            }
-                                          });
-                                        }}
-                                        disabled={assignHabitMutation.isPending || !masterHabit.isActive}
-                                        className={`text-xs px-3 py-1 h-7 ${
-                                          !masterHabit.isActive 
-                                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                        }`}
-                                        data-testid={`button-assign-habit-${child.id}`}
-                                      >
-                                        {assignHabitMutation.isPending 
-                                          ? 'Adding...' 
-                                          : !masterHabit.isActive 
-                                            ? 'Inactive' 
-                                            : 'Assign'
-                                        }
-                                      </Button>
+                                      <div className="mt-2">
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            assignHabitMutation.mutate({
+                                              childId: child.id,
+                                              habitData: {
+                                                masterHabitId: masterHabit.id,
+                                                name: masterHabit.name,
+                                                description: masterHabit.description,
+                                                icon: masterHabit.icon,
+                                                color: masterHabit.color,
+                                                frequency: masterHabit.frequency,
+                                                xpReward: masterHabit.xpReward,
+                                                isActive: true
+                                              }
+                                            });
+                                          }}
+                                          disabled={assignHabitMutation.isPending || !masterHabit.isActive}
+                                          className={`w-full text-xs px-4 py-2 min-h-[32px] ${
+                                            !masterHabit.isActive 
+                                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                              : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                          }`}
+                                          data-testid={`button-assign-habit-${child.id}`}
+                                        >
+                                          {assignHabitMutation.isPending 
+                                            ? 'Assigning...' 
+                                            : !masterHabit.isActive 
+                                              ? 'Habit Inactive' 
+                                              : '✅ Assign Habit'
+                                          }
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -1497,7 +1513,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       ) : (
         <div className="space-y-4">
           {masterHabits?.map((habit) => (
-            <div key={habit.id} className="p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
+            <div key={habit.id} className="p-6 bg-turquoise/10 rounded-lg border-2 border-turquoise/30 shadow-sm">
               {editingHabit === habit.id ? (
                 <div className="space-y-3">
                   <Input
@@ -1534,79 +1550,87 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{habit.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <div className="font-bold text-gray-800">{habit.name}</div>
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="text-3xl">{habit.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <div className="font-bold text-gray-800 text-lg">{habit.name}</div>
+                        <span className={`text-sm font-medium px-3 py-1 rounded-full ${
                           habit.isActive 
                             ? 'bg-green-200 text-green-800' 
                             : 'bg-yellow-200 text-yellow-800'
                         }`}>
-                          {habit.isActive ? 'Active' : 'Inactive'}
+                          {habit.isActive ? '✅ Active' : '⏸️ Inactive'}
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600">{habit.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-sm text-gray-600 mb-1">{habit.description}</div>
+                      <div className="text-xs text-gray-500">
                         {habit.isActive 
-                          ? "Appears in child's daily habit list" 
-                          : "Hidden from child - won't sync to their device"
+                          ? "✓ Appears in child's daily habit list and syncs to their device" 
+                          : "⚠️ Hidden from child - won't sync to their device"
                         }
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="text-right mr-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="text-right">
                       <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
                       <div className="text-xs text-gray-500">Reward</div>
                     </div>
-                    <Button
-                      onClick={() => {
-                        toggleMasterHabitStatusMutation.mutate({
-                          habitId: habit.id,
-                          isActive: !habit.isActive
-                        });
-                      }}
-                      disabled={toggleMasterHabitStatusMutation.isPending}
-                      className={`px-3 py-1 text-xs font-medium ${
-                        habit.isActive 
-                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                          : 'bg-green-500 hover:bg-green-600 text-white'
-                      }`}
-                    >
-                      {toggleMasterHabitStatusMutation.isPending 
-                        ? "..." 
-                        : habit.isActive 
-                          ? "⏸️ Make Inactive" 
-                          : "▶️ Make Active"
-                      }
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingHabit(habit.id);
-                        setEditHabitName(habit.name);
-                        setEditHabitDescription(habit.description || "");
-                        setEditHabitIcon(habit.icon);
-                        setEditHabitXP(habit.xpReward.toString());
-                        setEditHabitColor(habit.color || "turquoise");
-                      }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
-                    >
-                      ✏️ Edit
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        if (confirm(`Delete "${habit.name}" habit? This cannot be undone.`)) {
-                          deleteHabitMutation.mutate(habit.id);
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        onClick={() => {
+                          toggleMasterHabitStatusMutation.mutate({
+                            habitId: habit.id,
+                            isActive: !habit.isActive
+                          });
+                        }}
+                        disabled={toggleMasterHabitStatusMutation.isPending}
+                        size="sm"
+                        className={`px-4 py-2 text-sm font-medium min-w-[120px] ${
+                          habit.isActive 
+                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                        data-testid={`button-toggle-master-habit-${habit.id}`}
+                      >
+                        {toggleMasterHabitStatusMutation.isPending 
+                          ? "Updating..." 
+                          : habit.isActive 
+                            ? "⏸️ Make Inactive" 
+                            : "▶️ Make Active"
                         }
-                      }}
-                      disabled={deleteHabitMutation.isPending}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
-                    >
-                      {deleteHabitMutation.isPending ? "..." : "🗑️"}
-                    </Button>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setEditingHabit(habit.id);
+                          setEditHabitName(habit.name);
+                          setEditHabitDescription(habit.description || "");
+                          setEditHabitIcon(habit.icon);
+                          setEditHabitXP(habit.xpReward.toString());
+                          setEditHabitColor(habit.color || "turquoise");
+                        }}
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm min-w-[80px]"
+                        data-testid={`button-edit-master-habit-${habit.id}`}
+                      >
+                        ✏️ Edit
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (confirm(`Delete "${habit.name}" habit? This cannot be undone.`)) {
+                            deleteHabitMutation.mutate(habit.id);
+                          }
+                        }}
+                        disabled={deleteHabitMutation.isPending}
+                        size="sm"
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 text-sm min-w-[80px]"
+                        data-testid={`button-delete-master-habit-${habit.id}`}
+                      >
+                        {deleteHabitMutation.isPending ? "Deleting..." : "🗑️ Delete"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1638,8 +1662,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
               )}
             </div>
           ) : (
-            <div className="space-y-4 p-4 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
-              <h4 className="font-bold text-gray-800">Create New Habit</h4>
+            <div className="space-y-4 p-6 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
+              <h4 className="font-bold text-gray-800 text-lg">Create New Habit</h4>
               
               <div className="space-y-3">
                 <Input
