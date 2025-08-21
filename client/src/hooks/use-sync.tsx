@@ -149,6 +149,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/habits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
       
+      // Invalidate reward claims for all children to ensure cross-device sync
+      queryClient.invalidateQueries({ queryKey: ["/api/children"], predicate: (query) => 
+        query.queryKey[0] === "/api/children" && query.queryKey[2] === "reward-claims"
+      });
+      
       // Invalidate child-specific queries if authenticated as child
       if (childIsAuthenticated && child) {
         const childId = (child as any).id;
@@ -156,6 +161,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/completions`] });
         queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/completions/today`] });
         queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/pending-habits`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/reward-claims`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
       }
       
       // Mark sync as completed on server

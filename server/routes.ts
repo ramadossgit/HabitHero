@@ -560,6 +560,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const claim = await storage.createRewardClaim(claimData);
+      
+      // Create sync event for reward claim
+      const userId = req.user?.id || req.session.parentId;
+      if (userId) {
+        await syncService.createSyncEvent({
+          userId,
+          eventType: 'reward_claimed',
+          entityType: 'reward_claims',
+          entityId: claim.id,
+          eventData: { childId: req.body.childId, rewardId: req.params.rewardId }
+        });
+      }
+      
       res.json(claim);
     } catch (error) {
       console.error("Error claiming reward:", error);
@@ -571,6 +584,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/reward-claims/:claimId/approve', isAuthenticated, async (req, res) => {
     try {
       const claim = await storage.approveRewardClaim(req.params.claimId);
+      
+      // Create sync event for reward approval
+      const userId = req.user?.id;
+      if (userId) {
+        await syncService.createSyncEvent({
+          userId,
+          eventType: 'reward_approved',
+          entityType: 'reward_claims',
+          entityId: claim.id,
+          eventData: { childId: claim.childId, rewardId: claim.rewardId }
+        });
+      }
+      
       res.json(claim);
     } catch (error) {
       console.error("Error approving reward claim:", error);
@@ -583,6 +609,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Update the claim status to 'used'
       const claim = await storage.markRewardClaimAsUsed(req.params.claimId);
+      
+      // Create sync event for reward marked as used
+      const userId = req.user?.id || req.session.parentId;
+      if (userId) {
+        await syncService.createSyncEvent({
+          userId,
+          eventType: 'reward_used',
+          entityType: 'reward_claims',
+          entityId: claim.id,
+          eventData: { childId: claim.childId, rewardId: claim.rewardId }
+        });
+      }
+      
       res.json(claim);
     } catch (error) {
       console.error("Error marking reward as used:", error);
