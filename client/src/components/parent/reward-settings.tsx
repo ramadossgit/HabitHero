@@ -41,7 +41,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
     queryKey: ["/api/auth/user"],
   });
 
-  const isPremium = user?.subscriptionStatus === 'active';
+  const isPremium = (user as User)?.subscriptionStatus === 'active';
 
   const createRewardMutation = useMutation({
     mutationFn: async (rewardData: any) => {
@@ -197,10 +197,19 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             <Alert className="mt-3 border-coral/20 bg-coral/5">
               <Crown className="h-4 w-4 text-coral" />
               <AlertDescription>
-                <strong>Unlock Recurring Rewards with Premium!</strong> Automatically generate Daily, Weekly, Monthly, and Yearly rewards for consistent motivation.
-                <Button variant="link" className="h-auto p-0 ml-2 text-coral hover:text-coral/80 font-medium">
+                <strong>Unlock Premium Features!</strong>
+                <ul className="mt-2 text-sm space-y-1">
+                  <li>• Recurring reward creation (Daily, Weekly, Monthly)</li>
+                  <li>• Weekend Challenge Rewards</li>
+                  <li>• Mini Games (upcoming)</li>
+                </ul>
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 mt-2 text-coral hover:text-coral/80 font-medium"
+                  onClick={() => window.location.href = '/premium-enrollment'}
+                >
                   <ArrowUp className="w-3 h-3 mr-1" />
-                  Upgrade Now
+                  Upgrade to Premium
                 </Button>
               </AlertDescription>
             </Alert>
@@ -353,7 +362,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             📅 Daily Rewards
           </h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.category === "daily").map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "daily").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
@@ -394,7 +403,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                 </div>
               );
             })}
-            {rewards?.filter((reward: Reward) => reward.category === "daily").length === 0 && (
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "daily").length === 0 && (
               <p className="text-gray-500 text-sm italic">No daily rewards configured</p>
             )}
           </div>
@@ -407,7 +416,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             🗓️ Weekly Rewards
           </h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.category === "weekly").map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "weekly").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
@@ -448,7 +457,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                 </div>
               );
             })}
-            {rewards?.filter((reward: Reward) => reward.category === "weekly").length === 0 && (
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "weekly").length === 0 && (
               <p className="text-gray-500 text-sm italic">No weekly rewards configured</p>
             )}
           </div>
@@ -461,7 +470,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             🗓️ Monthly Rewards
           </h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.category === "monthly").map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "monthly").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
@@ -502,7 +511,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                 </div>
               );
             })}
-            {rewards?.filter((reward: Reward) => reward.category === "monthly").length === 0 && (
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "monthly").length === 0 && (
               <p className="text-gray-500 text-sm italic">No monthly rewards configured</p>
             )}
           </div>
@@ -515,7 +524,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             📆 Yearly Rewards
           </h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.category === "yearly").map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "yearly").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
@@ -556,7 +565,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                 </div>
               );
             })}
-            {rewards?.filter((reward: Reward) => reward.category === "yearly").length === 0 && (
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.category === "yearly").length === 0 && (
               <p className="text-gray-500 text-sm italic">No yearly rewards configured</p>
             )}
           </div>
@@ -565,7 +574,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
         <div>
           <h4 className="font-nunito font-bold mb-3">Special Treats</h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.type === "treat").map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => reward.type === "treat").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
@@ -603,7 +612,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
         <div>
           <h4 className="font-nunito font-bold mb-3">Other Rewards</h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => !["screen_time", "treat"].includes(reward.type)).map((reward: Reward) => {
+            {(rewards as Reward[])?.filter((reward: Reward) => !["screen_time", "treat"].includes(reward.type)).map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
