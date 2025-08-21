@@ -18,6 +18,11 @@ export default function ParentAuthPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
+  // Get the default tab from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode');
+  const defaultTab = mode === 'login' ? 'login' : 'register';
+
   // Only redirect to dashboard if user is authenticated AND this redirect is from a successful login/signup
   // Don't redirect if user just visits the auth page while already logged in
   const [shouldRedirect, setShouldRedirect] = useState(false);
@@ -228,7 +233,7 @@ export default function ParentAuthPage() {
               </CardHeader>
               <CardContent>
 
-                <Tabs defaultValue="register" className="space-y-4">
+                <Tabs defaultValue={defaultTab} className="space-y-4">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login" className="flex items-center space-x-2">
                       <LogIn className="w-4 h-4" />
