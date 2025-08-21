@@ -53,12 +53,17 @@ export class SubscriptionService {
         trial_period_days: user.subscriptionStatus === 'trial' ? 0 : undefined,
       });
 
-      // Update user subscription info
+      // Update user subscription info  
+      const currentPeriodEnd = (subscription as any).current_period_end;
+      const subscriptionEndDate = currentPeriodEnd && typeof currentPeriodEnd === 'number' 
+        ? new Date(currentPeriodEnd * 1000) 
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default to 30 days from now
+        
       await storage.updateUserSubscription(userId, {
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: subscription.status === 'trialing' || subscription.status === 'active' ? 'active' : 'cancelled',
         subscriptionPlan: planId,
-        subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
+        subscriptionEndDate: subscriptionEndDate
       });
 
       const latestInvoice = subscription.latest_invoice as any;
@@ -136,9 +141,14 @@ export class SubscriptionService {
         cancel_at_period_end: true
       });
 
+      const currentPeriodEnd = (subscription as any).current_period_end;
+      const subscriptionEndDate = currentPeriodEnd && typeof currentPeriodEnd === 'number' 
+        ? new Date(currentPeriodEnd * 1000) 
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        
       await storage.updateUserSubscription(userId, {
         subscriptionStatus: 'cancelled',
-        subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
+        subscriptionEndDate: subscriptionEndDate
       });
 
       return subscription;
@@ -161,9 +171,14 @@ export class SubscriptionService {
                    : 'expired';
 
       if (status !== user.subscriptionStatus) {
+        const currentPeriodEnd = (subscription as any).current_period_end;
+        const subscriptionEndDate = currentPeriodEnd && typeof currentPeriodEnd === 'number' 
+          ? new Date(currentPeriodEnd * 1000) 
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          
         await storage.updateUserSubscription(userId, {
           subscriptionStatus: status,
-          subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
+          subscriptionEndDate: subscriptionEndDate
         });
       }
 
