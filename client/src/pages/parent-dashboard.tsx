@@ -443,7 +443,7 @@ export default function ParentDashboard() {
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file);
+                        if (file) handleImageUpload(e);
                       }}
                     />
                   </div>
@@ -2700,7 +2700,7 @@ function KidsManagementSection({
                     accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
+                      if (file) handleImageUpload(e);
                     }}
                     className="hidden"
                     id="avatar-upload-new"
@@ -3000,6 +3000,33 @@ function RewardSettingsSection({
                         </Select>
                       </div>
                     </div>
+
+                    {/* Kid Assignment for Edit Reward */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Assign to Kids</label>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {children.map((child) => (
+                          <div key={child.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`edit-reward-kid-${child.id}`}
+                              checked={true} // For now, assume all rewards are assigned to all kids
+                              onChange={(e) => {
+                                // TODO: Handle kid assignment changes for existing rewards
+                              }}
+                              className="w-4 h-4 text-orange-500 border-2 border-orange-300 rounded focus:ring-orange-500"
+                            />
+                            <label htmlFor={`edit-reward-kid-${child.id}`} className="text-sm font-medium text-gray-700 flex items-center">
+                              <span className="text-lg mr-1">{child.avatarType === 'robot' ? '🤖' : child.avatarType === 'princess' ? '👑' : child.avatarType === 'ninja' ? '🥷' : '🐾'}</span>
+                              {child.name} (Level {child.level})
+                            </label>
+                          </div>
+                        ))}
+                        {children.length === 0 && (
+                          <p className="text-sm text-gray-500 italic">No kids available. Add a child first.</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="flex space-x-2 mt-3">
@@ -3009,10 +3036,7 @@ function RewardSettingsSection({
                           rewardId: reward.id,
                           name: editRewardName.trim(),
                           description: editRewardDescription.trim(),
-                          type: "treat", // Default type for custom rewards
-                          value: editRewardName.trim(),
-                          cost: parseInt(editRewardCost),
-                          costType: "xp"
+                          cost: parseInt(editRewardCost)
                         });
                       }}
                       disabled={updateRewardMutation.isPending || !editRewardName.trim()}
