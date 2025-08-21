@@ -1049,19 +1049,27 @@ function HabitAssignmentModal({
 
   // Group current habit assignments by master habit ID
   const habitAssignmentsByMaster = React.useMemo(() => {
-    if (!allHabits) return {};
+    if (!allHabits || !children) return {};
     
     const groups: Record<string, (Habit & { childName?: string })[]> = {};
     allHabits.forEach(habit => {
-      const masterHabitId = habit.masterHabitId || 'legacy-' + habit.id; // Handle legacy habits
-      if (!groups[masterHabitId]) {
-        groups[masterHabitId] = [];
+      const masterHabitId = habit.masterHabitId;
+      if (masterHabitId) { // Only include habits that have a masterHabitId
+        if (!groups[masterHabitId]) {
+          groups[masterHabitId] = [];
+        }
+        // Add child name to habit for display
+        const child = children.find(c => c.id === habit.childId);
+        groups[masterHabitId].push({
+          ...habit,
+          childName: child?.name
+        });
       }
-      groups[masterHabitId].push(habit);
     });
     
+    console.log('habitAssignmentsByMaster updated:', groups);
     return groups;
-  }, [allHabits]);
+  }, [allHabits, children]);
 
   if (!isOpen) return null;
 
@@ -1150,6 +1158,15 @@ function HabitAssignmentModal({
                               const childHabit = habitAssignments.find(h => h.childId === child.id);
                               const hasHabit = !!childHabit;
                               const isActive = childHabit?.isActive ?? false;
+
+                              console.log(`Assignment check for ${child.name}:`, {
+                                childId: child.id,
+                                masterHabitId: masterHabit.id,
+                                habitAssignments,
+                                childHabit,
+                                hasHabit,
+                                isActive
+                              });
 
                               return (
                                 <div key={child.id} className={`p-4 rounded-lg border-2 min-h-[100px] ${
@@ -1615,12 +1632,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <div className="text-right">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-4">
+                    <div className="text-left lg:text-right lg:min-w-[80px]">
                       <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
                       <div className="text-xs text-gray-500">Reward</div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                       <Button
                         onClick={() => {
                           toggleMasterHabitStatusMutation.mutate({
@@ -1630,7 +1647,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         }}
                         disabled={toggleMasterHabitStatusMutation.isPending}
                         size="sm"
-                        className={`px-4 py-2 text-sm font-medium min-w-[120px] ${
+                        className={`flex-1 sm:flex-initial px-3 py-2 text-sm font-medium min-w-[140px] whitespace-nowrap ${
                           habit.isActive 
                             ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
                             : 'bg-green-500 hover:bg-green-600 text-white'
@@ -1654,7 +1671,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                           setEditHabitColor(habit.color || "turquoise");
                         }}
                         size="sm"
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm min-w-[80px]"
+                        className="flex-1 sm:flex-initial bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 text-sm min-w-[80px]"
                         data-testid={`button-edit-master-habit-${habit.id}`}
                       >
                         ✏️ Edit
@@ -1667,7 +1684,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         }}
                         disabled={deleteHabitMutation.isPending}
                         size="sm"
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 text-sm min-w-[80px]"
+                        className="flex-1 sm:flex-initial bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-sm min-w-[80px]"
                         data-testid={`button-delete-master-habit-${habit.id}`}
                       >
                         {deleteHabitMutation.isPending ? "Deleting..." : "🗑️ Delete"}
