@@ -986,17 +986,26 @@ function HabitAssignmentModal({
   // Assign habit to child
   const assignHabitMutation = useMutation({
     mutationFn: async ({ childId, habitData }: { childId: string; habitData: any }) => {
-      await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
+      const response = await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to assign habit to child");
+      }
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { childId }) => {
       toast({
         title: "Habit Assigned!",
         description: "Habit has been assigned to child successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      // Invalidate specific child habits
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Habit assignment error:", error);
       toast({
         title: "Error",
         description: "Failed to assign habit to child.",
@@ -1008,7 +1017,12 @@ function HabitAssignmentModal({
   // Remove habit assignment from child
   const removeHabitMutation = useMutation({
     mutationFn: async ({ habitId }: { habitId: string }) => {
-      await apiRequest("DELETE", `/api/habits/${habitId}`);
+      const response = await apiRequest("DELETE", `/api/habits/${habitId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to remove habit from child");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -1016,9 +1030,15 @@ function HabitAssignmentModal({
         description: "Habit has been removed from child.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      // Invalidate all child habits to refresh the display
+      children.forEach(child => {
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/habits`] });
+      });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Habit removal error:", error);
       toast({
         title: "Error",
         description: "Failed to remove habit from child.",
@@ -1203,6 +1223,13 @@ function HabitAssignmentModal({
                                         <Button
                                           size="sm"
                                           onClick={() => {
+                                            console.log('Assigning habit:', {
+                                              childId: child.id,
+                                              childName: child.name,
+                                              masterHabitId: masterHabit.id,
+                                              masterHabitName: masterHabit.name,
+                                              masterHabitIsActive: masterHabit.isActive
+                                            });
                                             assignHabitMutation.mutate({
                                               childId: child.id,
                                               habitData: {
