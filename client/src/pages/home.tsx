@@ -22,13 +22,13 @@ export default function Home() {
 
   // Fetch habits and completions for health meter
   const { data: habits = [] } = useQuery<Habit[]>({
-    queryKey: ["/api/children", loggedInChild?.id, "habits"],
-    enabled: !!loggedInChild?.id,
+    queryKey: ["/api/children", (loggedInChild as Child)?.id, "habits"],
+    enabled: !!(loggedInChild as Child)?.id,
   });
 
   const { data: todaysCompletions = [] } = useQuery<HabitCompletion[]>({
-    queryKey: ["/api/children", loggedInChild?.id, "completions", "today"],
-    enabled: !!loggedInChild?.id,
+    queryKey: ["/api/children", (loggedInChild as Child)?.id, "completions", "today"],
+    enabled: !!(loggedInChild as Child)?.id,
   });
 
   if (childAuthLoading) {
@@ -94,6 +94,20 @@ export default function Home() {
   // Fetch parental controls for the current child
   const { data: parentalControls } = useQuery<ParentalControls>({
     queryKey: ['/api/children', currentChild.id, 'parental-controls'],
+    enabled: !!currentChild.id,
+  });
+
+  // Check parent's subscription status for Premium features  
+  const { data: subscriptionInfo } = useQuery({
+    queryKey: ['/api/subscription/check-feature-access'],
+    queryFn: async () => {
+      const response = await fetch('/api/subscription/check-feature-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feature: 'mini_games' })
+      });
+      return response.json();
+    },
     enabled: !!currentChild.id,
   });
 
@@ -179,7 +193,10 @@ export default function Home() {
 
           <TabsContent value="rewards" className="space-y-6">
             {featuresEnabled.rewards ? (
-              <RewardsSection childId={currentChild.id} />
+              <RewardsSection 
+                childId={currentChild.id} 
+                userSubscriptionStatus={subscriptionInfo?.user?.subscriptionStatus || 'free'} 
+              />
             ) : (
               <Alert>
                 <Lock className="h-4 w-4" />

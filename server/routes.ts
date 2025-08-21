@@ -551,34 +551,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Reward not found" });
       }
 
-      // Create a reward transaction that requires approval
-      const transactionData = insertRewardTransactionSchema.parse({
+      // Create a reward claim with pending status
+      const claimData = {
+        rewardId: req.params.rewardId,
         childId: req.body.childId,
-        type: 'earned',
-        amount: targetReward.cost || 10, // Default to 10 points if no cost specified
-        source: 'reward_claim',
-        description: `Claimed reward: ${targetReward.name}`,
-        requiresApproval: true,
+        status: 'pending',
         isApproved: false,
-      });
+      };
 
-      const transaction = await storage.createRewardTransaction(transactionData);
-      res.json(transaction);
+      const claim = await storage.createRewardClaim(claimData);
+      res.json(claim);
     } catch (error) {
       console.error("Error claiming reward:", error);
       res.status(500).json({ message: "Failed to claim reward" });
     }
   });
 
-  // Approve reward transaction route
-  app.post('/api/reward-transactions/:transactionId/approve', isAuthenticated, async (req, res) => {
+  // Approve reward claim route
+  app.post('/api/reward-claims/:claimId/approve', isAuthenticated, async (req, res) => {
     try {
-      const { approvedBy } = req.body;
-      const transaction = await storage.approveRewardTransaction(req.params.transactionId, approvedBy);
-      res.json(transaction);
+      const claim = await storage.approveRewardClaim(req.params.claimId);
+      res.json(claim);
     } catch (error) {
-      console.error("Error approving reward transaction:", error);
-      res.status(500).json({ message: "Failed to approve reward transaction" });
+      console.error("Error approving reward claim:", error);
+      res.status(500).json({ message: "Failed to approve reward claim" });
+    }
+  });
+
+  // Mark reward as used route
+  app.put('/api/reward-claims/:claimId/mark-used', isParentOrChildAuthenticated, async (req, res) => {
+    try {
+      // Update the claim status to 'used'
+      const claim = await storage.markRewardClaimAsUsed(req.params.claimId);
+      res.json(claim);
+    } catch (error) {
+      console.error("Error marking reward as used:", error);
+      res.status(500).json({ message: "Failed to mark reward as used" });
     }
   });
 

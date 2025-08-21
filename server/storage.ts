@@ -93,6 +93,7 @@ export interface IStorage {
   createRewardClaim(claim: InsertRewardClaim): Promise<RewardClaim>;
   getRewardClaims(childId: string): Promise<RewardClaim[]>;
   approveRewardClaim(claimId: string): Promise<RewardClaim>;
+  markRewardClaimAsUsed(claimId: string): Promise<RewardClaim>;
   
   // Mini-game operations
   getAllMiniGames(): Promise<MiniGame[]>;
@@ -685,12 +686,25 @@ export class DatabaseStorage implements IStorage {
     const [approvedClaim] = await db
       .update(rewardClaims)
       .set({
+        status: 'approved',
         isApproved: true,
         approvedAt: new Date(),
       })
       .where(eq(rewardClaims.id, claimId))
       .returning();
     return approvedClaim;
+  }
+
+  async markRewardClaimAsUsed(claimId: string): Promise<RewardClaim> {
+    const [usedClaim] = await db
+      .update(rewardClaims)
+      .set({
+        status: 'used',
+        usedAt: new Date(),
+      })
+      .where(eq(rewardClaims.id, claimId))
+      .returning();
+    return usedClaim;
   }
 
   // Mini-game operations

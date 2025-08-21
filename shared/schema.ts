@@ -161,8 +161,10 @@ export const rewardClaims = pgTable("reward_claims", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   rewardId: varchar("reward_id").notNull().references(() => rewards.id, { onDelete: "cascade" }),
   childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  status: varchar("status").notNull().default("pending"), // pending, approved, used
   claimedAt: timestamp("claimed_at").defaultNow(),
   approvedAt: timestamp("approved_at"),
+  usedAt: timestamp("used_at"),
   isApproved: boolean("is_approved").notNull().default(false),
 });
 
