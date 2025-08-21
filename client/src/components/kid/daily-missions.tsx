@@ -236,11 +236,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <div className="bg-gradient-to-r from-sky to-mint text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse">
                     ⚡ +{habit.xpReward} XP
                   </div>
-                  {habit.rewardPoints && (
-                    <div className="bg-gradient-to-r from-coral to-orange-400 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                      🎁 +{habit.rewardPoints}
-                    </div>
-                  )}
+
                 </div>
               </div>
               
