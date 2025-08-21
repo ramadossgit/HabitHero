@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isChildAuthenticated, isParentOrChildAuthenticated } from "./auth";
 import { syncService } from "./sync-service";
+import { RecurringRewardsService } from "./recurring-rewards-service";
 import { SubscriptionService } from "./subscription-service";
 import { SUBSCRIPTION_PLANS } from "@shared/subscription-plans";
 import Stripe from 'stripe';
@@ -34,6 +35,9 @@ declare module 'express-session' {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Start the recurring rewards processor
+  RecurringRewardsService.startProcessor();
 
   // Note: Auth routes are now handled in setupAuth function
 
@@ -502,7 +506,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         childId: req.params.childId,
       });
+      
+      // Set next occurrence based on category and recurrence
+      if (rewardData.isRecurring) {
+        const now = new Date();
+        switch (rewardData.category) {
+          case 'daily':
+            rewardData.nextOccurrence = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Tomorrow
+            break;
+          case 'weekly':
+            const nextWeek = new Date(now);
+            nextWeek.setDate(nextWeek.getDate() + 7); // Next week
+            rewardData.nextOccurrence = nextWeek;
+            break;
+          case 'monthly':
+            const nextMonth = new Date(now);
+            nextMonth.setMonth(nextMonth.getMonth() + 1); // Next month
+            rewardData.nextOccurrence = nextMonth;
+            break;
+          case 'yearly':
+            const nextYear = new Date(now);
+            nextYear.setFullYear(nextYear.getFullYear() + 1); // Next year
+            rewardData.nextOccurrence = nextYear;
+            break;
+        }
+        rewardData.lastGenerated = now;
+      }
+      
       const reward = await storage.createReward(rewardData);
+      
+      // Sync the new reward to all devices
+      await syncService.addEvent(
+        req.user?.id || req.session.parentId || '',
+        'reward_created',
+        'rewards',
+        reward.id,
+        { 
+          childId: req.params.childId, 
+          rewardName: reward.name,
+          category: reward.category,
+          isRecurring: reward.isRecurring 
+        }
+      );
+      
       res.json(reward);
     } catch (error) {
       console.error("Error creating reward:", error);

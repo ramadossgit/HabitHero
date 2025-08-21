@@ -88,6 +88,10 @@ export interface IStorage {
   createReward(reward: InsertReward): Promise<Reward>;
   updateReward(id: string, updates: Partial<InsertReward>): Promise<Reward>;
   deleteReward(id: string): Promise<void>;
+  getRecurringRewardsDue(currentDate: Date): Promise<Reward[]>;
+  getRecurringRewardsByChild(childId: string): Promise<Reward[]>;
+  getRewardInstancesByParent(parentRewardId: string): Promise<Reward[]>;
+  getParentByChildId(childId: string): Promise<User | undefined>;
   
   // Reward claim operations
   createRewardClaim(claim: InsertRewardClaim): Promise<RewardClaim>;
@@ -670,6 +674,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteReward(id: string): Promise<void> {
     await db.delete(rewards).where(eq(rewards.id, id));
+  }
+
+  async getRecurringRewardsDue(currentDate: Date): Promise<Reward[]> {
+    return await db.select().from(rewards).where(
+      and(
+        eq(rewards.isRecurring, true),
+        sql`${rewards.nextOccurrence} <= ${currentDate}`
+      )
+    );
+  }
+
+  async getRecurringRewardsByChild(childId: string): Promise<Reward[]> {
+    return await db.select().from(rewards).where(
+      and(
+        eq(rewards.childId, childId),
+        eq(rewards.isRecurring, true)
+      )
+    );
+  }
+
+  async getRewardInstancesByParent(parentRewardId: string): Promise<Reward[]> {
+    return await db.select().from(rewards).where(
+      eq(rewards.parentRewardId, parentRewardId)
+    ).orderBy(desc(rewards.createdAt));
+  }
+
+  async getParentByChildId(childId: string): Promise<User | undefined> {
+    const [child] = await db.select().from(children).where(eq(children.id, childId));
+    if (!child) return undefined;
+    
+    const [parent] = await db.select().from(users).where(eq(users.id, child.parentId));
+    return parent;
   }
 
   // Reward claim operations

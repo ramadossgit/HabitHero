@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Plus, Edit, Trash2, Clock, Cookie, Car, Star } from "lucide-react";
+import { Gift, Plus, Edit, Trash2, Clock, Cookie, Car, Star, Calendar, RotateCcw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Reward } from "@shared/schema";
 
 interface RewardSettingsProps {
@@ -27,6 +28,8 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
     value: "",
     cost: 3,
     costType: "habits",
+    category: "daily",
+    isRecurring: false,
   });
 
   const { data: rewards, isLoading } = useQuery({
@@ -106,6 +109,8 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
       value: "",
       cost: 3,
       costType: "habits",
+      category: "daily",
+      isRecurring: false,
     });
   };
 
@@ -118,6 +123,8 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
       value: reward.value || "",
       cost: reward.cost,
       costType: reward.costType,
+      category: reward.category || "daily",
+      isRecurring: reward.isRecurring || false,
     });
     setIsDialogOpen(true);
   };
@@ -258,6 +265,36 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                   </Select>
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={rewardForm.category} onValueChange={(value) => setRewardForm({ ...rewardForm, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">📅 Daily</SelectItem>
+                      <SelectItem value="weekly">🗓️ Weekly</SelectItem>
+                      <SelectItem value="monthly">🗓️ Monthly</SelectItem>
+                      <SelectItem value="yearly">📆 Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="isRecurring" 
+                      checked={rewardForm.isRecurring}
+                      onCheckedChange={(checked) => setRewardForm({ ...rewardForm, isRecurring: checked as boolean })}
+                    />
+                    <Label htmlFor="isRecurring" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      🔄 Recurring Reward
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Creates new instances based on category schedule</p>
+                </div>
+              </div>
               <Button 
                 type="submit" 
                 className="w-full bg-turquoise text-white hover:bg-turquoise/80"
@@ -271,17 +308,82 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
       </div>
 
       <div className="space-y-6">
+        {/* Daily Rewards */}
         <div>
-          <h4 className="font-nunito font-bold mb-3">Screen Time Rewards</h4>
+          <h4 className="font-nunito font-bold mb-3 flex items-center">
+            <Calendar className="w-5 h-5 text-mint mr-2" />
+            📅 Daily Rewards
+          </h4>
           <div className="space-y-3">
-            {rewards?.filter((reward: Reward) => reward.type === "screen_time").map((reward: Reward) => {
+            {rewards?.filter((reward: Reward) => reward.category === "daily").map((reward: Reward) => {
               const IconComponent = getRewardIcon(reward.type);
               
               return (
-                <div key={reward.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={reward.id} className="flex items-center justify-between p-3 bg-mint/10 rounded-lg">
+                  <div className="flex items-center">
+                    <IconComponent className="w-5 h-5 text-mint mr-3" />
+                    <div>
+                      <span className="font-medium">{reward.name}</span>
+                      {reward.isRecurring && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-mint/20 text-mint">
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Recurring
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      {reward.cost} {reward.costType === "habits" ? "habits" : reward.costType}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditReward(reward)}
+                    >
+                      <Edit className="w-4 h-4 text-mint" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteRewardMutation.mutate(reward.id)}
+                      disabled={deleteRewardMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {rewards?.filter((reward: Reward) => reward.category === "daily").length === 0 && (
+              <p className="text-gray-500 text-sm italic">No daily rewards configured</p>
+            )}
+          </div>
+        </div>
+
+        {/* Weekly Rewards */}
+        <div>
+          <h4 className="font-nunito font-bold mb-3 flex items-center">
+            <Calendar className="w-5 h-5 text-sky mr-2" />
+            🗓️ Weekly Rewards
+          </h4>
+          <div className="space-y-3">
+            {rewards?.filter((reward: Reward) => reward.category === "weekly").map((reward: Reward) => {
+              const IconComponent = getRewardIcon(reward.type);
+              
+              return (
+                <div key={reward.id} className="flex items-center justify-between p-3 bg-sky/10 rounded-lg">
                   <div className="flex items-center">
                     <IconComponent className="w-5 h-5 text-sky mr-3" />
-                    <span>{reward.name}</span>
+                    <div>
+                      <span className="font-medium">{reward.name}</span>
+                      {reward.isRecurring && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-sky/20 text-sky">
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Recurring
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-600">
@@ -306,6 +408,115 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                 </div>
               );
             })}
+            {rewards?.filter((reward: Reward) => reward.category === "weekly").length === 0 && (
+              <p className="text-gray-500 text-sm italic">No weekly rewards configured</p>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Rewards */}
+        <div>
+          <h4 className="font-nunito font-bold mb-3 flex items-center">
+            <Calendar className="w-5 h-5 text-coral mr-2" />
+            🗓️ Monthly Rewards
+          </h4>
+          <div className="space-y-3">
+            {rewards?.filter((reward: Reward) => reward.category === "monthly").map((reward: Reward) => {
+              const IconComponent = getRewardIcon(reward.type);
+              
+              return (
+                <div key={reward.id} className="flex items-center justify-between p-3 bg-coral/10 rounded-lg">
+                  <div className="flex items-center">
+                    <IconComponent className="w-5 h-5 text-coral mr-3" />
+                    <div>
+                      <span className="font-medium">{reward.name}</span>
+                      {reward.isRecurring && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-coral/20 text-coral">
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Recurring
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      {reward.cost} {reward.costType === "habits" ? "habits" : reward.costType}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditReward(reward)}
+                    >
+                      <Edit className="w-4 h-4 text-coral" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteRewardMutation.mutate(reward.id)}
+                      disabled={deleteRewardMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {rewards?.filter((reward: Reward) => reward.category === "monthly").length === 0 && (
+              <p className="text-gray-500 text-sm italic">No monthly rewards configured</p>
+            )}
+          </div>
+        </div>
+
+        {/* Yearly Rewards */}
+        <div>
+          <h4 className="font-nunito font-bold mb-3 flex items-center">
+            <Calendar className="w-5 h-5 text-turquoise mr-2" />
+            📆 Yearly Rewards
+          </h4>
+          <div className="space-y-3">
+            {rewards?.filter((reward: Reward) => reward.category === "yearly").map((reward: Reward) => {
+              const IconComponent = getRewardIcon(reward.type);
+              
+              return (
+                <div key={reward.id} className="flex items-center justify-between p-3 bg-turquoise/10 rounded-lg">
+                  <div className="flex items-center">
+                    <IconComponent className="w-5 h-5 text-turquoise mr-3" />
+                    <div>
+                      <span className="font-medium">{reward.name}</span>
+                      {reward.isRecurring && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-turquoise/20 text-turquoise">
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Recurring
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      {reward.cost} {reward.costType === "habits" ? "habits" : reward.costType}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditReward(reward)}
+                    >
+                      <Edit className="w-4 h-4 text-turquoise" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteRewardMutation.mutate(reward.id)}
+                      disabled={deleteRewardMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {rewards?.filter((reward: Reward) => reward.category === "yearly").length === 0 && (
+              <p className="text-gray-500 text-sm italic">No yearly rewards configured</p>
+            )}
           </div>
         </div>
 

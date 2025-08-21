@@ -152,8 +152,14 @@ export const rewards = pgTable("rewards", {
   value: varchar("value"), // e.g., "30_minutes", "ice_cream", "park_visit"
   cost: integer("cost").notNull(), // XP or habits required
   costType: varchar("cost_type").notNull().default("habits"), // habits, xp, streak
+  category: varchar("category").notNull().default("daily"), // daily, weekly, monthly, yearly
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  parentRewardId: varchar("parent_reward_id"), // For linking recurring instances to original
+  nextOccurrence: timestamp("next_occurrence"), // When this reward is next available
+  lastGenerated: timestamp("last_generated"), // Last time recurring instance was created
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Claimed rewards
@@ -405,6 +411,7 @@ export const insertHabitCompletionSchema = createInsertSchema(habitCompletions).
 export const insertRewardSchema = createInsertSchema(rewards).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertRewardClaimSchema = createInsertSchema(rewardClaims).omit({
