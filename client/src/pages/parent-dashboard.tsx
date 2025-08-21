@@ -800,7 +800,7 @@ export default function ParentDashboard() {
               showHabitAssignment={showHabitAssignment}
               setShowHabitAssignment={setShowHabitAssignment}
               children={children || []}
-              user={user}
+              user={user as User}
             />
           </div>
 
@@ -830,7 +830,12 @@ export default function ParentDashboard() {
 
           {/* Reward Settings Section */}
           <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
-            <RewardSettingsSection childId={child?.id || ''} showAddReward={showAddReward} setShowAddReward={setShowAddReward} />
+            <RewardSettingsSection 
+              childId={child?.id || ''} 
+              showAddReward={showAddReward} 
+              setShowAddReward={setShowAddReward}
+              children={children || []}
+            />
           </div>
 
           {/* Reward Approval Section */}
@@ -2693,7 +2698,10 @@ function KidsManagementSection({
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
                     className="hidden"
                     id="avatar-upload-new"
                   />
@@ -2754,16 +2762,23 @@ function KidsManagementSection({
 }
 
 // Reward Settings Section Component
-function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: { 
+function RewardSettingsSection({ 
+  childId, 
+  showAddReward, 
+  setShowAddReward, 
+  children 
+}: { 
   childId: string; 
   showAddReward: boolean; 
   setShowAddReward: (show: boolean) => void; 
+  children: Child[];
 }) {
   const { toast } = useToast();
   const [rewardName, setRewardName] = useState("");
   const [rewardDescription, setRewardDescription] = useState("");
   const [rewardCost, setRewardCost] = useState("100");
   const [rewardIcon, setRewardIcon] = useState("🎁");
+  const [selectedKids, setSelectedKids] = useState<string[]>([]);
   const [editingReward, setEditingReward] = useState<string | null>(null);
   const [editRewardName, setEditRewardName] = useState("");
   const [editRewardDescription, setEditRewardDescription] = useState("");
@@ -2788,6 +2803,7 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       setRewardDescription("");
       setRewardCost("100");
       setRewardIcon("🎁");
+      setSelectedKids([]);
       setShowAddReward(false);
     },
     onError: (error) => {
@@ -2852,13 +2868,25 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
       });
       return;
     }
-    createRewardMutation.mutate({
-      childId,
-      name: rewardName.trim(),
-      description: rewardDescription.trim(),
-      icon: rewardIcon,
-      cost: parseInt(rewardCost),
-      isActive: true,
+    if (selectedKids.length === 0) {
+      toast({
+        title: "No kids selected",
+        description: "Please select at least one child for this reward!",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create reward for each selected kid
+    selectedKids.forEach(kidId => {
+      createRewardMutation.mutate({
+        childId: kidId,
+        name: rewardName.trim(),
+        description: rewardDescription.trim(),
+        icon: rewardIcon,
+        cost: parseInt(rewardCost),
+        isActive: true,
+      });
     });
   };
 
@@ -3061,6 +3089,37 @@ function RewardSettingsSection({ childId, showAddReward, setShowAddReward }: {
                         <SelectItem value="500">500 XP</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+
+                {/* Kid Assignment for Rewards */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Assign to Kids</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {children.map((child) => (
+                      <div key={child.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`reward-kid-${child.id}`}
+                          checked={selectedKids.includes(child.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedKids([...selectedKids, child.id]);
+                            } else {
+                              setSelectedKids(selectedKids.filter(id => id !== child.id));
+                            }
+                          }}
+                          className="w-4 h-4 text-orange-500 border-2 border-orange-300 rounded focus:ring-orange-500"
+                        />
+                        <label htmlFor={`reward-kid-${child.id}`} className="text-sm font-medium text-gray-700 flex items-center">
+                          <span className="text-lg mr-1">{child.avatarType === 'robot' ? '🤖' : child.avatarType === 'princess' ? '👑' : child.avatarType === 'ninja' ? '🥷' : '🐾'}</span>
+                          {child.name} (Level {child.level})
+                        </label>
+                      </div>
+                    ))}
+                    {children.length === 0 && (
+                      <p className="text-sm text-gray-500 italic">No kids available. Add a child first.</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -3304,7 +3363,7 @@ function RewardApprovalSection({ childId }: { childId: string }) {
   const transactionsArray = Array.isArray(rewardTransactions) ? rewardTransactions.slice(0, 5) : [];
   
   const handleApprove = (transactionId: string) => {
-    if (!user?.id) {
+    if (!(user as User)?.id) {
       toast({
         title: "Error",
         description: "User not authenticated",
@@ -3312,7 +3371,7 @@ function RewardApprovalSection({ childId }: { childId: string }) {
       });
       return;
     }
-    approveRewardMutation.mutate({ transactionId, approvedBy: user.id });
+    approveRewardMutation.mutate({ transactionId, approvedBy: (user as User).id });
   };
 
   const handleGiveBonus = (amount: number, description: string) => {
