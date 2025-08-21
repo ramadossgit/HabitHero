@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Gift, Plus, Edit, Trash2, Clock, Cookie, Car, Star, Calendar, RotateCcw } from "lucide-react";
+import { Gift, Plus, Edit, Trash2, Clock, Cookie, Car, Star, Calendar, RotateCcw, Crown, ArrowUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Reward } from "@shared/schema";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Reward, User } from "@shared/schema";
 
 interface RewardSettingsProps {
   childId: string;
@@ -35,6 +36,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
   const { data: rewards, isLoading } = useQuery({
     queryKey: ["/api/children", childId, "rewards"],
   });
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const isPremium = user?.subscriptionStatus === 'active';
 
   const createRewardMutation = useMutation({
     mutationFn: async (rewardData: any) => {
@@ -131,6 +138,17 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if recurring rewards require Premium
+    if (rewardForm.isRecurring && !isPremium) {
+      toast({
+        title: "Premium Feature Required",
+        description: "Recurring rewards are available for Premium members only. Upgrade to unlock this feature!",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (editingReward) {
       updateRewardMutation.mutate({
         rewardId: editingReward.id,
@@ -170,10 +188,24 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
   return (
     <Card className="p-6 shadow-lg">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-fredoka text-2xl text-gray-800 flex items-center">
-          <Gift className="text-turquoise mr-3" />
-          Reward Settings
-        </h3>
+        <div>
+          <h3 className="font-fredoka text-2xl text-gray-800 flex items-center">
+            <Gift className="text-turquoise mr-3" />
+            Reward Settings
+          </h3>
+          {!isPremium && (
+            <Alert className="mt-3 border-coral/20 bg-coral/5">
+              <Crown className="h-4 w-4 text-coral" />
+              <AlertDescription>
+                <strong>Unlock Recurring Rewards with Premium!</strong> Automatically generate Daily, Weekly, Monthly, and Yearly rewards for consistent motivation.
+                <Button variant="link" className="h-auto p-0 ml-2 text-coral hover:text-coral/80 font-medium">
+                  <ArrowUp className="w-3 h-3 mr-1" />
+                  Upgrade Now
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
@@ -287,12 +319,18 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       id="isRecurring" 
                       checked={rewardForm.isRecurring}
                       onCheckedChange={(checked) => setRewardForm({ ...rewardForm, isRecurring: checked as boolean })}
+                      disabled={!isPremium}
                     />
                     <Label htmlFor="isRecurring" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       🔄 Recurring Reward
+                      {!isPremium && (
+                        <Crown className="w-3 h-3 inline-block ml-1 text-coral" />
+                      )}
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Creates new instances based on category schedule</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isPremium ? "Creates new instances based on category schedule" : "Premium feature - Upgrade to unlock"}
+                  </p>
                 </div>
               </div>
               <Button 
@@ -326,8 +364,9 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <span className="font-medium">{reward.name}</span>
                       {reward.isRecurring && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-mint/20 text-mint">
+                          <Crown className="w-3 h-3 mr-1" />
                           <RotateCcw className="w-3 h-3 mr-1" />
-                          Recurring
+                          Premium Recurring
                         </span>
                       )}
                     </div>
@@ -379,8 +418,9 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <span className="font-medium">{reward.name}</span>
                       {reward.isRecurring && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-sky/20 text-sky">
+                          <Crown className="w-3 h-3 mr-1" />
                           <RotateCcw className="w-3 h-3 mr-1" />
-                          Recurring
+                          Premium Recurring
                         </span>
                       )}
                     </div>
@@ -432,8 +472,9 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <span className="font-medium">{reward.name}</span>
                       {reward.isRecurring && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-coral/20 text-coral">
+                          <Crown className="w-3 h-3 mr-1" />
                           <RotateCcw className="w-3 h-3 mr-1" />
-                          Recurring
+                          Premium Recurring
                         </span>
                       )}
                     </div>
@@ -485,8 +526,9 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <span className="font-medium">{reward.name}</span>
                       {reward.isRecurring && (
                         <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-turquoise/20 text-turquoise">
+                          <Crown className="w-3 h-3 mr-1" />
                           <RotateCcw className="w-3 h-3 mr-1" />
-                          Recurring
+                          Premium Recurring
                         </span>
                       )}
                     </div>
