@@ -10,6 +10,7 @@ import Landing from "@/pages/landing";
 import ParentAuthPage from "@/pages/parent-auth-page";
 import SubscriptionPage from "@/pages/subscription";
 import PremiumEnrollment from "@/pages/premium-enrollment";
+import PremiumSuccess from "@/pages/premium-success";
 import Home from "@/pages/home";
 import ParentDashboard from "@/pages/parent-dashboard";
 import ProgressReportsPage from "@/pages/progress-reports";
@@ -56,6 +57,9 @@ function Router() {
       </Route>
       <Route path="/premium-enrollment">
         {isAuthenticated ? <PremiumEnrollment /> : <ParentAuthPage />}
+      </Route>
+      <Route path="/premium-success">
+        {isAuthenticated ? <PremiumSuccess /> : <ParentAuthPage />}
       </Route>
       <Route path="/progress-reports">
         {isAuthenticated ? <ProgressReportsPage /> : <ParentAuthPage />}

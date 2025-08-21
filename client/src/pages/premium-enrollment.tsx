@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { loadStripe } from "@stripe/stripe-js";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, Check, ArrowLeft, Calendar, Trophy, Gamepad2, Star, Zap } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
+
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+}
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const plans = [
   {
@@ -65,21 +73,72 @@ const features = [
 export default function PremiumEnrollment() {
   const [selectedPlan, setSelectedPlan] = useState("quarterly");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
   });
 
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ["/api/subscription/status"],
+    enabled: !!user,
+  });
+
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      const response = await apiRequest("POST", "/api/subscription/create", { planId });
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      console.log('Subscription created:', data);
+      if (data.clientSecret) {
+        const stripe = await stripePromise;
+        if (!stripe) {
+          throw new Error('Stripe failed to load');
+        }
+
+        // Redirect to Stripe Checkout
+        const result = await stripe.confirmPayment({
+          clientSecret: data.clientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/premium-success`,
+          },
+        });
+
+        if (result.error) {
+          toast({
+            title: "Payment Failed",
+            description: result.error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.error('No client secret received:', data);
+        toast({
+          title: "Subscription Error",
+          description: "Failed to initialize payment. Please try again.",
+          variant: "destructive",
+        });
+      }
+      setIsProcessing(false);
+    },
+    onError: (error: any) => {
+      console.error("Subscription creation failed:", error);
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Failed to create subscription. Please try again.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    },
+  });
+
   const handleEnroll = async (planId: string) => {
     setIsProcessing(true);
     try {
-      // Redirect to Stripe payment page - this would be implemented with your payment system
-      console.log("Processing enrollment for plan:", planId);
-      // For now, just show success
-      setTimeout(() => {
-        alert("Premium enrollment would be processed here!");
-        setIsProcessing(false);
-      }, 2000);
+      await createSubscriptionMutation.mutateAsync(planId);
     } catch (error) {
       console.error("Enrollment failed:", error);
       setIsProcessing(false);
