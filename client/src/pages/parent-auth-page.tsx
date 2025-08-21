@@ -228,7 +228,7 @@ export default function ParentAuthPage() {
               </CardHeader>
               <CardContent>
 
-                <Tabs defaultValue="login" className="space-y-4">
+                <Tabs defaultValue="register" className="space-y-4">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login" className="flex items-center space-x-2">
                       <LogIn className="w-4 h-4" />
