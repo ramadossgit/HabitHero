@@ -1159,14 +1159,7 @@ function HabitAssignmentModal({
                               const hasHabit = !!childHabit;
                               const isActive = childHabit?.isActive ?? false;
 
-                              console.log(`Assignment check for ${child.name}:`, {
-                                childId: child.id,
-                                masterHabitId: masterHabit.id,
-                                habitAssignments,
-                                childHabit,
-                                hasHabit,
-                                isActive
-                              });
+
 
                               return (
                                 <div key={child.id} className={`p-4 rounded-lg border-2 min-h-[100px] ${
