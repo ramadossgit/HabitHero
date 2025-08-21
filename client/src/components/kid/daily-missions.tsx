@@ -46,9 +46,28 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
       const habit = habitsArray.find(h => h.id === habitId);
       if (habit && habit.timeRangeStart && habit.timeRangeEnd) {
         const now = new Date();
-        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentTimeInMinutes = currentHour * 60 + currentMinutes;
         
-        if (currentTime < habit.timeRangeStart || currentTime > habit.timeRangeEnd) {
+        // Parse start and end times
+        const [startHour, startMinute] = habit.timeRangeStart.split(':').map(Number);
+        const [endHour, endMinute] = habit.timeRangeEnd.split(':').map(Number);
+        const startTimeInMinutes = startHour * 60 + startMinute;
+        const endTimeInMinutes = endHour * 60 + endMinute;
+        
+        // Check if current time is within the allowed range
+        let isWithinRange = false;
+        
+        if (endTimeInMinutes >= startTimeInMinutes) {
+          // Normal case: start and end are on the same day
+          isWithinRange = currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes <= endTimeInMinutes;
+        } else {
+          // Crosses midnight: e.g., 22:00 - 06:00
+          isWithinRange = currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes <= endTimeInMinutes;
+        }
+        
+        if (!isWithinRange) {
           throw new Error(`This habit can only be completed between ${habit.timeRangeStart} and ${habit.timeRangeEnd}. Come back during the allowed time!`);
         }
       }

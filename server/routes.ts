@@ -345,6 +345,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Habit not found" });
       }
 
+      // Server-side time validation
+      if (habit.timeRangeStart && habit.timeRangeEnd) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinutes = now.getMinutes();
+        const currentTimeInMinutes = currentHour * 60 + currentMinutes;
+        
+        // Parse start and end times
+        const [startHour, startMinute] = habit.timeRangeStart.split(':').map(Number);
+        const [endHour, endMinute] = habit.timeRangeEnd.split(':').map(Number);
+        const startTimeInMinutes = startHour * 60 + startMinute;
+        const endTimeInMinutes = endHour * 60 + endMinute;
+        
+        // Check if current time is within the allowed range
+        let isWithinRange = false;
+        
+        if (endTimeInMinutes >= startTimeInMinutes) {
+          // Normal case: start and end are on the same day
+          isWithinRange = currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes <= endTimeInMinutes;
+        } else {
+          // Crosses midnight: e.g., 22:00 - 06:00
+          isWithinRange = currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes <= endTimeInMinutes;
+        }
+        
+        if (!isWithinRange) {
+          return res.status(400).json({ 
+            message: `This habit can only be completed between ${habit.timeRangeStart} and ${habit.timeRangeEnd}. Come back during the allowed time!` 
+          });
+        }
+      }
+
       const today = new Date().toISOString().split('T')[0];
       
       // Check if there's already an approved completion for today
