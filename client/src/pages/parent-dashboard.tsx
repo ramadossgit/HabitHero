@@ -1313,11 +1313,16 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
 
   const createMasterHabitMutation = useMutation({
     mutationFn: async (habitData: any) => {
-      await apiRequest("POST", `/api/habits/master`, habitData);
+      const response = await apiRequest("POST", `/api/habits/master`, habitData);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to create master habit");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Master Habit Created! 🎯",
+        title: "Master Habit Created!",
         description: "New master habit template created! Use Assignment Center to assign to children.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
@@ -1330,6 +1335,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       setShowAddHabit(false);
     },
     onError: (error) => {
+      console.error("Master habit creation error:", error);
       toast({
         title: "Error",
         description: "Failed to create master habit. Please try again.",
@@ -1340,11 +1346,16 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
 
   const updateMasterHabitMutation = useMutation({
     mutationFn: async (data: { masterHabitId: string; updates: any }) => {
-      await apiRequest("PATCH", `/api/habits/master/${data.masterHabitId}`, data.updates);
+      const response = await apiRequest("PATCH", `/api/master-habits/${data.masterHabitId}`, data.updates);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to update master habit");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Master Habit Updated! 🎯",
+        title: "Master Habit Updated!",
         description: "Master habit has been updated successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
@@ -1352,6 +1363,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       setEditingHabit(null);
     },
     onError: (error) => {
+      console.error("Master habit update error:", error);
       toast({
         title: "Error",
         description: "Failed to update master habit. Please try again.",
@@ -1428,17 +1440,20 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   // For master habit status updates (template-level)
   const toggleMasterHabitStatusMutation = useMutation({
     mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
-      await apiRequest("PATCH", `/api/master-habits/${habitId}`, { isActive });
+      const response = await apiRequest("PATCH", `/api/master-habits/${habitId}`, { isActive });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to update master habit status");
+      }
+      return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Master Habit Status Updated!",
-        description: "Master habit status has been changed successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh master habits
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] }); // Refresh master habits
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh child assignments
       queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Master habit status update error:", error);
       toast({
         title: "Error",
         description: "Failed to update master habit status.",
