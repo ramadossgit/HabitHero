@@ -2883,8 +2883,10 @@ function RewardSettingsSection({
         childId: kidId,
         name: rewardName.trim(),
         description: rewardDescription.trim(),
-        icon: rewardIcon,
+        type: "treat", // Default type for custom rewards
+        value: rewardName.trim(), // Use name as value
         cost: parseInt(rewardCost),
+        costType: "xp", // Using XP cost type
         isActive: true,
       });
     });
@@ -3007,8 +3009,10 @@ function RewardSettingsSection({
                           rewardId: reward.id,
                           name: editRewardName.trim(),
                           description: editRewardDescription.trim(),
-                          icon: editRewardIcon,
-                          cost: parseInt(editRewardCost)
+                          type: "treat", // Default type for custom rewards
+                          value: editRewardName.trim(),
+                          cost: parseInt(editRewardCost),
+                          costType: "xp"
                         });
                       }}
                       disabled={updateRewardMutation.isPending || !editRewardName.trim()}
