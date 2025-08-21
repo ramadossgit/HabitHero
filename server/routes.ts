@@ -536,18 +536,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reward = await storage.createReward(rewardData);
       
       // Sync the new reward to all devices
-      await syncService.addEvent(
-        req.user?.id || req.session.parentId || '',
-        'reward_created',
-        'rewards',
-        reward.id,
-        { 
+      await syncService.createSyncEvent({
+        userId: req.user?.id || req.session.parentId || '',
+        eventType: 'reward_created',
+        entityType: 'rewards',
+        entityId: reward.id,
+        eventData: { 
           childId: req.params.childId, 
           rewardName: reward.name,
           category: reward.category,
           isRecurring: reward.isRecurring 
         }
-      );
+      });
       
       res.json(reward);
     } catch (error) {

@@ -6,9 +6,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export class SubscriptionService {
   // Create Stripe customer
@@ -60,12 +58,14 @@ export class SubscriptionService {
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: subscription.status === 'trialing' || subscription.status === 'active' ? 'active' : 'cancelled',
         subscriptionPlan: planId,
-        subscriptionEndDate: new Date(subscription.current_period_end * 1000)
+        subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
       });
 
+      const latestInvoice = subscription.latest_invoice as any;
+      
       return {
         subscriptionId: subscription.id,
-        clientSecret: subscription.latest_invoice?.payment_intent?.client_secret,
+        clientSecret: latestInvoice?.payment_intent?.client_secret,
         status: subscription.status
       };
     } catch (error) {
@@ -76,29 +76,51 @@ export class SubscriptionService {
 
   // Get or create Stripe price for plan
   private static async getOrCreatePrice(plan: SubscriptionPlan) {
-    // In production, you should create these prices manually in Stripe dashboard
-    // This is a simplified version for development
-    const priceId = `price_${plan.id}_${Math.floor(plan.price * 100)}`;
-    
+    // First, try to find existing price by metadata
     try {
-      const existingPrice = await stripe.prices.retrieve(priceId);
-      return existingPrice.id;
-    } catch {
-      // Price doesn't exist, create it
+      const prices = await stripe.prices.list({
+        limit: 100,
+        expand: ['data.product']
+      });
+      
+      const existingPrice = prices.data.find(price => 
+        price.metadata?.planId === plan.id && 
+        price.unit_amount === Math.floor(plan.price * 100) &&
+        price.currency === plan.currency
+      );
+      
+      if (existingPrice) {
+        return existingPrice.id;
+      }
+    } catch (error) {
+      console.error('Error searching for existing prices:', error);
+    }
+
+    // Price doesn't exist, create it
+    try {
+      // First create the product
+      const product = await stripe.products.create({
+        name: `Habit Heroes - ${plan.name}`,
+        description: `${plan.name} subscription plan for Habit Heroes`,
+        metadata: { planId: plan.id }
+      });
+
+      // Then create the price
       const price = await stripe.prices.create({
         unit_amount: Math.floor(plan.price * 100),
         currency: plan.currency,
         recurring: {
-          interval: plan.interval,
-          interval_count: plan.intervalCount
+          interval: plan.interval === 'quarter' ? 'month' : plan.interval as 'month' | 'year',
+          interval_count: plan.interval === 'quarter' ? 3 : plan.intervalCount
         },
-        product_data: {
-          name: `Habit Heroes - ${plan.name}`,
-          description: plan.features.join(', ')
-        },
+        product: product.id,
         metadata: { planId: plan.id }
       });
+      
       return price.id;
+    } catch (error) {
+      console.error('Error creating price:', error);
+      throw error;
     }
   }
 
@@ -116,7 +138,7 @@ export class SubscriptionService {
 
       await storage.updateUserSubscription(userId, {
         subscriptionStatus: 'cancelled',
-        subscriptionEndDate: new Date(subscription.current_period_end * 1000)
+        subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
       });
 
       return subscription;
@@ -141,14 +163,14 @@ export class SubscriptionService {
       if (status !== user.subscriptionStatus) {
         await storage.updateUserSubscription(userId, {
           subscriptionStatus: status,
-          subscriptionEndDate: new Date(subscription.current_period_end * 1000)
+          subscriptionEndDate: new Date((subscription as any).current_period_end * 1000)
         });
       }
 
       return await storage.getUserById(userId);
     } catch (error) {
       console.error('Error syncing subscription status:', error);
-      return user;
+      return await storage.getUserById(userId);
     }
   }
 
