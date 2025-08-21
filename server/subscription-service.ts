@@ -42,6 +42,17 @@ export class SubscriptionService {
       const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
       if (!plan) throw new Error('Plan not found');
 
+      // Cancel any existing subscription first
+      if (user.stripeSubscriptionId) {
+        try {
+          await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+          console.log('Cancelled existing subscription:', user.stripeSubscriptionId);
+        } catch (error) {
+          console.warn('Could not cancel existing subscription:', error);
+          // Continue anyway - it might already be cancelled
+        }
+      }
+
       // Create price if it doesn't exist (in production, create these manually in Stripe)
       const priceId = await this.getOrCreatePrice(plan);
 
@@ -51,6 +62,12 @@ export class SubscriptionService {
         payment_behavior: 'default_incomplete',
         expand: ['latest_invoice.payment_intent'],
         trial_period_days: user.subscriptionStatus === 'trial' ? 0 : undefined,
+        // Add automatic tax collection
+        automatic_tax: { enabled: false },
+        // Ensure we collect payment immediately
+        payment_settings: {
+          save_default_payment_method: 'on_subscription',
+        },
       });
 
       // Update user subscription info  
@@ -67,10 +84,28 @@ export class SubscriptionService {
       });
 
       const latestInvoice = subscription.latest_invoice as any;
+      const clientSecret = latestInvoice?.payment_intent?.client_secret;
+      
+      console.log('Subscription created:', {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        hasInvoice: !!latestInvoice,
+        hasPaymentIntent: !!latestInvoice?.payment_intent,
+        hasClientSecret: !!clientSecret
+      });
+      
+      if (!clientSecret) {
+        console.error('No client secret found in subscription creation:', {
+          subscription: subscription.id,
+          latest_invoice: latestInvoice?.id,
+          payment_intent: latestInvoice?.payment_intent?.id,
+          subscription_status: subscription.status
+        });
+      }
       
       return {
         subscriptionId: subscription.id,
-        clientSecret: latestInvoice?.payment_intent?.client_secret,
+        clientSecret: clientSecret,
         status: subscription.status
       };
     } catch (error) {
