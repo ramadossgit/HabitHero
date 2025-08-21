@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera, Mic, Play, Volume2 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
@@ -800,6 +800,7 @@ export default function ParentDashboard() {
               showHabitAssignment={showHabitAssignment}
               setShowHabitAssignment={setShowHabitAssignment}
               children={children || []}
+              user={user}
             />
           </div>
 
@@ -1317,13 +1318,14 @@ function HabitAssignmentModal({
 }
 
 // Habit Management Section Component
-function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children }: { 
+function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user }: { 
   childId: string; 
   showAddHabit: boolean; 
   setShowAddHabit: (show: boolean) => void;
   showHabitAssignment: boolean; 
   setShowHabitAssignment: (show: boolean) => void;
   children: Child[];
+  user?: User;
 }) {
   const { toast } = useToast();
   const [habitName, setHabitName] = useState("");
@@ -1331,12 +1333,30 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   const [habitIcon, setHabitIcon] = useState("⚡");
   const [habitXP, setHabitXP] = useState("50");
   const [habitColor, setHabitColor] = useState("turquoise");
+  
+  // Premium voice reminder states
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceRecordingBlob, setVoiceRecordingBlob] = useState<Blob | null>(null);
+  const [voiceRecordingName, setVoiceRecordingName] = useState("");
+  const [reminderDuration, setReminderDuration] = useState(30);
+  const [customRingtone, setCustomRingtone] = useState("gentle-chime");
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  
   const [editingHabit, setEditingHabit] = useState<string | null>(null);
   const [editHabitName, setEditHabitName] = useState("");
   const [editHabitDescription, setEditHabitDescription] = useState("");
   const [editHabitIcon, setEditHabitIcon] = useState("⚡");
   const [editHabitXP, setEditHabitXP] = useState("50");
   const [editHabitColor, setEditHabitColor] = useState("turquoise");
+  
+  // Premium voice reminder states for editing
+  const [editVoiceRecordingBlob, setEditVoiceRecordingBlob] = useState<Blob | null>(null);
+  const [editVoiceRecordingName, setEditVoiceRecordingName] = useState("");
+  const [editReminderDuration, setEditReminderDuration] = useState(30);
+  const [editCustomRingtone, setEditCustomRingtone] = useState("gentle-chime");
+  const [editIsRecording, setEditIsRecording] = useState(false);
+  const [editMediaRecorder, setEditMediaRecorder] = useState<MediaRecorder | null>(null);
 
   // Get master habits for this parent
   const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
@@ -1364,11 +1384,17 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync to Kids Adventure
       setHabitName("");
       setHabitDescription("");
       setHabitIcon("⚡");
       setHabitXP("50");
       setHabitColor("turquoise");
+      // Clear Premium voice reminder states
+      setVoiceRecordingBlob(null);
+      setVoiceRecordingName("");
+      setReminderDuration(30);
+      setCustomRingtone("gentle-chime");
       setShowAddHabit(false);
     },
     onError: (error) => {
@@ -1397,7 +1423,13 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync to Kids Adventure
       setEditingHabit(null);
+      // Clear Premium voice reminder edit states
+      setEditVoiceRecordingBlob(null);
+      setEditVoiceRecordingName("");
+      setEditReminderDuration(30);
+      setEditCustomRingtone("gentle-chime");
     },
     onError: (error) => {
       console.error("Master habit update error:", error);
@@ -1499,7 +1531,104 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
-  const handleAddHabit = () => {
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setVoiceRecordingBlob(blob);
+        setVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      toast({
+        title: "Recording Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const playRecording = () => {
+    if (voiceRecordingBlob) {
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+      const audio = new Audio(URL.createObjectURL(voiceRecordingBlob));
+      setAudioElement(audio);
+      audio.play();
+    }
+  };
+
+  // Edit voice recording functions
+  const startEditRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setEditVoiceRecordingBlob(blob);
+        setEditVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      setEditMediaRecorder(recorder);
+      recorder.start();
+      setEditIsRecording(true);
+    } catch (error) {
+      toast({
+        title: "Recording Error",
+        description: "Could not access microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopEditRecording = () => {
+    if (editMediaRecorder && editIsRecording) {
+      editMediaRecorder.stop();
+      setEditIsRecording(false);
+    }
+  };
+
+  const playEditRecording = () => {
+    if (editVoiceRecordingBlob) {
+      const audio = new Audio(URL.createObjectURL(editVoiceRecordingBlob));
+      audio.play();
+    }
+  };
+
+  const handleAddHabit = async () => {
     if (!habitName.trim()) {
       toast({
         title: "Name required",
@@ -1508,6 +1637,34 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
       return;
     }
+
+    let voiceRecordingUrl = "";
+    
+    // Upload voice recording if exists and user is Premium
+    if (voiceRecordingBlob && user?.subscriptionStatus === 'active') {
+      try {
+        // Get upload URL
+        const uploadResponse = await apiRequest("POST", "/api/objects/upload");
+        const { uploadURL } = await uploadResponse.json();
+
+        // Upload the audio blob
+        const uploadResult = await fetch(uploadURL, {
+          method: 'PUT',
+          body: voiceRecordingBlob,
+          headers: {
+            'Content-Type': 'audio/webm'
+          }
+        });
+
+        if (uploadResult.ok) {
+          voiceRecordingUrl = uploadURL.split('?')[0]; // Remove query params for storage
+        }
+      } catch (error) {
+        console.error("Voice upload failed:", error);
+        // Continue with habit creation even if voice upload fails
+      }
+    }
+
     createMasterHabitMutation.mutate({
       name: habitName.trim(),
       description: habitDescription.trim(),
@@ -1515,6 +1672,11 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       xpReward: parseInt(habitXP),
       color: habitColor,
       frequency: "daily",
+      voiceRecording: voiceRecordingUrl,
+      voiceRecordingName,
+      reminderDuration: user?.subscriptionStatus === 'active' ? reminderDuration : 30,
+      customRingtone: user?.subscriptionStatus === 'active' ? customRingtone : "default",
+      voiceReminderEnabled: user?.subscriptionStatus === 'active' && !!voiceRecordingBlob,
     });
   };
 
@@ -1567,16 +1729,187 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
           {masterHabits?.map((habit) => (
             <div key={habit.id} className="p-6 bg-turquoise/10 rounded-lg border-2 border-turquoise/30 shadow-sm">
               {editingHabit === habit.id ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Input
                     value={editHabitName}
                     onChange={(e) => setEditHabitName(e.target.value)}
                     placeholder="Habit name"
                     className="border-2 border-turquoise"
                   />
+                  <Textarea
+                    value={editHabitDescription}
+                    onChange={(e) => setEditHabitDescription(e.target.value)}
+                    placeholder="Description (optional)"
+                    className="border-2 border-turquoise"
+                  />
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">Icon</label>
+                      <Select value={editHabitIcon} onValueChange={setEditHabitIcon}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="⚡">⚡ Energy</SelectItem>
+                          <SelectItem value="🏃">🏃 Exercise</SelectItem>
+                          <SelectItem value="📚">📚 Study</SelectItem>
+                          <SelectItem value="🧘">🧘 Mindfulness</SelectItem>
+                          <SelectItem value="💧">💧 Water</SelectItem>
+                          <SelectItem value="🥗">🥗 Healthy Food</SelectItem>
+                          <SelectItem value="💤">💤 Sleep</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">XP Reward</label>
+                      <Select value={editHabitXP} onValueChange={setEditHabitXP}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25 XP</SelectItem>
+                          <SelectItem value="50">50 XP</SelectItem>
+                          <SelectItem value="75">75 XP</SelectItem>
+                          <SelectItem value="100">100 XP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-bold text-gray-700">Color</label>
+                      <Select value={editHabitColor} onValueChange={setEditHabitColor}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="turquoise">🔵 Turquoise</SelectItem>
+                          <SelectItem value="coral">🔴 Coral</SelectItem>
+                          <SelectItem value="sunshine">🟡 Sunshine</SelectItem>
+                          <SelectItem value="mint">🟢 Mint</SelectItem>
+                          <SelectItem value="purple">🟣 Purple</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Premium Voice Reminder Features for Editing */}
+                  {user?.subscriptionStatus === 'active' && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
+                      <h4 className="font-bold text-gold mb-3 flex items-center">
+                        ⭐ Premium Voice Reminder Features
+                      </h4>
+                      
+                      {/* Edit Voice Recording */}
+                      <div className="mb-4">
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
+                        <div className="flex items-center space-x-3 mb-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={editIsRecording ? "destructive" : "default"}
+                            onClick={editIsRecording ? stopEditRecording : startEditRecording}
+                            className="flex items-center space-x-2"
+                          >
+                            {editIsRecording ? (
+                              <>
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                <span>Stop Recording</span>
+                              </>
+                            ) : (
+                              <>
+                                <Mic className="w-4 h-4" />
+                                <span>Record Message</span>
+                              </>
+                            )}
+                          </Button>
+                          {(editVoiceRecordingBlob || habit.voiceRecording) && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={playEditRecording}
+                              className="flex items-center space-x-2"
+                            >
+                              <Play className="w-4 h-4" />
+                              <span>Play</span>
+                            </Button>
+                          )}
+                        </div>
+                        {editVoiceRecordingName && (
+                          <p className="text-sm text-green-600">✓ New voice message: {editVoiceRecordingName}</p>
+                        )}
+                        {habit.voiceRecording && !editVoiceRecordingName && (
+                          <p className="text-sm text-blue-600">✓ Current: {habit.voiceRecordingName || 'Voice reminder'}</p>
+                        )}
+                      </div>
+
+                      {/* Edit Reminder Duration */}
+                      <div className="mb-4">
+                        <label className="text-sm font-bold text-gray-700">Reminder Duration (minutes)</label>
+                        <Select value={editReminderDuration.toString()} onValueChange={(value) => setEditReminderDuration(parseInt(value))}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="15">15 minutes</SelectItem>
+                            <SelectItem value="30">30 minutes</SelectItem>
+                            <SelectItem value="45">45 minutes</SelectItem>
+                            <SelectItem value="60">1 hour</SelectItem>
+                            <SelectItem value="90">1.5 hours</SelectItem>
+                            <SelectItem value="120">2 hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Edit System Ringtones */}
+                      <div className="mb-4">
+                        <label className="text-sm font-bold text-gray-700">System Ringtone</label>
+                        <Select value={editCustomRingtone} onValueChange={setEditCustomRingtone}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gentle-chime">🎵 Gentle Chime</SelectItem>
+                            <SelectItem value="happy-bells">🔔 Happy Bells</SelectItem>
+                            <SelectItem value="nature-sounds">🌿 Nature Sounds</SelectItem>
+                            <SelectItem value="soft-piano">🎹 Soft Piano</SelectItem>
+                            <SelectItem value="cheerful-tune">🎶 Cheerful Tune</SelectItem>
+                            <SelectItem value="ocean-waves">🌊 Ocean Waves</SelectItem>
+                            <SelectItem value="bird-song">🐦 Bird Song</SelectItem>
+                            <SelectItem value="wind-chimes">🎐 Wind Chimes</SelectItem>
+                            <SelectItem value="magical-sparkle">✨ Magical Sparkle</SelectItem>
+                            <SelectItem value="forest-whisper">🌲 Forest Whisper</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex space-x-2">
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
+                        let editVoiceRecordingUrl = "";
+                        
+                        // Upload new voice recording if exists and user is Premium
+                        if (editVoiceRecordingBlob && user?.subscriptionStatus === 'active') {
+                          try {
+                            const uploadResponse = await apiRequest("POST", "/api/objects/upload");
+                            const { uploadURL } = await uploadResponse.json();
+
+                            const uploadResult = await fetch(uploadURL, {
+                              method: 'PUT',
+                              body: editVoiceRecordingBlob,
+                              headers: { 'Content-Type': 'audio/webm' }
+                            });
+
+                            if (uploadResult.ok) {
+                              editVoiceRecordingUrl = uploadURL.split('?')[0];
+                            }
+                          } catch (error) {
+                            console.error("Voice upload failed:", error);
+                          }
+                        }
+                        
                         updateMasterHabitMutation.mutate({
                           masterHabitId: habit.id,
                           updates: {
@@ -1585,16 +1918,28 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             icon: editHabitIcon,
                             xpReward: parseInt(editHabitXP),
                             color: editHabitColor,
+                            voiceRecording: editVoiceRecordingUrl || habit.voiceRecording,
+                            voiceRecordingName: editVoiceRecordingName || habit.voiceRecordingName,
+                            reminderDuration: user?.subscriptionStatus === 'active' ? editReminderDuration : habit.reminderDuration,
+                            customRingtone: user?.subscriptionStatus === 'active' ? editCustomRingtone : habit.customRingtone,
+                            voiceReminderEnabled: user?.subscriptionStatus === 'active' && (!!editVoiceRecordingBlob || !!habit.voiceRecording),
                           }
                         });
                       }}
                       disabled={updateMasterHabitMutation.isPending}
                       className="bg-green-500 hover:bg-green-600 text-white"
                     >
-                      {editHabitMutation.isPending ? "Saving..." : "💾 Save"}
+                      {updateMasterHabitMutation.isPending ? "Saving..." : "💾 Save Changes"}
                     </Button>
                     <Button
-                      onClick={() => setEditingHabit(null)}
+                      onClick={() => {
+                        setEditingHabit(null);
+                        // Clear edit states
+                        setEditVoiceRecordingBlob(null);
+                        setEditVoiceRecordingName("");
+                        setEditReminderDuration(30);
+                        setEditCustomRingtone("gentle-chime");
+                      }}
                       variant="outline"
                     >
                       Cancel
@@ -1662,6 +2007,10 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                           setEditHabitIcon(habit.icon);
                           setEditHabitXP(habit.xpReward.toString());
                           setEditHabitColor(habit.color || "turquoise");
+                          // Load existing Premium voice reminder settings
+                          setEditReminderDuration(habit.reminderDuration || 30);
+                          setEditCustomRingtone(habit.customRingtone || "gentle-chime");
+                          setEditVoiceRecordingName(habit.voiceRecordingName || "");
                         }}
                         size="sm"
                         className="flex-1 sm:flex-initial bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 text-sm min-w-[80px]"
@@ -1778,6 +2127,103 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                   </div>
                 </div>
               </div>
+
+              {/* Premium Voice Reminder Features */}
+              {user?.subscriptionStatus === 'active' && (
+                <div className="mt-6 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
+                  <h4 className="font-bold text-gold mb-3 flex items-center">
+                    ⭐ Premium Voice Reminder Features
+                  </h4>
+                  
+                  {/* Voice Recording */}
+                  <div className="mb-4">
+                    <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isRecording ? "destructive" : "default"}
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className="flex items-center space-x-2"
+                      >
+                        {isRecording ? (
+                          <>
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span>Stop Recording</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-4 h-4" />
+                            <span>Record Message</span>
+                          </>
+                        )}
+                      </Button>
+                      {voiceRecordingBlob && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={playRecording}
+                          className="flex items-center space-x-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          <span>Play</span>
+                        </Button>
+                      )}
+                    </div>
+                    {voiceRecordingName && (
+                      <p className="text-sm text-green-600">✓ Voice message recorded: {voiceRecordingName}</p>
+                    )}
+                  </div>
+
+                  {/* Reminder Duration */}
+                  <div className="mb-4">
+                    <label className="text-sm font-bold text-gray-700">Reminder Duration (minutes)</label>
+                    <Select value={reminderDuration.toString()} onValueChange={(value) => setReminderDuration(parseInt(value))}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutes</SelectItem>
+                        <SelectItem value="30">30 minutes</SelectItem>
+                        <SelectItem value="45">45 minutes</SelectItem>
+                        <SelectItem value="60">1 hour</SelectItem>
+                        <SelectItem value="90">1.5 hours</SelectItem>
+                        <SelectItem value="120">2 hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* System Ringtones */}
+                  <div className="mb-4">
+                    <label className="text-sm font-bold text-gray-700">System Ringtone</label>
+                    <Select value={customRingtone} onValueChange={setCustomRingtone}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gentle-chime">🎵 Gentle Chime</SelectItem>
+                        <SelectItem value="happy-bells">🔔 Happy Bells</SelectItem>
+                        <SelectItem value="nature-sounds">🌿 Nature Sounds</SelectItem>
+                        <SelectItem value="soft-piano">🎹 Soft Piano</SelectItem>
+                        <SelectItem value="cheerful-tune">🎶 Cheerful Tune</SelectItem>
+                        <SelectItem value="ocean-waves">🌊 Ocean Waves</SelectItem>
+                        <SelectItem value="bird-song">🐦 Bird Song</SelectItem>
+                        <SelectItem value="wind-chimes">🎐 Wind Chimes</SelectItem>
+                        <SelectItem value="magical-sparkle">✨ Magical Sparkle</SelectItem>
+                        <SelectItem value="forest-whisper">🌲 Forest Whisper</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-xs text-gray-600">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-gold rounded-full mr-2"></div>
+                      <span>Premium Feature</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="flex space-x-2">
                 <Button 

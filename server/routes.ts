@@ -1260,6 +1260,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Object Storage routes for voice recordings
+  app.post('/api/objects/upload', isAuthenticated, async (req, res) => {
+    try {
+      const { ObjectStorageService } = await import('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getVoiceRecordingUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error generating upload URL:", error);
+      res.status(500).json({ error: "Failed to generate upload URL" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
