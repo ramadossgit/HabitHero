@@ -32,6 +32,11 @@ export class SubscriptionService {
       const user = await storage.getUserById(userId);
       if (!user) throw new Error('User not found');
 
+      // Check if user already has an active subscription for this plan
+      if (user.stripeSubscriptionId && user.subscriptionStatus === 'active' && user.subscriptionPlan === planId) {
+        throw new Error(`You already have an active ${planId} subscription`);
+      }
+
       let customer;
       if (user.stripeCustomerId) {
         customer = await stripe.customers.retrieve(user.stripeCustomerId);
@@ -42,11 +47,14 @@ export class SubscriptionService {
       const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
       if (!plan) throw new Error('Plan not found');
 
-      // Cancel any existing subscription first
-      if (user.stripeSubscriptionId) {
+      // Only cancel existing subscription if switching to different plan
+      if (user.stripeSubscriptionId && user.subscriptionPlan !== planId) {
         try {
-          await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-          console.log('Cancelled existing subscription:', user.stripeSubscriptionId);
+          const existingSubscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+          if (existingSubscription.status === 'active' || existingSubscription.status === 'trialing') {
+            await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+            console.log('Cancelled existing subscription:', user.stripeSubscriptionId);
+          }
         } catch (error) {
           console.warn('Could not cancel existing subscription:', error);
           // Continue anyway - it might already be cancelled

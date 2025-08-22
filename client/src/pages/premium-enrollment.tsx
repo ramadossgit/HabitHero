@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { loadStripe } from "@stripe/stripe-js";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Crown, Check, ArrowLeft, Calendar, Trophy, Gamepad2, Star, Zap } from "lucide-react";
+import { Crown, Check, ArrowLeft, Calendar, Trophy, Gamepad2, Star, Zap, type LucideIcon } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +43,20 @@ const plans = [
   }
 ];
 
-const features = [
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: string;
+}
+
+interface SubscriptionStatus {
+  status: string;
+  plan: string;
+  nextBillingDate?: string;
+}
+
+const features: Feature[] = [
   {
     icon: Calendar,
     title: "Recurring Reward Creation",
@@ -81,7 +94,7 @@ export default function PremiumEnrollment() {
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: subscriptionStatus } = useQuery({
+  const { data: subscriptionStatus } = useQuery<SubscriptionStatus>({
     queryKey: ["/api/subscription/status"],
     enabled: !!user,
   });
@@ -136,6 +149,18 @@ export default function PremiumEnrollment() {
   });
 
   const handleEnroll = async (planId: string) => {
+    // Prevent multiple enrollments or enrolling in current plan
+    if (processingPlan || (subscriptionStatus?.status === 'active' && subscriptionStatus?.plan === planId)) {
+      if (subscriptionStatus?.status === 'active' && subscriptionStatus?.plan === planId) {
+        toast({
+          title: "Already Subscribed",
+          description: `You already have an active ${planId} subscription.`,
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
     setProcessingPlan(planId);
     try {
       await createSubscriptionMutation.mutateAsync(planId);
