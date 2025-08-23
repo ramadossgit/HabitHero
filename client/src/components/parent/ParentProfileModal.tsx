@@ -68,15 +68,15 @@ export default function ParentProfileModal({ isOpen, onClose, user }: ParentProf
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white min-h-[70px] z-10">
           <div className="flex items-center gap-3">
             <User className="w-6 h-6" />
             <div>
-              <h2 className="font-fredoka text-xl hero-title">Parent Profile</h2>
-              <p className="text-white/90 text-sm">Manage your account and preferences</p>
+              <h2 className="font-fredoka text-lg sm:text-xl hero-title">Parent Profile</h2>
+              <p className="text-white/90 text-xs sm:text-sm">Manage your account and preferences</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20 p-2">
+          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20 p-2 flex-shrink-0" data-testid="button-close-profile">
             <X className="w-5 h-5" />
           </Button>
         </div>

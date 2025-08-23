@@ -1260,19 +1260,13 @@ function HabitAssignmentModal({
                                               }
                                             });
                                           }}
-                                          disabled={assignHabitMutation.isPending || !masterHabit.isActive}
-                                          className={`w-full text-xs px-4 py-2 min-h-[32px] ${
-                                            !masterHabit.isActive 
-                                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                                              : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                          }`}
+                                          disabled={assignHabitMutation.isPending}
+                                          className="w-full text-xs px-4 py-2 min-h-[32px] bg-blue-500 hover:bg-blue-600 text-white"
                                           data-testid={`button-assign-habit-${child.id}`}
                                         >
                                           {assignHabitMutation.isPending 
                                             ? 'Assigning...' 
-                                            : !masterHabit.isActive 
-                                              ? 'Habit Inactive' 
-                                              : '✅ Assign Habit'
+                                            : '✅ Assign Habit'
                                           }
                                         </Button>
                                       </div>
@@ -2055,7 +2049,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                 <Button 
                   onClick={() => setShowHabitAssignment(true)}
                   className="bg-sky hover:bg-sky/80 text-white font-bold"
-                  disabled={!children || children.length < 2}
+                  disabled={!children || children.length === 0}
                 >
                   🔄 Manage Assignments
                 </Button>
@@ -3036,6 +3030,7 @@ function RewardSettingsSection({
                           rewardId: reward.id,
                           name: editRewardName.trim(),
                           description: editRewardDescription.trim(),
+                          icon: editRewardIcon,
                           cost: parseInt(editRewardCost)
                         });
                       }}

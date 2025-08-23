@@ -119,8 +119,8 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-5xl h-[95vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white">
+      <Card className="w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-coral to-sunshine text-white flex-shrink-0 min-h-[80px] z-10">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -131,16 +131,16 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h2 className="font-fredoka text-2xl hero-title">⚙️ Parent Controls</h2>
-              <p className="text-white/90 text-sm">Manage settings for each child</p>
+              <h2 className="font-fredoka text-lg sm:text-2xl hero-title">⚙️ Parent Controls</h2>
+              <p className="text-white/90 text-xs sm:text-sm">Manage settings for each child</p>
             </div>
           </div>
-          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20 p-2">
+          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/20 p-2 flex-shrink-0" data-testid="button-close">
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="flex h-full">
+        <div className="flex h-full flex-1 min-h-0">
           {/* Child Selector Sidebar */}
           <div className="w-64 border-r bg-gradient-to-b from-gray-50 to-white p-4">
             <h3 className="font-fredoka text-xl text-gray-800 mb-4 hero-title">👶 Select Child</h3>
@@ -204,7 +204,7 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
           </div>
 
           {/* Main Controls Panel */}
-          <div className="flex-1 overflow-y-auto max-h-[calc(95vh-120px)]">
+          <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-lg">Loading controls...</div>
