@@ -32,19 +32,24 @@ export default function SubscriptionPage() {
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async (planId: string) => {
-      return await apiRequest("POST", "/api/subscription/create", { planId });
+      const response = await apiRequest("POST", "/api/subscription/create", { planId });
+      return response.json();
     },
     onSuccess: (data: any) => {
       if (data.clientSecret) {
-        // Redirect to Stripe checkout
+        // Redirect to payment page with the client secret
         toast({
           title: "Redirecting to Payment",
-          description: "You'll be redirected to complete your subscription setup.",
+          description: "Complete your payment to activate Premium features.",
         });
-        // In a real app, you'd integrate Stripe checkout here
+        setLocation(`/premium-checkout?client_secret=${data.clientSecret}&subscription_id=${data.subscriptionId}`);
+      } else {
+        toast({
+          title: "Error", 
+          description: "Failed to initialize payment. Please try again.",
+          variant: "destructive",
+        });
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
     onError: (error: any) => {
       toast({

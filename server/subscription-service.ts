@@ -80,12 +80,16 @@ export class SubscriptionService {
       // Create price if it doesn't exist (in production, create these manually in Stripe)
       const priceId = await this.getOrCreatePrice(plan);
 
-      // Create subscription but don't trigger immediate payment (will be completed via PaymentIntent)
+      // Create subscription requiring immediate payment - NO trial period
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: priceId }],
-        // Start with trial to prevent immediate charge, we'll handle payment separately
-        trial_period_days: 1,
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          payment_method_types: ['card'],
+          save_default_payment_method: 'on_subscription'
+        },
+        expand: ['latest_invoice.payment_intent'],
         metadata: {
           userId: userId,
           planId: planId,
@@ -101,7 +105,7 @@ export class SubscriptionService {
         
       await storage.updateUserSubscription(userId, {
         stripeSubscriptionId: subscription.id,
-        subscriptionStatus: 'pending', // Will be updated after successful payment
+        subscriptionStatus: 'incomplete', // Will be updated after successful payment
         subscriptionPlan: planId,
         subscriptionEndDate: subscriptionEndDate
       });
@@ -286,8 +290,9 @@ export class SubscriptionService {
 
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
       
-      const status = subscription.status === 'active' || subscription.status === 'trialing' ? 'active' 
+      const status = subscription.status === 'active' ? 'active' 
                    : subscription.status === 'canceled' ? 'cancelled' 
+                   : subscription.status === 'trialing' ? 'pending'
                    : 'expired';
 
       if (status !== user.subscriptionStatus) {
