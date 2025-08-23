@@ -30,7 +30,6 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
     icon: "star",
     xpReward: 50,
     color: "mint",
-    rewardPoints: 5,
     reminderEnabled: false,
     reminderTime: "",
     voiceReminderEnabled: false,
@@ -118,7 +117,6 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       icon: "star",
       xpReward: 50,
       color: "mint",
-      rewardPoints: 5,
       reminderEnabled: false,
       reminderTime: "",
       voiceReminderEnabled: false,
@@ -139,14 +137,13 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
       icon: habit.icon,
       xpReward: habit.xpReward,
       color: habit.color,
-      rewardPoints: habit.rewardPoints || 5,
       reminderEnabled: habit.reminderEnabled || false,
       reminderTime: habit.reminderTime || "",
       voiceReminderEnabled: habit.voiceReminderEnabled || false,
       customRingtone: habit.customRingtone || "default",
-      reminderDuration: (habit as any).reminderDuration || 5,
-      voiceRecording: (habit as any).voiceRecording || undefined,
-      voiceRecordingName: (habit as any).voiceRecordingName || undefined,
+      reminderDuration: habit.reminderDuration || 5,
+      voiceRecording: habit.voiceRecording || undefined,
+      voiceRecordingName: habit.voiceRecordingName || undefined,
       timeRangeStart: habit.timeRangeStart || "07:00",
       timeRangeEnd: habit.timeRangeEnd || "20:00",
     });
@@ -358,7 +355,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="xpReward" className="flex items-center text-gray-700 dark:text-gray-300">
                     <span className="emoji mr-1">⚡</span> XP Reward
@@ -370,21 +367,6 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     onChange={(e) => setHabitForm({ ...habitForm, xpReward: parseInt(e.target.value) || 0 })}
                     min="10"
                     max="200"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rewardPoints" className="flex items-center text-gray-700 dark:text-gray-300">
-                    <Gift className="w-4 h-4 mr-2 text-coral" />
-                    <span className="emoji mr-1">🎁</span> Reward Points
-                  </Label>
-                  <Input
-                    id="rewardPoints"
-                    type="number"
-                    value={habitForm.rewardPoints}
-                    onChange={(e) => setHabitForm({ ...habitForm, rewardPoints: parseInt(e.target.value) || 0 })}
-                    min="1"
-                    max="50"
                     className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   />
                 </div>
@@ -422,7 +404,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                       {habit.isActive && <span className="emoji ml-2 text-green-500">✅</span>}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                      <span className="emoji mr-1">📅</span> Daily • <span className="emoji mr-1">⚡</span> {habit.xpReward} XP • <span className="emoji mr-1">🎁</span> {habit.rewardPoints} pts • {habit.description}
+                      <span className="emoji mr-1">📅</span> Daily • <span className="emoji mr-1">⚡</span> {habit.xpReward} XP • {habit.description}
                     </p>
                   </div>
                 </div>
