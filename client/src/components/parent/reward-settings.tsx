@@ -204,8 +204,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                   <li>• Mini Games (upcoming)</li>
                 </ul>
                 <Button 
-                  variant="link" 
-                  className="h-auto p-0 mt-2 text-coral hover:text-coral/80 font-medium"
+                  className="super-button h-auto p-2 mt-2 font-medium text-sm"
                   onClick={() => window.location.href = '/premium-enrollment'}
                 >
                   <ArrowUp className="w-3 h-3 mr-1" />
@@ -218,7 +217,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
-              className="bg-turquoise text-white hover:bg-turquoise/80"
+              className="super-button"
               onClick={() => {
                 setEditingReward(null);
                 resetForm();
@@ -344,7 +343,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-turquoise text-white hover:bg-turquoise/80"
+                className="w-full super-button"
                 disabled={createRewardMutation.isPending || updateRewardMutation.isPending}
               >
                 {editingReward ? "Update Reward" : "Create Reward"}
@@ -385,19 +384,19 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       {reward.cost} {reward.costType === "habits" ? "habits" : reward.costType}
                     </span>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => handleEditReward(reward)}
                     >
-                      <Edit className="w-4 h-4 text-mint" />
+                      <Edit className="w-4 h-4" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -446,12 +445,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <Edit className="w-4 h-4 text-sky" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -500,12 +499,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <Edit className="w-4 h-4 text-coral" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -554,12 +553,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <Edit className="w-4 h-4 text-turquoise" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -595,12 +594,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <Edit className="w-4 h-4 text-sky" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -633,12 +632,12 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
                       <Edit className="w-4 h-4 text-sky" />
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
+                      className="super-button p-2"
                       onClick={() => deleteRewardMutation.mutate(reward.id)}
                       disabled={deleteRewardMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>

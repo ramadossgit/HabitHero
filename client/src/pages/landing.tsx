@@ -58,8 +58,7 @@ export default function Landing() {
             <div className="text-white text-lg text-center mt-4">
               <span>New family? </span>
               <Button 
-                variant="outline" 
-                className="text-gray-800 bg-white border-white hover:bg-gray-100 hover:text-gray-900 font-bold ml-2"
+                className="super-button font-bold ml-2"
                 onClick={() => setLocation("/parent/auth?mode=register")}
               >
                 Sign Up Here

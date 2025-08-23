@@ -77,8 +77,7 @@ export default function KidsLogin() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <Button
-              variant="ghost"
-              className="text-white hover:bg-white/20"
+              className="super-button"
               onClick={() => setLocation("/")}
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
@@ -156,7 +155,7 @@ export default function KidsLogin() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full fun-button text-white py-4 text-lg font-bold rounded-xl"
+                className="w-full super-button py-4 text-lg"
               >
                 {loginMutation.isPending ? "Logging in..." : "Start Adventure! 🚀"}
               </Button>

@@ -273,9 +273,7 @@ export default function ParentAuthPage() {
                           />
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                            className="super-button absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-1"
                             onClick={() => setShowPassword(!showPassword)}
                             data-testid="button-toggle-password"
                           >
@@ -286,7 +284,7 @@ export default function ParentAuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="w-full" 
+                        className="w-full super-button" 
                         disabled={loginMutation.isPending}
                         data-testid="button-login"
                       >
@@ -367,9 +365,7 @@ export default function ParentAuthPage() {
                           />
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                            className="super-button absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-1"
                             onClick={() => setShowPassword(!showPassword)}
                             data-testid="button-toggle-register-password"
                           >
@@ -392,7 +388,7 @@ export default function ParentAuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="w-full" 
+                        className="w-full super-button" 
                         disabled={registerMutation.isPending}
                         data-testid="button-register"
                       >

@@ -304,9 +304,8 @@ export default function ParentDashboard() {
               <div className="flex items-center space-x-4">
                 {hasCompletedOnboarding && (
                   <Button 
-                    variant="ghost" 
                     onClick={restartOnboarding}
-                    className="text-white hover:bg-white/20 font-bold"
+                    className="super-button font-bold"
                   >
                     📚 Tutorial
                   </Button>
@@ -315,7 +314,7 @@ export default function ParentDashboard() {
                   <SyncStatus />
                 </div>
                 <Link href="/">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 font-bold">
+                  <Button className="super-button font-bold">
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back to Home
                   </Button>
@@ -412,8 +411,7 @@ export default function ParentDashboard() {
                             const input = document.getElementById('avatar-upload') as HTMLInputElement;
                             if (input) input.value = '';
                           }}
-                          variant="outline"
-                          className="text-sm"
+                          className="super-button text-sm p-2"
                         >
                           Remove Image
                         </Button>
@@ -429,8 +427,7 @@ export default function ParentDashboard() {
                         </div>
                         <Button 
                           onClick={() => document.getElementById('avatar-upload')?.click()}
-                          variant="outline"
-                          className="border-coral text-coral hover:bg-coral hover:text-white"
+                          className="super-button"
                         >
                           Choose Image
                         </Button>
@@ -454,7 +451,7 @@ export default function ParentDashboard() {
                   <Button 
                     onClick={handleCreateHero}
                     disabled={createHeroMutation.isPending || !heroName.trim()}
-                    className="w-full py-6 text-xl font-bold bg-gradient-to-r from-coral to-orange-500 hover:from-coral/80 hover:to-orange-400 text-white rounded-xl transform hover:scale-105 transition-all shadow-lg"
+                    className="w-full super-button py-6 text-xl"
                   >
                     {createHeroMutation.isPending ? (
                       <>

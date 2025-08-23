@@ -375,7 +375,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
               {/* Original Alert Settings section has been moved above */}
               <Button 
                 type="submit" 
-                className="w-full bg-sky text-white hover:bg-sky/80"
+                className="w-full super-button"
                 disabled={createHabitMutation.isPending || updateHabitMutation.isPending}
               >
                 {editingHabit ? "Update Habit" : "Create Habit"}
@@ -413,8 +413,8 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     <span className="emoji mr-1">{habit.isActive ? "🟢" : "🔴"}</span> {habit.isActive ? "Active" : "Inactive"}
                   </span>
                   <Button
-                    variant="ghost"
                     size="sm"
+                    className="super-button p-2"
                     onClick={() => setLocation(`/alert-settings/${habit.id}`)}
                     title="Configure Alert Settings"
                     data-testid={`button-alert-settings-${habit.id}`}
@@ -422,21 +422,21 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                     <Settings className="w-4 h-4" />
                   </Button>
                   <Button
-                    variant="ghost"
                     size="sm"
+                    className="super-button p-2"
                     onClick={() => handleEditHabit(habit)}
                     data-testid={`button-edit-${habit.id}`}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
-                    variant="ghost"
                     size="sm"
+                    className="super-button p-2"
                     onClick={() => deleteHabitMutation.mutate(habit.id)}
                     disabled={deleteHabitMutation.isPending}
                     data-testid={`button-delete-${habit.id}`}
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -445,8 +445,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
         })}
 
         <Button
-          variant="outline"
-          className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-sky hover:text-sky dark:hover:border-sky dark:hover:text-sky bg-white dark:bg-gray-800"
+          className="w-full super-button p-4"
           onClick={() => {
             setEditingHabit(null);
             resetForm();

@@ -70,8 +70,7 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
               <Link href="/subscription" className="flex-1">
                 <Button 
                   type="button" 
-                  variant="outline" 
-                  className="w-full"
+                  className="w-full super-button"
                   disabled={isProcessing}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -81,7 +80,7 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
               <Button 
                 type="submit" 
                 disabled={!stripe || !elements || isProcessing}
-                className="flex-1 bg-coral hover:bg-coral/80 text-white"
+                className="flex-1 super-button"
               >
                 {isProcessing ? (
                   <>

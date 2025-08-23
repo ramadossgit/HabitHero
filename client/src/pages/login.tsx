@@ -26,7 +26,7 @@ export default function Login() {
         {/* Back to landing button */}
         <div className="mb-8">
           <Link href="/">
-            <Button variant="ghost" className="text-white hover:bg-white/10">
+            <Button className="super-button p-2">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
             </Button>
@@ -58,7 +58,7 @@ export default function Login() {
               <Button 
                 onClick={handleParentLogin}
                 disabled={isLoading}
-                className="w-full bg-sky hover:bg-sky/80 text-white font-bold py-4 text-lg font-fredoka shadow-lg"
+                className="w-full super-button font-fredoka text-lg"
               >
                 {isLoading ? "Signing in..." : "Sign in with Replit"}
               </Button>
@@ -70,7 +70,7 @@ export default function Login() {
               <div className="border-t pt-4 text-center">
                 <p className="text-gray-500 text-sm mb-2">Looking for kids login?</p>
                 <Link href="/kids-login">
-                  <Button variant="outline" className="text-coral border-coral hover:bg-coral hover:text-white font-fredoka">
+                  <Button className="super-button font-fredoka">
                     🎮 Kids Play Here
                   </Button>
                 </Link>
