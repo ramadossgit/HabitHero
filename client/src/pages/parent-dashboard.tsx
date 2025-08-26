@@ -1097,12 +1097,7 @@ function HabitAssignmentModal({
             </Button>
           </div>
 
-          {children.length < 2 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600">You need at least 2 children to manage individual habit assignments.</p>
-              <p className="text-sm text-gray-500 mt-2">Add more children to use this feature.</p>
-            </div>
-          ) : isLoading ? (
+          {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turquoise mx-auto"></div>
               <p className="text-gray-600 mt-4">Loading habits...</p>
