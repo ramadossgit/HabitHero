@@ -16,7 +16,8 @@ export default function ParentAuthPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   // Get the default tab from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,7 +27,7 @@ export default function ParentAuthPage() {
   // Only redirect to dashboard if user is authenticated AND this redirect is from a successful login/signup
   // Don't redirect if user just visits the auth page while already logged in
   const [shouldRedirect, setShouldRedirect] = useState(false);
-  
+
   useEffect(() => {
     // Only redirect if this is a fresh navigation and user is authenticated
     if (!isLoading && isAuthenticated && shouldRedirect) {
@@ -34,7 +35,7 @@ export default function ParentAuthPage() {
       setShouldRedirect(false);
     }
   }, [isAuthenticated, isLoading, shouldRedirect, setLocation]);
-  
+
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
@@ -50,8 +51,6 @@ export default function ParentAuthPage() {
     lastName: "",
     phoneNumber: ""
   });
-
-
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
@@ -138,7 +137,7 @@ export default function ParentAuthPage() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!registerData.email || !registerData.password || !registerData.firstName || !registerData.lastName) {
       toast({
@@ -148,8 +147,6 @@ export default function ParentAuthPage() {
       });
       return;
     }
-
-
 
     if (registerData.password !== registerData.confirmPassword) {
       toast({
@@ -259,25 +256,28 @@ export default function ParentAuthPage() {
                           data-testid="input-login-email"
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="login-password">Password</Label>
                         <div className="relative">
                           <Input
                             id="login-password"
-                            type={showPassword ? "text" : "password"}
+                            type={showLoginPassword ? "text" : "password"}
                             value={loginData.password}
                             onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                             placeholder="Enter your password"
+                            className="pr-10"
                             data-testid="input-login-password"
                           />
                           <Button
                             type="button"
-                            className="super-button absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-1"
-                            onClick={() => setShowPassword(!showPassword)}
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
                             data-testid="button-toggle-password"
                           >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
                         </div>
                       </div>
@@ -357,33 +357,49 @@ export default function ParentAuthPage() {
                         <div className="relative">
                           <Input
                             id="register-password"
-                            type={showPassword ? "text" : "password"}
+                            type={showRegisterPassword ? "text" : "password"}
                             value={registerData.password}
                             onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                             placeholder="At least 6 characters"
+                            className="pr-10"
                             data-testid="input-register-password"
                           />
                           <Button
                             type="button"
-                            className="super-button absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-1"
-                            onClick={() => setShowPassword(!showPassword)}
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                             data-testid="button-toggle-register-password"
                           >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="register-confirmPassword">Confirm Password *</Label>
-                        <Input
-                          id="register-confirmPassword"
-                          type="password"
-                          value={registerData.confirmPassword}
-                          onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                          placeholder="Confirm your password"
-                          data-testid="input-register-confirm-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="register-confirmPassword"
+                            type={showRegisterPassword ? "text" : "password"}
+                            value={registerData.confirmPassword}
+                            onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                            placeholder="Confirm your password"
+                            className="pr-10"
+                            data-testid="input-register-confirm-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                            data-testid="button-toggle-confirm-password"
+                          >
+                            {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </div>
 
                       <Button 

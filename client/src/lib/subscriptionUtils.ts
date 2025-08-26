@@ -22,7 +22,17 @@ export function getSubscriptionStatus(user: User | null | undefined): Subscripti
   }
 
   const now = new Date();
-  const trialEndDate = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  
+  // Handle case where trialEndsAt is null for new users
+  let trialEndDate: Date | null = null;
+  if (user.trialEndsAt) {
+    trialEndDate = new Date(user.trialEndsAt);
+  } else if (user.subscriptionStatus === 'trial') {
+    // For new users with null trialEndsAt, calculate from creation date + 7 days
+    const createdAt = user.createdAt ? new Date(user.createdAt) : now;
+    trialEndDate = new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  }
+  
   const subscriptionEndDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
 
   // Calculate days left for trial
