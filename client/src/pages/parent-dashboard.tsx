@@ -19,6 +19,8 @@ import ParentProfileModal from "@/components/parent/ParentProfileModal";
 import { TrialBanner } from "@/components/subscription/trial-banner";
 import TrialStatusBanner from "@/components/subscription/trial-status-banner";
 import SubscriptionManagementCard from "@/components/subscription/subscription-management-card";
+import SubscriptionRequiredLayout from "@/components/subscription/subscription-required-layout";
+import { requiresSubscription, getSubscriptionStatus } from "@/lib/subscriptionUtils";
 
 import type { Child, User, InsertChild, Habit, MasterHabit, Reward } from "@shared/schema";
 
@@ -278,6 +280,11 @@ export default function ParentDashboard() {
         </div>
       </div>
     );
+  }
+
+  // Check if user needs subscription access
+  if (user && requiresSubscription(user)) {
+    return <SubscriptionRequiredLayout user={user} />;
   }
 
   if (!children || children.length === 0) {
