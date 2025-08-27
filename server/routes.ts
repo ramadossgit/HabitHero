@@ -253,6 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assign master habit to specific child
   app.post('/api/children/:childId/habits', isAuthenticated, async (req, res) => {
     try {
       const habitData = insertHabitSchema.parse({
@@ -292,6 +293,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating habit:", error);
       res.status(500).json({ message: "Failed to create habit" });
+    }
+  });
+
+  // Auto-assign all master habits to all children (quick fix)
+  app.post('/api/habits/auto-assign-all', isAuthenticated, async (req, res) => {
+    try {
+      const parentId = req.user!.id;
+      
+      // Get all master habits for this parent
+      const masterHabits = await storage.getMasterHabitsByParent(parentId);
+      
+      // Get all children for this parent
+      const children = await storage.getChildrenByParent(parentId);
+      
+      let assignedCount = 0;
+      const results = [];
+      
+      for (const child of children) {
+        for (const masterHabit of masterHabits) {
+          // Check if this child already has this habit assigned
+          const existingHabits = await storage.getHabitsByChild(child.id);
+          const alreadyAssigned = existingHabits.find(h => h.masterHabitId === masterHabit.id);
+          
+          if (!alreadyAssigned) {
+            // Create child-specific habit from master habit
+            const habitData = {
+              childId: child.id,
+              masterHabitId: masterHabit.id,
+              name: masterHabit.name,
+              description: masterHabit.description,
+              icon: masterHabit.icon,
+              xpReward: masterHabit.xpReward,
+              color: masterHabit.color,
+              frequency: masterHabit.frequency,
+              isActive: masterHabit.isActive,
+              reminderTime: masterHabit.reminderTime ? String(masterHabit.reminderTime).padStart(2, '0') + ':00' : null,
+              reminderEnabled: masterHabit.reminderEnabled || false,
+              voiceReminderEnabled: masterHabit.voiceReminderEnabled || false,
+              customRingtone: masterHabit.customRingtone,
+              reminderDuration: masterHabit.reminderDuration || 5,
+              voiceRecording: masterHabit.voiceRecording,
+              voiceRecordingName: masterHabit.voiceRecordingName,
+              timeRangeStart: masterHabit.timeRangeStart,
+              timeRangeEnd: masterHabit.timeRangeEnd,
+            };
+            
+            const newHabit = await storage.createHabit(habitData);
+            results.push({
+              childName: child.name,
+              habitName: masterHabit.name,
+              habitId: newHabit.id
+            });
+            assignedCount++;
+            
+            // Create sync event
+            try {
+              await syncService.createSyncEvent({
+                userId: parentId,
+                eventType: 'habit_created',
+                entityType: 'habits',
+                entityId: newHabit.id,
+                eventData: {
+                  habitId: newHabit.id,
+                  habitName: newHabit.name,
+                  childId: child.id,
+                  childName: child.name,
+                  description: newHabit.description,
+                  xpReward: newHabit.xpReward
+                },
+                processed: false,
+                deviceOrigin: req.headers['x-device-id'] as string || 'auto-assign'
+              });
+            } catch (syncError) {
+              console.error('Failed to create sync event for auto-assignment:', syncError);
+            }
+          }
+        }
+      }
+      
+      console.log(`Auto-assigned ${assignedCount} habits across ${children.length} children`);
+      
+      res.json({
+        success: true,
+        assignedCount,
+        childrenCount: children.length,
+        masterHabitsCount: masterHabits.length,
+        results
+      });
+      
+    } catch (error) {
+      console.error("Error auto-assigning habits:", error);
+      res.status(500).json({ message: "Failed to auto-assign habits" });
     }
   });
 

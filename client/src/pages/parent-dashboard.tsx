@@ -805,6 +805,7 @@ export default function ParentDashboard() {
               setShowHabitAssignment={setShowHabitAssignment}
               children={children || []}
               user={user as User}
+              autoAssignAllMutation={autoAssignAllMutation}
             />
           </div>
 
@@ -1316,7 +1317,7 @@ function HabitAssignmentModal({
 }
 
 // Habit Management Section Component
-function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user }: { 
+function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user, autoAssignAllMutation }: { 
   childId: string; 
   showAddHabit: boolean; 
   setShowAddHabit: (show: boolean) => void;
@@ -1324,6 +1325,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   setShowHabitAssignment: (show: boolean) => void;
   children: Child[];
   user?: User;
+  autoAssignAllMutation: any;
 }) {
   const { toast } = useToast();
   const [habitName, setHabitName] = useState("");
@@ -1433,7 +1435,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     onSuccess: () => {
       toast({
         title: "Master Habit Created!",
-        description: "New master habit template created! Use Assignment Center to assign to children.",
+        description: "Master habit created! Click 'Auto-Assign All Habits' to assign to all children.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
       queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
@@ -1493,6 +1495,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       });
     },
   });
+
+
 
   const editHabitMutation = useMutation({
     mutationFn: async (data: { habitId: string; updates: any }) => {
@@ -1878,10 +1882,19 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
         )}
       </div>
       
-      {/* Status Explanation */}
+      {/* Status Explanation with Auto-Assign Button */}
       {masterHabits && masterHabits.length > 0 && (
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <h4 className="font-semibold text-blue-800 mb-2">🎯 Master Habit System</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-blue-800">🎯 Master Habit System</h4>
+            <Button
+              onClick={() => autoAssignAllMutation.mutate()}
+              disabled={autoAssignAllMutation.isPending}
+              className="bg-coral hover:bg-coral/80 text-white px-4 py-2 text-sm"
+            >
+              {autoAssignAllMutation.isPending ? "Assigning..." : "🚀 Auto-Assign All Habits"}
+            </Button>
+          </div>
           <div className="text-sm text-blue-700 space-y-1">
             <p>• <span className="font-medium">Master habits</span> are templates you can assign to any child</p>
             <p>• Use the <span className="font-medium">Assignment Center</span> to assign master habits to specific children</p>

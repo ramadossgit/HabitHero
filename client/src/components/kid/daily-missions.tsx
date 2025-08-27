@@ -120,22 +120,28 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   const completeMissionMutation = useMutation({
     mutationFn: async (habitId: string) => {
+      console.log("Completing habit:", habitId);
       // Time validation removed - kids can complete habits 24/7
       
-      await apiRequest("POST", `/api/habits/${habitId}/complete`, {});
+      const response = await apiRequest("POST", `/api/habits/${habitId}/complete`, {});
+      console.log("Completion response:", response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data, habitId) => {
+      console.log("Mission completed successfully:", habitId);
       toast({
         title: "Mission Complete! 🎉",
         description: "Great job! You earned XP and reward points!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId] });
       queryClient.invalidateQueries({ queryKey: ["/api/children", childId, "completions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", childId, "completions", "today"] });
     },
     onError: (error) => {
+      console.error("Mission completion failed:", error);
       toast({
         title: "Oops!",
-        description: error.message,
+        description: error.message || "Could not complete mission. Please try again.",
         variant: "destructive",
       });
     },
@@ -358,7 +364,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                     <div className="flex items-center space-x-2">
                       <Button
                         size="sm" 
-                        onClick={() => playVoiceRecording(habit.id, habit.voiceRecording, habit.customRingtone)}
+                        onClick={() => playVoiceRecording(habit.id, habit.voiceRecording, habit.customRingtone || undefined)}
                         className="bg-gold hover:bg-gold/80 text-white px-3 py-1 h-7"
                         data-testid={`play-voice-${habit.id}`}
                       >
