@@ -7,15 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  User, 
+import {
+  Clock,
+  CheckCircle,
+  XCircle,
+  User,
   Calendar,
   MessageSquare,
   Settings,
@@ -24,7 +30,7 @@ import {
   Zap,
   Bell,
   Lock,
-  Info
+  Info,
 } from "lucide-react";
 
 interface Child {
@@ -40,13 +46,16 @@ interface HabitApprovalProps {
 interface AutoApprovalSettings {
   enabled: boolean;
   timeValue: number;
-  timeUnit: 'hours' | 'days' | 'weeks';
+  timeUnit: "hours" | "days" | "weeks";
   applyToAllChildren: boolean;
-  childSpecificSettings: Record<string, {
-    enabled: boolean;
-    timeValue: number;
-    timeUnit: 'hours' | 'days' | 'weeks';
-  }>;
+  childSpecificSettings: Record<
+    string,
+    {
+      enabled: boolean;
+      timeValue: number;
+      timeUnit: "hours" | "days" | "weeks";
+    }
+  >;
 }
 
 export default function HabitApproval({ children }: HabitApprovalProps) {
@@ -55,19 +64,21 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectMessage, setRejectMessage] = useState("");
-  const [showAutoApprovalSettings, setShowAutoApprovalSettings] = useState(false);
+  const [showAutoApprovalSettings, setShowAutoApprovalSettings] =
+    useState(false);
 
   // Auto-approval settings state
-  const [autoApprovalSettings, setAutoApprovalSettings] = useState<AutoApprovalSettings>({
-    enabled: false,
-    timeValue: 24,
-    timeUnit: 'hours',
-    applyToAllChildren: true,
-    childSpecificSettings: {}
-  });
+  const [autoApprovalSettings, setAutoApprovalSettings] =
+    useState<AutoApprovalSettings>({
+      enabled: false,
+      timeValue: 24,
+      timeUnit: "hours",
+      applyToAllChildren: true,
+      childSpecificSettings: {},
+    });
 
-  const isPremium = (user as any)?.subscriptionStatus === 'active';
-  const isTrial = (user as any)?.subscriptionStatus === 'trial';
+  const isPremium = (user as any)?.subscriptionStatus === "active";
+  const isTrial = (user as any)?.subscriptionStatus === "trial";
   const hasAutoApprovalFeature = isPremium || isTrial;
 
   // Get pending habits count for each child
@@ -75,12 +86,12 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
     queryKey: ["/api/pending-habits/all"],
     select: (data: any[]) => {
       const counts: Record<string, number> = {};
-      data.forEach(item => {
+      data.forEach((item) => {
         const childId = item.child.id;
         counts[childId] = (counts[childId] || 0) + 1;
       });
       return counts;
-    }
+    },
   });
 
   // Get detailed pending habits for selected child
@@ -109,20 +120,30 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
   });
 
   const approveHabitMutation = useMutation({
-    mutationFn: async ({ completionId, message, isAutoApproval = false }: { 
-      completionId: string; 
-      message?: string; 
+    mutationFn: async ({
+      completionId,
+      message,
+      isAutoApproval = false,
+    }: {
+      completionId: string;
+      message?: string;
       isAutoApproval?: boolean;
     }) => {
-      return apiRequest("POST", `/api/habit-completions/${completionId}/approve`, {
-        approvedBy: (user as any)?.id || 'parent',
-        message,
-        isAutoApproval
-      });
+      return apiRequest(
+        "POST",
+        `/api/habit-completions/${completionId}/approve`,
+        {
+          approvedBy: (user as any)?.id || "parent",
+          message,
+          isAutoApproval,
+        },
+      );
     },
     onSuccess: (_, { isAutoApproval }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/pending-habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children", selectedChild, "pending-habits"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/children", selectedChild, "pending-habits"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync with kids view
 
       if (!isAutoApproval) {
@@ -136,21 +157,33 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to approve habit",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const rejectHabitMutation = useMutation({
-    mutationFn: async ({ completionId, message }: { completionId: string; message: string }) => {
-      return apiRequest("POST", `/api/habit-completions/${completionId}/reject`, {
-        rejectedBy: (user as any)?.id || 'parent',
-        message
-      });
+    mutationFn: async ({
+      completionId,
+      message,
+    }: {
+      completionId: string;
+      message: string;
+    }) => {
+      return apiRequest(
+        "POST",
+        `/api/habit-completions/${completionId}/reject`,
+        {
+          rejectedBy: (user as any)?.id || "parent",
+          message,
+        },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pending-habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children", selectedChild, "pending-habits"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/children", selectedChild, "pending-habits"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync with kids view
       setRejectingId(null);
       setRejectMessage("");
@@ -163,9 +196,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to reject habit",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const updateAutoApprovalMutation = useMutation({
@@ -173,7 +206,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       return apiRequest("PUT", "/api/auto-approval-settings", settings);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auto-approval-settings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/auto-approval-settings"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/auto-approval-stats"] });
       setShowAutoApprovalSettings(false); // Close the settings panel
       toast({
@@ -185,9 +220,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to update settings",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleApprove = (completionId: string, message?: string) => {
@@ -199,14 +234,16 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       toast({
         title: "Message Required",
         description: "Please provide feedback to help your child improve.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
     rejectHabitMutation.mutate({ completionId, message: rejectMessage });
   };
 
-  const handleAutoApprovalSettingsChange = (newSettings: Partial<AutoApprovalSettings>) => {
+  const handleAutoApprovalSettingsChange = (
+    newSettings: Partial<AutoApprovalSettings>,
+  ) => {
     const updatedSettings = { ...autoApprovalSettings, ...newSettings };
     setAutoApprovalSettings(updatedSettings);
   };
@@ -222,32 +259,43 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
     return `${value} ${unit}`;
   };
 
-  const getTimeInHours = (value: number, unit: 'hours' | 'days' | 'weeks') => {
+  const getTimeInHours = (value: number, unit: "hours" | "days" | "weeks") => {
     switch (unit) {
-      case 'hours': return value;
-      case 'days': return value * 24;
-      case 'weeks': return value * 24 * 7;
-      default: return value;
+      case "hours":
+        return value;
+      case "days":
+        return value * 24;
+      case "weeks":
+        return value * 24 * 7;
+      default:
+        return value;
     }
   };
 
-  const childrenWithCounts = children.map(child => ({
+  const childrenWithCounts = children.map((child) => ({
     ...child,
-    pendingCount: pendingCounts?.[child.id] || 0
+    pendingCount: pendingCounts?.[child.id] || 0,
   }));
 
   // Calculate time until auto-approval for pending habits
   const getPendingHabitsWithTimeLeft = () => {
-    if (!autoApprovalSettings.enabled || !hasAutoApprovalFeature) return pendingHabits;
+    if (!autoApprovalSettings.enabled || !hasAutoApprovalFeature)
+      return pendingHabits;
 
-    return pendingHabits.map(item => {
+    return pendingHabits.map((item) => {
       const completedAt = new Date(item.completion.completedAt);
-      const autoApprovalTime = getTimeInHours(
-        autoApprovalSettings.timeValue, 
-        autoApprovalSettings.timeUnit
-      ) * 60 * 60 * 1000; // Convert to milliseconds
+      const autoApprovalTime =
+        getTimeInHours(
+          autoApprovalSettings.timeValue,
+          autoApprovalSettings.timeUnit,
+        ) *
+        60 *
+        60 *
+        1000; // Convert to milliseconds
 
-      const autoApprovalDate = new Date(completedAt.getTime() + autoApprovalTime);
+      const autoApprovalDate = new Date(
+        completedAt.getTime() + autoApprovalTime,
+      );
       const now = new Date();
       const timeLeft = autoApprovalDate.getTime() - now.getTime();
 
@@ -255,7 +303,7 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
         ...item,
         autoApprovalDate,
         timeUntilAutoApproval: timeLeft > 0 ? timeLeft : 0,
-        willAutoApprove: timeLeft > 0
+        willAutoApprove: timeLeft > 0,
       };
     });
   };
@@ -284,8 +332,12 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
         <div className="flex items-center space-x-3">
           <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-mint" />
           <div>
-            <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">Habit Approvals</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Review and approve completed habits</p>
+            <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">
+              Habit Approvals
+            </h3>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Review and approve completed habits
+            </p>
           </div>
         </div>
 
@@ -294,11 +346,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
             {autoApprovalSettings.enabled && (
               <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
                 <Timer className="w-3 h-3" />
-                Auto-approval: {formatTimeDisplay(autoApprovalSettings.timeValue, autoApprovalSettings.timeUnit)}
+                Auto-approval:{" "}
+                {formatTimeDisplay(
+                  autoApprovalSettings.timeValue,
+                  autoApprovalSettings.timeUnit,
+                )}
               </Badge>
             )}
             <Button
-              onClick={() => setShowAutoApprovalSettings(!showAutoApprovalSettings)}
+              onClick={() =>
+                setShowAutoApprovalSettings(!showAutoApprovalSettings)
+              }
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
@@ -316,9 +374,13 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-gold" />
-              <CardTitle className="text-gold">Premium Auto-Approval Settings</CardTitle>
+              <CardTitle className="text-gold">
+                Premium Auto-Approval Settings
+              </CardTitle>
               {isTrial && (
-                <Badge variant="secondary" className="text-xs">Trial Access</Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Trial Access
+                </Badge>
               )}
             </div>
           </CardHeader>
@@ -336,7 +398,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
               </div>
               <Switch
                 checked={autoApprovalSettings.enabled}
-                onCheckedChange={(enabled) => handleAutoApprovalSettingsChange({ enabled })}
+                onCheckedChange={(enabled) =>
+                  handleAutoApprovalSettingsChange({ enabled })
+                }
               />
             </div>
 
@@ -345,10 +409,16 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                 {/* Time Configuration */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Auto-approve after</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Auto-approve after
+                    </label>
                     <Select
                       value={autoApprovalSettings.timeValue.toString()}
-                      onValueChange={(value) => handleAutoApprovalSettingsChange({ timeValue: parseInt(value) })}
+                      onValueChange={(value) =>
+                        handleAutoApprovalSettingsChange({
+                          timeValue: parseInt(value),
+                        })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -370,10 +440,12 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">Time unit</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Time unit
+                    </label>
                     <Select
                       value={autoApprovalSettings.timeUnit}
-                      onValueChange={(value: 'hours' | 'days' | 'weeks') => 
+                      onValueChange={(value: "hours" | "days" | "weeks") =>
                         handleAutoApprovalSettingsChange({ timeUnit: value })
                       }
                     >
@@ -393,8 +465,14 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                 <Alert className="bg-blue-50 border-blue-200">
                   <Info className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
-                    <strong>Preview:</strong> Habits will be automatically approved after{' '}
-                    <strong>{formatTimeDisplay(autoApprovalSettings.timeValue, autoApprovalSettings.timeUnit)}</strong>{' '}
+                    <strong>Preview:</strong> Habits will be automatically
+                    approved after{" "}
+                    <strong>
+                      {formatTimeDisplay(
+                        autoApprovalSettings.timeValue,
+                        autoApprovalSettings.timeUnit,
+                      )}
+                    </strong>{" "}
                     from completion time.
                   </AlertDescription>
                 </Alert>
@@ -406,30 +484,38 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                       <div className="text-2xl font-bold text-green-600">
                         {(autoApprovalStats as any)?.thisWeek || 0}
                       </div>
-                      <div className="text-sm text-gray-600">Auto-approved this week</div>
+                      <div className="text-sm text-gray-600">
+                        Auto-approved this week
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
                         {(autoApprovalStats as any)?.totalSaved || 0}
                       </div>
-                      <div className="text-sm text-gray-600">Total time saved (hours)</div>
+                      <div className="text-sm text-gray-600">
+                        Total time saved (hours)
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {(autoApprovalStats as any)?.pending || 0}
                       </div>
-                      <div className="text-sm text-gray-600">Pending auto-approval</div>
+                      <div className="text-sm text-gray-600">
+                        Pending auto-approval
+                      </div>
                     </div>
                   </div>
                 )}
 
                 <div className="flex justify-end">
-                  <Button 
+                  <Button
                     onClick={saveAutoApprovalSettings}
                     disabled={updateAutoApprovalMutation.isPending}
                     className="bg-gold hover:bg-gold/80 text-white"
                   >
-                    {updateAutoApprovalMutation.isPending ? "Saving..." : "Save Settings"}
+                    {updateAutoApprovalMutation.isPending
+                      ? "Saving..."
+                      : "Save Settings"}
                   </Button>
                 </div>
               </>
@@ -443,8 +529,12 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
         <Alert className="mb-6 bg-gradient-to-r from-gold/10 to-yellow-50 border-gold/30">
           <Crown className="h-4 w-4 text-gold" />
           <AlertDescription className="text-gray-700">
-            <strong>Premium Feature:</strong> Auto-approval saves time by automatically approving habits after your set time period. 
-            <Button variant="link" className="p-0 h-auto text-gold font-semibold ml-1">
+            <strong>Premium Feature:</strong> Auto-approval saves time by
+            automatically approving habits after your set time period.
+            <Button
+              variant="link"
+              className="p-0 h-auto text-gold font-semibold ml-1"
+            >
               Upgrade to Premium
             </Button>
           </AlertDescription>
@@ -454,15 +544,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
       <div>
         {/* Child Selection */}
         <div className="space-y-4">
-          <h4 className="font-fredoka text-lg font-bold text-gray-700">Select a child to review their habits:</h4>
+          <h4 className="font-fredoka text-lg font-bold text-gray-700">
+            Select a child to review their habits:
+          </h4>
           <div className="grid gap-3">
             {childrenWithCounts.map((child) => (
               <div
                 key={child.id}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedChild === child.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
+                  selectedChild === child.id
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => setSelectedChild(child.id)}
                 data-testid={`select-child-${child.id}`}
@@ -474,16 +566,24 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {child.pendingCount > 0 && (
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                      <Badge
+                        variant="secondary"
+                        className="bg-orange-100 text-orange-800"
+                      >
                         {child.pendingCount} pending
                       </Badge>
                     )}
-                    {hasAutoApprovalFeature && autoApprovalSettings.enabled && child.pendingCount > 0 && (
-                      <Badge variant="outline" className="text-xs flex items-center gap-1">
-                        <Timer className="w-3 h-3" />
-                        Auto-approval enabled
-                      </Badge>
-                    )}
+                    {hasAutoApprovalFeature &&
+                      autoApprovalSettings.enabled &&
+                      child.pendingCount > 0 && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs flex items-center gap-1"
+                        >
+                          <Timer className="w-3 h-3" />
+                          Auto-approval enabled
+                        </Badge>
+                      )}
                   </div>
                 </div>
               </div>
@@ -493,43 +593,61 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
           {/* Pending Habits for Selected Child */}
           {selectedChild && pendingHabitsWithTimeLeft && (
             <div className="mt-6 space-y-4">
-              <h4 className="font-fredoka text-lg font-bold text-gray-700 hero-title">Pending Habits:</h4>
+              <h4 className="font-fredoka text-lg font-bold text-gray-700 hero-title">
+                Pending Habits:
+              </h4>
               {pendingHabitsWithTimeLeft.length === 0 ? (
                 <div className="text-center py-8 bg-green-50 rounded-lg border-2 border-green-200">
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <p className="text-green-700 font-medium">No pending habits for this child.</p>
+                  <p className="text-green-700 font-medium">
+                    No pending habits for this child.
+                  </p>
                   <p className="text-green-600 text-sm">All caught up!</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {pendingHabitsWithTimeLeft.map((item: any) => (
-                    <Card key={item.completion.id} className="border-orange-200 relative overflow-hidden">
+                    <Card
+                      key={item.completion.id}
+                      className="border-orange-200 relative overflow-hidden"
+                    >
                       {/* Auto-approval timer indicator */}
-                      {hasAutoApprovalFeature && autoApprovalSettings.enabled && item.willAutoApprove && (
-                        <div className="absolute top-0 right-0 bg-gradient-to-l from-blue-500 to-blue-400 text-white px-3 py-1 text-xs font-medium flex items-center gap-1">
-                          <Timer className="w-3 h-3" />
-                          Auto-approve in {formatTimeLeft(item.timeUntilAutoApproval)}
-                        </div>
-                      )}
+                      {hasAutoApprovalFeature &&
+                        autoApprovalSettings.enabled &&
+                        item.willAutoApprove && (
+                          <div className="absolute top-0 right-0 bg-gradient-to-l from-blue-500 to-blue-400 text-white px-3 py-1 text-xs font-medium flex items-center gap-1">
+                            <Timer className="w-3 h-3" />
+                            Auto-approve in{" "}
+                            {formatTimeLeft(item.timeUntilAutoApproval)}
+                          </div>
+                        )}
 
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 pr-4">
                             <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold">{item.habit.name}</h4>
+                              <h4 className="font-semibold">
+                                {item.habit.name}
+                              </h4>
                               <Badge variant="outline" className="text-xs">
                                 +{item.completion.xpEarned} XP
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">{item.habit.description}</p>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {item.habit.description}
+                            </p>
                             <div className="flex items-center gap-4 text-xs text-gray-500">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {new Date(item.completion.completedAt).toLocaleDateString()}
+                                {new Date(
+                                  item.completion.completedAt,
+                                ).toLocaleDateString()}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {new Date(item.completion.completedAt).toLocaleTimeString()}
+                                {new Date(
+                                  item.completion.completedAt,
+                                ).toLocaleTimeString()}
                               </div>
                             </div>
                           </div>
@@ -545,7 +663,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                               </label>
                               <Textarea
                                 value={rejectMessage}
-                                onChange={(e) => setRejectMessage(e.target.value)}
+                                onChange={(e) =>
+                                  setRejectMessage(e.target.value)
+                                }
                                 placeholder="Explain what needs to be improved..."
                                 className="mt-1"
                                 data-testid={`reject-message-${item.completion.id}`}
@@ -560,7 +680,9 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                                 className="super-button"
                                 data-testid={`confirm-reject-${item.completion.id}`}
                               >
-                                {rejectHabitMutation.isPending ? "Sending..." : "Send Feedback"}
+                                {rejectHabitMutation.isPending
+                                  ? "Sending..."
+                                  : "Send Feedback"}
                               </Button>
                               <Button
                                 variant="outline"
@@ -579,13 +701,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleApprove(item.completion.id, "Great job!")}
+                              onClick={() =>
+                                handleApprove(item.completion.id, "Great job!")
+                              }
                               disabled={approveHabitMutation.isPending}
                               className="super-button bg-green-600 hover:bg-green-700"
                               data-testid={`approve-habit-${item.completion.id}`}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
-                              {approveHabitMutation.isPending ? "Approving..." : "Approve"}
+                              {approveHabitMutation.isPending
+                                ? "Approving..."
+                                : "Approve"}
                             </Button>
                             <Button
                               variant="outline"
