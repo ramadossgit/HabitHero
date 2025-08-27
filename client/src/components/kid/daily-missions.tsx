@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,9 +16,13 @@ import {
   CheckCircle,
   Clock,
   Flame,
-  RefreshCw
+  RefreshCw,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX
 } from "lucide-react";
-import type { Habit, HabitCompletion } from "@shared/schema";
+import type { Habit, HabitCompletion, User } from "@shared/schema";
 
 interface DailyMissionsProps {
   childId: string;
@@ -26,8 +30,82 @@ interface DailyMissionsProps {
 
 export default function DailyMissions({ childId }: DailyMissionsProps) {
   const { toast } = useToast();
+  
+  // Premium voice features state
+  const [isPlaying, setIsPlaying] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Get parent/user info for premium features
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/auth/user"],
+  });
 
+  // Subscription and trial status
+  const isPremium = user?.subscriptionStatus === 'active';
+  const isTrial = user?.subscriptionStatus === 'trial';
+  const hasVoiceFeatures = isPremium || isTrial;
+
+  // Voice recording playback functions
+  const playVoiceRecording = (habitId: string, voiceRecording: string, customRingtone?: string) => {
+    if (isPlaying === habitId) {
+      // Stop current playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      setIsPlaying(null);
+      return;
+    }
+
+    // Play ringtone first (if available), then voice recording
+    const playSequence = async () => {
+      setIsPlaying(habitId);
+      
+      try {
+        // Play custom ringtone first (if available)
+        if (customRingtone && customRingtone !== 'default') {
+          const ringtoneAudio = new Audio(`/api/ringtones/${customRingtone}.mp3`);
+          ringtoneAudio.volume = isMuted ? 0 : 0.7;
+          await new Promise((resolve) => {
+            ringtoneAudio.onended = resolve;
+            ringtoneAudio.onerror = resolve; // Continue even if ringtone fails
+            ringtoneAudio.play().catch(resolve);
+          });
+        }
+
+        // Then play voice recording
+        audioRef.current = new Audio(voiceRecording);
+        audioRef.current.volume = isMuted ? 0 : 1;
+        audioRef.current.onended = () => setIsPlaying(null);
+        audioRef.current.onerror = () => setIsPlaying(null);
+        
+        await audioRef.current.play();
+        
+        toast({
+          title: "🎵 Voice Reminder Playing",
+          description: "Listen to your custom habit reminder!",
+        });
+      } catch (error) {
+        console.error('Voice playback failed:', error);
+        setIsPlaying(null);
+        toast({
+          title: "Playback Error",
+          description: "Could not play voice reminder",
+          variant: "destructive",
+        });
+      }
+    };
+
+    playSequence();
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (audioRef.current) {
+      audioRef.current.volume = !isMuted ? 0 : 1;
+    }
+  };
 
   const { data: habits, isLoading: habitsLoading } = useQuery({
     queryKey: ["/api/children", childId, "habits"],
@@ -175,10 +253,35 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
 
   return (
     <section className="mb-8">
-      <h2 className="font-fredoka text-3xl text-gray-800 mb-6 flex items-center">
-        <Star className="text-coral mr-3" />
-        Today's Hero Missions
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-fredoka text-3xl text-gray-800 flex items-center">
+          <Star className="text-coral mr-3" />
+          Today's Hero Missions
+        </h2>
+        
+        {/* Master audio control for Premium voice features */}
+        {hasVoiceFeatures && habitsArray.some((h: Habit) => h.voiceRecording && h.voiceReminderEnabled) && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gold font-medium">Voice Controls:</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => toggleMute()}
+              className="border-gold/30 hover:bg-gold/10"
+              data-testid="master-mute-toggle"
+            >
+              {isMuted ? (
+                <VolumeX className="w-4 h-4 text-gold mr-1" />
+              ) : (
+                <Volume2 className="w-4 h-4 text-gold mr-1" />
+              )}
+              <span className="text-xs text-gold">
+                {isMuted ? 'Unmute All' : 'Mute All'}
+              </span>
+            </Button>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {habitsArray.map((habit: Habit) => {
@@ -229,6 +332,87 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                   <p className="text-xs text-mint font-medium">
                     🔔 Daily reminder at {habit.reminderTime}
                   </p>
+                </div>
+              )}
+              
+              {/* Enhanced Premium Voice Recording Features */}
+              {hasVoiceFeatures && habit.voiceRecording && habit.voiceReminderEnabled && (
+                <div className="mb-3 p-3 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border border-gold/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-gold rounded-full animate-pulse"></div>
+                      <span className="text-xs font-bold text-gold">Premium Voice Reminder</span>
+                      {isTrial && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">TRIAL</span>}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => toggleMute()}
+                      className="w-6 h-6 p-0 border-gold/30"
+                    >
+                      {isMuted ? <VolumeX className="w-3 h-3 text-gold" /> : <Volume2 className="w-3 h-3 text-gold" />}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm" 
+                        onClick={() => playVoiceRecording(habit.id, habit.voiceRecording, habit.customRingtone)}
+                        className="bg-gold hover:bg-gold/80 text-white px-3 py-1 h-7"
+                        data-testid={`play-voice-${habit.id}`}
+                      >
+                        {isPlaying === habit.id ? (
+                          <>
+                            <Pause className="w-3 h-3 mr-1" />
+                            <span className="text-xs">Stop</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3 mr-1" />
+                            <span className="text-xs">Play</span>
+                          </>
+                        )}
+                      </Button>
+                      <div className="text-xs text-gold">
+                        {habit.voiceRecordingName || 'Voice message'}
+                      </div>
+                    </div>
+                    
+                    {habit.customRingtone && habit.customRingtone !== 'gentle-chime' && (
+                      <div className="text-xs text-gold bg-gold/10 px-2 py-0.5 rounded">
+                        🎵 Custom tone
+                      </div>
+                    )}
+                  </div>
+                  
+                  {habit.reminderDuration && habit.reminderDuration > 30 && (
+                    <div className="text-xs text-gold/70 mt-1">
+                      ⏱️ Plays for {Math.floor(habit.reminderDuration / 60)}h {habit.reminderDuration % 60}m
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upgrade prompt for non-premium users with voice-enabled habits */}
+              {!hasVoiceFeatures && habit.voiceRecording && habit.voiceReminderEnabled && (
+                <div className="mb-3 p-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg border border-gray-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      <span className="text-xs font-bold text-gray-600">Voice Reminder Available</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-gold hover:bg-gold/80 text-white px-3 py-1 h-7 text-xs"
+                      onClick={() => window.open('/premium', '_blank')}
+                    >
+                      ⭐ Upgrade
+                    </Button>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    Upgrade to Premium to hear custom voice reminders!
+                  </div>
                 </div>
               )}
               

@@ -61,6 +61,17 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        // Custom Habit Heroes colors
+        coral: "var(--coral)",
+        turquoise: "var(--turquoise)",
+        sky: "var(--sky)",
+        mint: "var(--mint)",
+        sunshine: "var(--sunshine)",
+        purple: "var(--purple)",
+        orange: "var(--orange)",
+        lime: "var(--lime)",
+        lavender: "var(--lavender)",
+        gold: "var(--gold)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
