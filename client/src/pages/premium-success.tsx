@@ -54,9 +54,10 @@ export default function PremiumSuccess() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentIntentId = urlParams.get('payment_intent_id');
+    const paymentIntentId = urlParams.get('payment_intent'); // Stripe uses 'payment_intent' not 'payment_intent_id'
+    const redirectStatus = urlParams.get('redirect_status');
     
-    if (paymentIntentId && !isCompleting && subscriptionStatus?.status !== 'active') {
+    if (paymentIntentId && redirectStatus === 'succeeded' && !isCompleting && subscriptionStatus?.status !== 'active') {
       setIsCompleting(true);
       completeSubscriptionMutation.mutate(paymentIntentId);
     }

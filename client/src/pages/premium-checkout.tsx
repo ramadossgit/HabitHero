@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
@@ -29,22 +30,60 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
 
     setIsProcessing(true);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/premium-success`,
-      },
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Payment Failed",
+          description: error.message || "Please check your payment details and try again.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Payment succeeded without redirect
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        toast({
+          title: "Payment Successful!",
+          description: "Completing your subscription activation...",
+        });
+        
+        // Complete subscription activation
+        try {
+          const response = await apiRequest("POST", "/api/subscription/complete", { 
+            paymentIntentId: paymentIntent.id 
+          });
+          
+          if (response.ok) {
+            // Navigate to success page programmatically
+            setLocation('/premium-success?payment_intent=' + paymentIntent.id + '&redirect_status=succeeded');
+          } else {
+            throw new Error('Failed to complete subscription');
+          }
+        } catch (completionError) {
+          console.error('Failed to complete subscription:', completionError);
+          toast({
+            title: "Payment Succeeded",
+            description: "But there was an issue activating your subscription. Please contact support.",
+            variant: "destructive",
+          });
+        }
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
       toast({
-        title: "Payment Failed",
-        description: error.message || "Please check your payment details and try again.",
+        title: "Payment Error", 
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
       setIsProcessing(false);
     }
-    // If successful, user will be redirected to premium-success page
   };
 
   return (
