@@ -174,6 +174,29 @@ export default function ParentDashboard() {
     },
   });
 
+  // Auto-assign all master habits to all children mutation
+  const autoAssignAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/habits/auto-assign-all", {});
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Auto-Assignment Complete! 🚀",
+        description: "All master habits have been assigned to all children",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/master-habits"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Auto-Assignment Failed",
+        description: error.message || "Could not auto-assign habits. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const [newAvatarImage, setNewAvatarImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   

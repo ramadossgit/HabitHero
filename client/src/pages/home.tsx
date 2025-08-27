@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { useChildAuth } from "@/hooks/useChildAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ import type {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("missions");
+  const { toast } = useToast();
 
   // Single-user experience - only for logged in children
   const {
@@ -53,6 +56,57 @@ export default function Home() {
     ],
     enabled: !!(loggedInChild as Child)?.id,
   });
+
+  // Mission completion mutation - same as DailyMissions component
+  const completeMissionMutation = useMutation({
+    mutationFn: async (habitId: string) => {
+      console.log("Completing habit:", habitId);
+      const response = await apiRequest("POST", `/api/habits/${habitId}/complete`, {});
+      console.log("Completion response:", response);
+      return response;
+    },
+    onSuccess: (data, habitId) => {
+      console.log("Mission completed successfully:", habitId);
+      toast({
+        title: "Mission Complete! 🎉",
+        description: "Great job! You earned XP and reward points!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id, "completions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id, "completions", "today"] });
+    },
+    onError: (error) => {
+      console.error("Mission completion failed:", error);
+      toast({
+        title: "Oops!",
+        description: error.message || "Could not complete mission. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Status calculation function - same as DailyMissions component
+  const getHabitStatus = (habitId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayCompletions = todaysCompletions.filter(c => c.date === today);
+    const habitCompletions = todayCompletions.filter(c => c.habitId === habitId);
+    
+    if (habitCompletions.length === 0) return 'available';
+    
+    // Check for approved first - if approved, habit is done
+    const approved = habitCompletions.find(c => c.status === 'approved');
+    if (approved) return 'approved';
+    
+    // Check for pending - if there's a pending, show pending
+    const pending = habitCompletions.find(c => c.status === 'pending');
+    if (pending) return 'pending';
+    
+    // If only rejected, allow try again
+    const rejected = habitCompletions.find(c => c.status === 'rejected');
+    if (rejected) return 'rejected';
+    
+    return 'available';
+  };
 
   if (childAuthLoading) {
     return (
@@ -272,12 +326,13 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {habits.map((habit) => {
+                        const status = getHabitStatus(habit.id);
                         const completion = todaysCompletions.find(
                           (c) => c.habitId === habit.id,
                         );
-                        const isCompleted = completion?.status === "approved";
-                        const isPending = completion?.status === "pending";
-                        const canComplete = !completion;
+                        const isCompleted = status === "approved";
+                        const isPending = status === "pending";
+                        const canComplete = status === "available" || status === "rejected";
 
                         return (
                           <Card
@@ -358,15 +413,25 @@ export default function Home() {
                                     <>
                                       <div className="w-4 h-4 bg-coral rounded-full animate-pulse"></div>
                                       <span className="text-coral font-bold text-sm">
-                                        Ready
+                                        {status === 'rejected' ? 'Try Again' : 'Ready'}
                                       </span>
                                     </>
                                   )}
                                 </div>
 
                                 {canComplete && (
-                                  <Button className="super-button px-4 py-2 text-sm font-bold">
-                                    Complete!
+                                  <Button 
+                                    className="super-button px-4 py-2 text-sm font-bold"
+                                    onClick={() => completeMissionMutation.mutate(habit.id)}
+                                    disabled={completeMissionMutation.isPending}
+                                    data-testid={`complete-habit-${habit.id}`}
+                                  >
+                                    {completeMissionMutation.isPending 
+                                      ? "Completing..." 
+                                      : status === 'rejected' 
+                                        ? "Try Again!" 
+                                        : "Complete!"
+                                    }
                                   </Button>
                                 )}
 
