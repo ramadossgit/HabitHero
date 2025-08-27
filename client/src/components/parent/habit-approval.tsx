@@ -243,8 +243,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
   const handleAutoApprovalSettingsChange = (
     newSettings: Partial<AutoApprovalSettings>,
   ) => {
-    const updatedSettings = { ...autoApprovalSettings, ...newSettings };
-    setAutoApprovalSettings(updatedSettings);
+    try {
+      const updatedSettings = { ...autoApprovalSettings, ...newSettings };
+      setAutoApprovalSettings(updatedSettings);
+    } catch (error) {
+      console.error('Error updating auto-approval settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update auto-approval settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveAutoApprovalSettings = () => {
@@ -413,11 +422,18 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                     </label>
                     <Select
                       value={autoApprovalSettings.timeValue.toString()}
-                      onValueChange={(value) =>
-                        handleAutoApprovalSettingsChange({
-                          timeValue: parseInt(value),
-                        })
-                      }
+                      onValueChange={(value) => {
+                        try {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue) && numValue > 0 && numValue <= 24) {
+                            handleAutoApprovalSettingsChange({
+                              timeValue: numValue,
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error parsing time value:', error);
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -440,9 +456,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                     </label>
                     <Select
                       value={autoApprovalSettings.timeUnit}
-                      onValueChange={(value: "hours" | "days" | "weeks") =>
-                        handleAutoApprovalSettingsChange({ timeUnit: value })
-                      }
+                      onValueChange={(value) => {
+                        try {
+                          if (value === "hours" || value === "days" || value === "weeks") {
+                            handleAutoApprovalSettingsChange({ 
+                              timeUnit: value as "hours" | "days" | "weeks" 
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error updating time unit:', error);
+                        }
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />
