@@ -210,6 +210,7 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
         queryKey: ["/api/auto-approval-settings"],
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auto-approval-stats"] });
+      setShowAutoApprovalSettings(false);
       toast({
         title: "Auto-Approval Settings Updated",
         description: "Your preferences have been saved successfully.",
@@ -425,7 +426,8 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                       onValueChange={(value) => {
                         try {
                           const numValue = parseInt(value);
-                          if (!isNaN(numValue) && numValue > 0 && numValue <= 24) {
+                          const validValues = [1, 2, 3, 4, 5, 6, 8, 12, 24, 48, 72];
+                          if (!isNaN(numValue) && validValues.includes(numValue)) {
                             handleAutoApprovalSettingsChange({
                               timeValue: numValue,
                             });
@@ -439,13 +441,17 @@ export default function HabitApproval({ children }: HabitApprovalProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => i + 1).map(
-                          (num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num}
-                            </SelectItem>
-                          ),
-                        )}
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4">4</SelectItem>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="6">6</SelectItem>
+                        <SelectItem value="8">8</SelectItem>
+                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="24">24</SelectItem>
+                        <SelectItem value="48">48</SelectItem>
+                        <SelectItem value="72">72</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
