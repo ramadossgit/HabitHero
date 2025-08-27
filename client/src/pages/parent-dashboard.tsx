@@ -1340,6 +1340,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   const [customRingtone, setCustomRingtone] = useState("gentle-chime");
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
   
   const [editingHabit, setEditingHabit] = useState<string | null>(null);
   const [editHabitName, setEditHabitName] = useState("");
@@ -1355,6 +1357,59 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   const [editCustomRingtone, setEditCustomRingtone] = useState("gentle-chime");
   const [editIsRecording, setEditIsRecording] = useState(false);
   const [editMediaRecorder, setEditMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [editRecordingDuration, setEditRecordingDuration] = useState(0);
+  const [editRecordingTimer, setEditRecordingTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Check if user has premium features
+  const isPremium = user?.subscriptionStatus === 'active';
+  const isTrial = user?.subscriptionStatus === 'trial';
+  const hasVoiceFeatures = isPremium || isTrial;
+
+  // Ringtone options based on subscription
+  const getRingtoneOptions = () => {
+    const freeRingtones = [
+      { value: "gentle-chime", label: "🎵 Gentle Chime", preview: "gentle-chime.mp3" },
+      { value: "happy-bells", label: "🔔 Happy Bells", preview: "happy-bells.mp3" },
+      { value: "nature-sounds", label: "🌿 Nature Sounds", preview: "nature-sounds.mp3" },
+      { value: "soft-piano", label: "🎹 Soft Piano", preview: "soft-piano.mp3" },
+      { value: "cheerful-tune", label: "🎶 Cheerful Tune", preview: "cheerful-tune.mp3" }
+    ];
+
+    const premiumRingtones = [
+      { value: "ocean-waves", label: "🌊 Ocean Waves", premium: true, preview: "ocean-waves.mp3" },
+      { value: "bird-song", label: "🐦 Bird Song", premium: true, preview: "bird-song.mp3" },
+      { value: "wind-chimes", label: "🎐 Wind Chimes", premium: true, preview: "wind-chimes.mp3" },
+      { value: "magical-sparkle", label: "✨ Magical Sparkle", premium: true, preview: "magical-sparkle.mp3" },
+      { value: "forest-whisper", label: "🌲 Forest Whisper", premium: true, preview: "forest-whisper.mp3" },
+      { value: "gentle-rain", label: "🌧️ Gentle Rain", premium: true, preview: "gentle-rain.mp3" },
+      { value: "crystal-bells", label: "💎 Crystal Bells", premium: true, preview: "crystal-bells.mp3" },
+      { value: "morning-breeze", label: "🌅 Morning Breeze", premium: true, preview: "morning-breeze.mp3" },
+      { value: "zen-meditation", label: "🧘 Zen Meditation", premium: true, preview: "zen-meditation.mp3" },
+      { value: "fairy-dust", label: "🧚 Fairy Dust", premium: true, preview: "fairy-dust.mp3" },
+      { value: "bamboo-fountain", label: "🎋 Bamboo Fountain", premium: true, preview: "bamboo-fountain.mp3" },
+      { value: "starlight-melody", label: "⭐ Starlight Melody", premium: true, preview: "starlight-melody.mp3" },
+      { value: "butterfly-dance", label: "🦋 Butterfly Dance", premium: true, preview: "butterfly-dance.mp3" },
+      { value: "moonlight-serenade", label: "🌙 Moonlight Serenade", premium: true, preview: "moonlight-serenade.mp3" },
+      { value: "dream-whistle", label: "💫 Dream Whistle", premium: true, preview: "dream-whistle.mp3" }
+    ];
+
+    return isPremium ? [...freeRingtones, ...premiumRingtones] : freeRingtones;
+  };
+
+  const ringtoneOptions = getRingtoneOptions();
+
+  // Play ringtone preview
+  const playRingtonePreview = (ringtoneValue: string) => {
+    const ringtone = ringtoneOptions.find(r => r.value === ringtoneValue);
+    if (ringtone?.preview) {
+      // In a real app, you would play the actual audio file
+      // For now, we'll just show a toast
+      toast({
+        title: "Playing Preview",
+        description: `🎵 ${ringtone.label}`,
+      });
+    }
+  };
 
   // Get master habits for this parent
   const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
@@ -1529,11 +1584,46 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
-  // Voice recording functions
+  // Reset form functions
+  const resetNewHabitForm = () => {
+    setHabitName("");
+    setHabitDescription("");
+    setHabitIcon("⚡");
+    setHabitXP("50");
+    setHabitColor("turquoise");
+    setVoiceRecordingBlob(null);
+    setVoiceRecordingName("");
+    setReminderDuration(30);
+    setCustomRingtone("gentle-chime");
+    setRecordingDuration(0);
+    if (recordingTimer) clearInterval(recordingTimer);
+    setShowAddHabit(false);
+  };
+
+  const resetEditForm = () => {
+    setEditingHabit(null);
+    setEditVoiceRecordingBlob(null);
+    setEditVoiceRecordingName("");
+    setEditReminderDuration(30);
+    setEditCustomRingtone("gentle-chime");
+    setEditRecordingDuration(0);
+    if (editRecordingTimer) clearInterval(editRecordingTimer);
+  };
+
+  // Enhanced voice recording functions
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
@@ -1547,11 +1637,28 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
         setVoiceRecordingBlob(blob);
         setVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
         stream.getTracks().forEach(track => track.stop());
+        if (recordingTimer) clearInterval(recordingTimer);
+        setRecordingDuration(0);
       };
 
       setMediaRecorder(recorder);
       recorder.start();
       setIsRecording(true);
+      
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingDuration(prev => {
+          const newDuration = prev + 1;
+          // Auto-stop at 60 seconds
+          if (newDuration >= 60) {
+            stopRecording();
+            return 60;
+          }
+          return newDuration;
+        });
+      }, 1000);
+      setRecordingTimer(timer);
+
     } catch (error) {
       toast({
         title: "Recording Error",
@@ -1565,6 +1672,10 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
       setIsRecording(false);
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+        setRecordingTimer(null);
+      }
     }
   };
 
@@ -1576,15 +1687,40 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       }
       const audio = new Audio(URL.createObjectURL(voiceRecordingBlob));
       setAudioElement(audio);
-      audio.play();
+      audio.play().catch(error => {
+        toast({
+          title: "Playback Error",
+          description: "Could not play recording",
+          variant: "destructive",
+        });
+      });
     }
   };
 
-  // Edit voice recording functions
+  const deleteRecording = () => {
+    setVoiceRecordingBlob(null);
+    setVoiceRecordingName("");
+    setRecordingDuration(0);
+    if (audioElement) {
+      audioElement.pause();
+      setAudioElement(null);
+    }
+  };
+
+  // Enhanced edit voice recording functions
   const startEditRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
@@ -1598,11 +1734,27 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
         setEditVoiceRecordingBlob(blob);
         setEditVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
         stream.getTracks().forEach(track => track.stop());
+        if (editRecordingTimer) clearInterval(editRecordingTimer);
+        setEditRecordingDuration(0);
       };
 
       setEditMediaRecorder(recorder);
       recorder.start();
       setEditIsRecording(true);
+      
+      // Start timer
+      const timer = setInterval(() => {
+        setEditRecordingDuration(prev => {
+          const newDuration = prev + 1;
+          if (newDuration >= 60) {
+            stopEditRecording();
+            return 60;
+          }
+          return newDuration;
+        });
+      }, 1000);
+      setEditRecordingTimer(timer);
+
     } catch (error) {
       toast({
         title: "Recording Error",
@@ -1616,14 +1768,37 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     if (editMediaRecorder && editIsRecording) {
       editMediaRecorder.stop();
       setEditIsRecording(false);
+      if (editRecordingTimer) {
+        clearInterval(editRecordingTimer);
+        setEditRecordingTimer(null);
+      }
     }
   };
 
   const playEditRecording = () => {
     if (editVoiceRecordingBlob) {
       const audio = new Audio(URL.createObjectURL(editVoiceRecordingBlob));
-      audio.play();
+      audio.play().catch(error => {
+        toast({
+          title: "Playback Error",
+          description: "Could not play recording",
+          variant: "destructive",
+        });
+      });
     }
+  };
+
+  const deleteEditRecording = () => {
+    setEditVoiceRecordingBlob(null);
+    setEditVoiceRecordingName("");
+    setEditRecordingDuration(0);
+  };
+
+  // Format recording duration
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleAddHabit = async () => {
@@ -1638,14 +1813,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
 
     let voiceRecordingUrl = "";
     
-    // Upload voice recording if exists and user is Premium
-    if (voiceRecordingBlob && user?.subscriptionStatus === 'active') {
+    // Upload voice recording if exists and user has voice features
+    if (voiceRecordingBlob && hasVoiceFeatures) {
       try {
-        // Get upload URL
         const uploadResponse = await apiRequest("POST", "/api/objects/upload");
         const { uploadURL } = await uploadResponse.json();
 
-        // Upload the audio blob
         const uploadResult = await fetch(uploadURL, {
           method: 'PUT',
           body: voiceRecordingBlob,
@@ -1655,11 +1828,10 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
         });
 
         if (uploadResult.ok) {
-          voiceRecordingUrl = uploadURL.split('?')[0]; // Remove query params for storage
+          voiceRecordingUrl = uploadURL.split('?')[0];
         }
       } catch (error) {
         console.error("Voice upload failed:", error);
-        // Continue with habit creation even if voice upload fails
       }
     }
 
@@ -1672,9 +1844,9 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
       frequency: "daily",
       voiceRecording: voiceRecordingUrl,
       voiceRecordingName,
-      reminderDuration: user?.subscriptionStatus === 'active' ? reminderDuration : 30,
-      customRingtone: user?.subscriptionStatus === 'active' ? customRingtone : "default",
-      voiceReminderEnabled: user?.subscriptionStatus === 'active' && !!voiceRecordingBlob,
+      reminderDuration: hasVoiceFeatures ? reminderDuration : 30,
+      customRingtone: hasVoiceFeatures ? customRingtone : "gentle-chime",
+      voiceReminderEnabled: hasVoiceFeatures && !!voiceRecordingBlob,
     });
   };
 
@@ -1790,14 +1962,15 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                     </div>
                   </div>
 
-                  {/* Premium Voice Reminder Features for Editing */}
-                  {user?.subscriptionStatus === 'active' && (
+                  {/* Enhanced Premium Voice Reminder Features for Editing */}
+                  {hasVoiceFeatures && (
                     <div className="mt-4 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
                       <h4 className="font-bold text-gold mb-3 flex items-center">
                         ⭐ Premium Voice Reminder Features
+                        {isTrial && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">TRIAL</span>}
                       </h4>
                       
-                      {/* Edit Voice Recording */}
+                      {/* Enhanced Edit Voice Recording */}
                       <div className="mb-4">
                         <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
                         <div className="flex items-center space-x-3 mb-2">
@@ -1807,11 +1980,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             variant={editIsRecording ? "destructive" : "default"}
                             onClick={editIsRecording ? stopEditRecording : startEditRecording}
                             className="flex items-center space-x-2"
+                            data-testid="button-edit-voice-record"
                           >
                             {editIsRecording ? (
                               <>
                                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                <span>Stop Recording</span>
+                                <span>Stop Recording {formatDuration(editRecordingDuration)}</span>
                               </>
                             ) : (
                               <>
@@ -1827,12 +2001,32 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                               variant="outline"
                               onClick={playEditRecording}
                               className="flex items-center space-x-2"
+                              data-testid="button-edit-voice-play"
                             >
                               <Play className="w-4 h-4" />
                               <span>Play</span>
                             </Button>
                           )}
+                          {editVoiceRecordingBlob && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={deleteEditRecording}
+                              className="flex items-center space-x-2 text-red-600 border-red-300 hover:bg-red-50"
+                              data-testid="button-edit-voice-delete"
+                            >
+                              <X className="w-4 h-4" />
+                              <span>Delete</span>
+                            </Button>
+                          )}
                         </div>
+                        {editIsRecording && (
+                          <div className="text-sm text-orange-600 mb-2 flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span>Recording... {formatDuration(editRecordingDuration)} / 1:00 (auto-stops at 60s)</span>
+                          </div>
+                        )}
                         {editVoiceRecordingName && (
                           <p className="text-sm text-green-600">✓ New voice message: {editVoiceRecordingName}</p>
                         )}
@@ -1857,6 +2051,48 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             <SelectItem value="120">2 hours</SelectItem>
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-gray-500 mt-1">How long the reminder plays before auto-stopping</p>
+                      </div>
+
+                      {/* Enhanced Edit Custom Ringtones */}
+                      <div className="mb-4">
+                        <label className="text-sm font-bold text-gray-700">Custom Ringtone</label>
+                        <Select value={editCustomRingtone} onValueChange={setEditCustomRingtone}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ringtoneOptions.map((ringtone) => (
+                              <SelectItem 
+                                key={ringtone.value} 
+                                value={ringtone.value}
+                                className={ringtone.premium && !isPremium ? "opacity-50" : ""}
+                                disabled={ringtone.premium && !isPremium}
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{ringtone.label}</span>
+                                  {ringtone.premium && !isPremium && (
+                                    <span className="text-xs text-gold">⭐ Premium</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => playRingtonePreview(editCustomRingtone)}
+                            className="text-xs px-2 py-1"
+                          >
+                            🔊 Preview
+                          </Button>
+                          <p className="text-xs text-gray-500">
+                            Sound that plays when voice reminder starts
+                          </p>
+                        </div>
                       </div>
 
                       {/* Edit System Ringtones */}
@@ -1888,8 +2124,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                       onClick={async () => {
                         let editVoiceRecordingUrl = "";
                         
-                        // Upload new voice recording if exists and user is Premium
-                        if (editVoiceRecordingBlob && user?.subscriptionStatus === 'active') {
+                        // Upload new voice recording if exists and user has voice features
+                        if (editVoiceRecordingBlob && hasVoiceFeatures) {
                           try {
                             const uploadResponse = await apiRequest("POST", "/api/objects/upload");
                             const { uploadURL } = await uploadResponse.json();
@@ -1918,9 +2154,9 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             color: editHabitColor,
                             voiceRecording: editVoiceRecordingUrl || habit.voiceRecording,
                             voiceRecordingName: editVoiceRecordingName || habit.voiceRecordingName,
-                            reminderDuration: user?.subscriptionStatus === 'active' ? editReminderDuration : habit.reminderDuration,
-                            customRingtone: user?.subscriptionStatus === 'active' ? editCustomRingtone : habit.customRingtone,
-                            voiceReminderEnabled: user?.subscriptionStatus === 'active' && (!!editVoiceRecordingBlob || !!habit.voiceRecording),
+                            reminderDuration: hasVoiceFeatures ? editReminderDuration : habit.reminderDuration,
+                            customRingtone: hasVoiceFeatures ? editCustomRingtone : habit.customRingtone,
+                            voiceReminderEnabled: hasVoiceFeatures && (!!editVoiceRecordingBlob || !!habit.voiceRecording),
                           }
                         });
                       }}
@@ -2126,14 +2362,15 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                 </div>
               </div>
 
-              {/* Premium Voice Reminder Features */}
-              {user?.subscriptionStatus === 'active' && (
+              {/* Enhanced Premium Voice Reminder Features */}
+              {hasVoiceFeatures && (
                 <div className="mt-6 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
                   <h4 className="font-bold text-gold mb-3 flex items-center">
                     ⭐ Premium Voice Reminder Features
+                    {isTrial && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">TRIAL</span>}
                   </h4>
                   
-                  {/* Voice Recording */}
+                  {/* Enhanced Voice Recording */}
                   <div className="mb-4">
                     <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
                     <div className="flex items-center space-x-3 mb-2">
@@ -2143,11 +2380,12 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         variant={isRecording ? "destructive" : "default"}
                         onClick={isRecording ? stopRecording : startRecording}
                         className="flex items-center space-x-2"
+                        data-testid="button-voice-record"
                       >
                         {isRecording ? (
                           <>
                             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                            <span>Stop Recording</span>
+                            <span>Stop Recording {formatDuration(recordingDuration)}</span>
                           </>
                         ) : (
                           <>
@@ -2157,18 +2395,38 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         )}
                       </Button>
                       {voiceRecordingBlob && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={playRecording}
-                          className="flex items-center space-x-2"
-                        >
-                          <Play className="w-4 h-4" />
-                          <span>Play</span>
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={playRecording}
+                            className="flex items-center space-x-2"
+                            data-testid="button-voice-play"
+                          >
+                            <Play className="w-4 h-4" />
+                            <span>Play</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={deleteRecording}
+                            className="flex items-center space-x-2 text-red-600 border-red-300 hover:bg-red-50"
+                            data-testid="button-voice-delete"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>Delete</span>
+                          </Button>
+                        </>
                       )}
                     </div>
+                    {isRecording && (
+                      <div className="text-sm text-orange-600 mb-2 flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span>Recording... {formatDuration(recordingDuration)} / 1:00 (auto-stops at 60s)</span>
+                      </div>
+                    )}
                     {voiceRecordingName && (
                       <p className="text-sm text-green-600">✓ Voice message recorded: {voiceRecordingName}</p>
                     )}
@@ -2190,34 +2448,54 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         <SelectItem value="120">2 hours</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500 mt-1">How long the reminder plays before auto-stopping</p>
                   </div>
 
-                  {/* System Ringtones */}
+                  {/* Enhanced Custom Ringtones */}
                   <div className="mb-4">
-                    <label className="text-sm font-bold text-gray-700">System Ringtone</label>
+                    <label className="text-sm font-bold text-gray-700">Custom Ringtone</label>
                     <Select value={customRingtone} onValueChange={setCustomRingtone}>
                       <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="gentle-chime">🎵 Gentle Chime</SelectItem>
-                        <SelectItem value="happy-bells">🔔 Happy Bells</SelectItem>
-                        <SelectItem value="nature-sounds">🌿 Nature Sounds</SelectItem>
-                        <SelectItem value="soft-piano">🎹 Soft Piano</SelectItem>
-                        <SelectItem value="cheerful-tune">🎶 Cheerful Tune</SelectItem>
-                        <SelectItem value="ocean-waves">🌊 Ocean Waves</SelectItem>
-                        <SelectItem value="bird-song">🐦 Bird Song</SelectItem>
-                        <SelectItem value="wind-chimes">🎐 Wind Chimes</SelectItem>
-                        <SelectItem value="magical-sparkle">✨ Magical Sparkle</SelectItem>
-                        <SelectItem value="forest-whisper">🌲 Forest Whisper</SelectItem>
+                        {ringtoneOptions.map((ringtone) => (
+                          <SelectItem 
+                            key={ringtone.value} 
+                            value={ringtone.value}
+                            className={ringtone.premium && !isPremium ? "opacity-50" : ""}
+                            disabled={ringtone.premium && !isPremium}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span>{ringtone.label}</span>
+                              {ringtone.premium && !isPremium && (
+                                <span className="text-xs text-gold">⭐ Premium</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => playRingtonePreview(customRingtone)}
+                        className="text-xs px-2 py-1"
+                      >
+                        🔊 Preview
+                      </Button>
+                      <p className="text-xs text-gray-500">
+                        Sound that plays when voice reminder starts
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-4 text-xs text-gray-600">
+                  <div className="flex items-center space-x-4 text-xs text-gray-600 mt-4">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-gold rounded-full mr-2"></div>
-                      <span>Premium Feature</span>
+                      <span>Premium Feature - Enhanced Voice Reminders</span>
                     </div>
                   </div>
                 </div>
