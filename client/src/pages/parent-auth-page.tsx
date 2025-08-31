@@ -238,19 +238,113 @@ export default function ParentAuthPage() {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-3">
-              <h3 className="font-fredoka text-xl">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
+              <h3 className="font-fredoka text-xl text-yellow-300">
                 🎮 Features Your Kids Will Love:
               </h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  • Customize their hero avatar (robots, princesses, ninjas,
-                  animals)
-                </li>
-                <li>• Earn XP and level up by completing daily habits</li>
-                <li>• Unlock new gear and avatar customizations</li>
-                <li>• Fun visual progress tracking and celebrations</li>
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-mint mb-2">🦸 Hero Characters</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Create custom avatars (robots, princesses, ninjas)</li>
+                    <li>• Unlock new gear and costumes</li>
+                    <li>• Level up from novice to legendary hero</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-coral mb-2">🏆 Gamification</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Earn XP for completing habits</li>
+                    <li>• Build streak counters</li>
+                    <li>• Unlock achievement badges</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sky mb-2">🎯 Daily Missions</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Turn chores into epic quests</li>
+                    <li>• Photo proof submissions</li>
+                    <li>• Voice message support</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple mb-2">🎁 Reward System</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Earn reward points</li>
+                    <li>• Custom family rewards</li>
+                    <li>• Mini-games unlock</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
+              <h3 className="font-fredoka text-xl text-yellow-300">
+                👨‍👩‍👧‍👦 Parent Dashboard Features:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-mint mb-2">📊 Progress Tracking</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Real-time habit completion</li>
+                    <li>• Weekly/monthly reports</li>
+                    <li>• Streak analytics</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-coral mb-2">⚙️ Management Tools</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Create custom habits</li>
+                    <li>• Set reward values</li>
+                    <li>• Approve/review submissions</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sky mb-2">👑 Premium Features</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• Auto-approval settings</li>
+                    <li>• Voice recordings</li>
+                    <li>• Advanced analytics</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple mb-2">🔒 Safety & Control</h4>
+                  <ul className="space-y-1 text-white/90">
+                    <li>• COPPA compliant platform</li>
+                    <li>• Screen time controls</li>
+                    <li>• Content filtering</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-mint/20 to-sky/20 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <h3 className="font-fredoka text-xl text-center mb-4">
+                🚀 Get Started in 3 Easy Steps:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-mint rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">1</span>
+                  </div>
+                  <h4 className="font-semibold text-mint mb-1">Create Account</h4>
+                  <p className="text-white/90">Sign up with your email - takes 30 seconds!</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">2</span>
+                  </div>
+                  <h4 className="font-semibold text-coral mb-1">Add Children</h4>
+                  <p className="text-white/90">Set up profiles and choose hero avatars</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-sky rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-white font-bold">3</span>
+                  </div>
+                  <h4 className="font-semibold text-sky mb-1">Start Adventures</h4>
+                  <p className="text-white/90">Create habits and watch the magic happen!</p>
+                </div>
+              </div>
             </div>
           </div>
 
