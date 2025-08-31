@@ -284,7 +284,6 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
-
                     <div className="bg-white/70 rounded-lg p-4 border-2 border-purple-200">
                       <div className="text-sm text-gray-600 mb-2 font-medium">
                         Health Score
@@ -314,7 +313,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                {/* Enhanced Daily Missions Section - Kid-friendly */}
+                  {/* Enhanced Daily Missions Section - Kid-friendly */}
                 <div className="kid-card bg-gradient-to-r from-energy-orange/10 to-joy-yellow/10 border-energy-orange p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-16 h-16 bg-gradient-to-r from-energy-orange to-joy-yellow rounded-full flex items-center justify-center magic-glow">
@@ -464,7 +463,6 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              </div>
             ) : (
               <Alert className="border-2 border-orange-300 bg-orange-50">
                 <Lock className="h-5 w-5 text-orange-600" />
