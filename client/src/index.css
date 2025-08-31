@@ -54,22 +54,28 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   
-  /* Custom colors for Habit Heroes - Kid-friendly and vibrant */
-  --coral: #FF6B6B; /* Bright coral for primary actions */
-  --turquoise: #4ECDC4; /* Fun turquoise for secondary elements */
-  --sky: #4ECDC4; /* Bright turquoise for info */
-  --mint: #96CEB4; /* Soft mint for success */
-  --sunshine: #FFEAA7; /* Bright yellow for warnings/highlights */
-  --purple: #A29BFE; /* Magical purple for special elements */
-  --orange: #FD79A8; /* Playful pink-orange */
-  --lime: #00D2D3; /* Electric lime for energy */
-  --lavender: #DDA0DD; /* Soft lavender for calm elements */
-  --gold: #FFD700; /* Premium gold for voice features */
+  /* Kid-Centric Design Colors - Following design standards guide */
+  --hero-blue: #4285F4; /* Trust, reliability */
+  --success-green: #34A853; /* Achievement, growth */
+  --energy-orange: #FF6B35; /* Enthusiasm, motivation */
+  --joy-yellow: #FBBC04; /* Happiness, optimism */
   
-  /* Fun gradients */
-  --rainbow-gradient: linear-gradient(45deg, #FF6B6B, #4ECDC4, #96CEB4, #FFD93D, #FFEAA7, #A29BFE);
-  --hero-gradient: linear-gradient(135deg, #96CEB4 0%, #4ECDC4 30%, #FFD93D 60%, #FF6B6B 100%);
-  --magic-gradient: radial-gradient(circle, #A29BFE 0%, #DDA0DD 50%, #FF6B6B 100%);
+  /* Existing colors adapted for compatibility */
+  --coral: #FF6B35; /* Energy orange for primary actions */
+  --turquoise: #4285F4; /* Hero blue for secondary elements */
+  --sky: #4285F4; /* Hero blue for info */
+  --mint: #34A853; /* Success green for success states */
+  --sunshine: #FBBC04; /* Joy yellow for highlights */
+  --purple: #8E44AD; /* Balanced purple for special elements */
+  --orange: #FF6B35; /* Energy orange */
+  --lime: #34A853; /* Success green for energy */
+  --lavender: #DDA0DD; /* Soft lavender for calm elements */
+  --gold: #FBBC04; /* Joy yellow for premium features */
+  
+  /* Kid-Friendly Gradients */
+  --rainbow-gradient: linear-gradient(45deg, #4285F4, #34A853, #FF6B35, #FBBC04, #8E44AD);
+  --hero-gradient: linear-gradient(135deg, #4285F4 0%, #34A853 30%, #FBBC04 60%, #FF6B35 100%);
+  --magic-gradient: radial-gradient(circle, #8E44AD 0%, #DDA0DD 50%, #FF6B35 100%);
   
   /* Background patterns */
   --light-bg: #F8F9FA;
@@ -391,5 +397,207 @@
 
   .fade-in-up {
     animation: fade-in-up 0.4s ease-out;
+  }
+
+  /* Kid-Centric UI Improvements */
+  
+  /* Large Touch Targets - Minimum 48px for mobile */
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+  
+  /* Enhanced Button Styles for Kids */
+  .kid-button {
+    min-height: 56px; /* Extra large for small fingers */
+    padding: 16px 24px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    font-family: 'Nunito', sans-serif;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .kid-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .kid-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* High Contrast Text for Readability */
+  .readable-text {
+    color: #333333;
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  
+  .readable-text-large {
+    color: #333333;
+    font-size: 20px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  
+  /* Card Improvements for Better Visibility */
+  .kid-card {
+    background: white;
+    border: 3px solid #E0E6ED;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .kid-card:hover {
+    border-color: var(--hero-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Focus Indicators for Keyboard Navigation */
+  .kid-button:focus,
+  .touch-target:focus,
+  .kid-card:focus {
+    outline: 3px solid var(--hero-blue);
+    outline-offset: 2px;
+  }
+  
+  /* Responsive Grid for Different Devices */
+  .responsive-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+  
+  /* Mobile (default) - single column */
+  @media (min-width: 640px) {
+    .responsive-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+  }
+  
+  /* Tablet */
+  @media (min-width: 768px) {
+    .responsive-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    
+    .readable-text {
+      font-size: 18px;
+    }
+    
+    .readable-text-large {
+      font-size: 24px;
+    }
+  }
+  
+  /* Desktop */
+  @media (min-width: 1024px) {
+    .responsive-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+  }
+  
+  /* Loading States for Better UX */
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #E0E6ED;
+    border-top: 4px solid var(--hero-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Success/Error States */
+  .success-indicator {
+    background: var(--success-green);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(52, 168, 83, 0.3);
+  }
+  
+  .error-indicator {
+    background: #DC3545;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
+  }
+  
+  /* Safe Navigation Areas */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Thumb-Friendly Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 3px solid #E0E6ED;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 16px;
+    min-height: 56px;
+    min-width: 72px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666666;
+    text-decoration: none;
+  }
+  
+  .bottom-nav-item:hover,
+  .bottom-nav-item.active {
+    background: var(--hero-blue);
+    color: white;
+    transform: translateY(-2px);
   }
 }

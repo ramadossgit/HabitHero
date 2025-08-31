@@ -207,72 +207,75 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen hero-gradient">
+    <div className="min-h-screen hero-gradient safe-area-top">
       {/* Hero Header */}
       <HeroHeader child={currentChild} />
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 pb-8">
+      {/* Main Content - Kid-friendly layout */}
+      <div className="container mx-auto px-4 pb-24">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/90 backdrop-blur-sm border border-white/20">
+          <TabsList className="responsive-grid grid-cols-2 sm:grid-cols-4 mb-6 bg-white/95 backdrop-blur-sm border-4 border-white/30 rounded-2xl p-2 shadow-lg">
             <TabsTrigger
               value="missions"
-              className="flex items-center gap-2 data-[state=active]:bg-coral data-[state=active]:text-white font-bold text-gray-700"
+              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-hero-blue data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
               disabled={!featuresEnabled.habits}
+              data-testid="tab-missions"
             >
               {featuresEnabled.habits ? (
-                <Gamepad2 className="w-4 h-4" />
+                <Gamepad2 className="w-6 h-6" />
               ) : (
-                <Lock className="w-4 h-4" />
+                <Lock className="w-6 h-6" />
               )}
-              <span className="hidden sm:inline">Missions</span>
+              <span className="readable-text text-sm">🎮 Missions</span>
             </TabsTrigger>
             <TabsTrigger
               value="customize"
-              className="flex items-center gap-2 data-[state=active]:bg-mint data-[state=active]:text-white font-bold text-gray-700"
+              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-success-green data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
               disabled={!featuresEnabled.gearShop}
+              data-testid="tab-customize"
             >
               {featuresEnabled.gearShop ? (
-                <Settings className="w-4 h-4" />
+                <Settings className="w-6 h-6" />
               ) : (
-                <Lock className="w-4 h-4" />
+                <Lock className="w-6 h-6" />
               )}
-              <span className="hidden sm:inline">Customize</span>
+              <span className="readable-text text-sm">🎨 Style</span>
             </TabsTrigger>
             <TabsTrigger
               value="rewards"
-              className="flex items-center gap-2 data-[state=active]:bg-sunshine data-[state=active]:text-gray-800 font-bold text-gray-700"
+              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-joy-yellow data-[state=active]:text-gray-800 font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
               disabled={!featuresEnabled.rewards}
+              data-testid="tab-rewards"
             >
               {featuresEnabled.rewards ? (
-                <Trophy className="w-4 h-4" />
+                <Trophy className="w-6 h-6" />
               ) : (
-                <Lock className="w-4 h-4" />
+                <Lock className="w-6 h-6" />
               )}
-              <span className="hidden sm:inline">Rewards</span>
+              <span className="readable-text text-sm">🏆 Prizes</span>
             </TabsTrigger>
             <TabsTrigger
               value="progress"
-              className="flex items-center gap-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white font-bold text-gray-700"
+              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-purple data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
+              data-testid="tab-progress"
             >
-              <Star className="w-4 h-4" />
-              <span className="hidden sm:inline">Progress</span>
+              <Star className="w-6 h-6" />
+              <span className="readable-text text-sm">📊 Stats</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="missions" className="space-y-6">
             {featuresEnabled.habits ? (
-              <>
-                {/* Enhanced Habit Health Meter */}
-                <Card className="fun-card border-4 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="font-fredoka text-2xl text-gray-800 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                          <Star className="w-5 h-5 text-white" />
-                        </div>
-                        Habit Health Meter
-                      </h2>
+              <div className="space-y-6">
+                {/* Enhanced Habit Health Meter - Kid-friendly */}
+                <div className="kid-card bg-gradient-to-r from-hero-blue/10 to-success-green/10 border-hero-blue p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-fredoka text-2xl sm:text-3xl readable-text-large text-gray-800 flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-hero-blue to-success-green rounded-full flex items-center justify-center magic-glow">
+                        <Star className="w-6 h-6 text-white" />
+                      </div>
+                      🌟 Hero Health Meter
+                    </h2>
                       {/* Smaller health indicator */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-gradient-to-r from-red-400 to-green-400 rounded-full border-2 border-white shadow-sm"></div>
@@ -309,22 +312,20 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
 
-                {/* Enhanced Daily Missions Section */}
-                <Card className="fun-card border-4 border-coral bg-gradient-to-r from-coral/5 to-orange/5">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center">
-                        <Gamepad2 className="w-6 h-6 text-white" />
-                      </div>
-                      <h2 className="font-fredoka text-3xl text-gray-800">
-                        Today's Hero Missions
-                      </h2>
+                {/* Enhanced Daily Missions Section - Kid-friendly */}
+                <div className="kid-card bg-gradient-to-r from-energy-orange/10 to-joy-yellow/10 border-energy-orange p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-r from-energy-orange to-joy-yellow rounded-full flex items-center justify-center magic-glow">
+                      <Gamepad2 className="w-8 h-8 text-white" />
                     </div>
+                    <h2 className="font-fredoka text-3xl sm:text-4xl readable-text-large text-gray-800">
+                      🎮 Today's Hero Missions
+                    </h2>
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="responsive-grid gap-4">
                       {habits.map((habit) => {
                         const status = getHabitStatus(habit.id);
                         const completion = todaysCompletions.find(
@@ -461,9 +462,9 @@ export default function Home() {
                         </p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </>
+                  </div>
+                </div>
+              </div>
             ) : (
               <Alert className="border-2 border-orange-300 bg-orange-50">
                 <Lock className="h-5 w-5 text-orange-600" />
