@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useChildAuth } from "@/hooks/useChildAuth";
 import { SyncProvider } from "@/hooks/use-sync";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import Landing from "@/pages/landing";
 import ParentAuthPage from "@/pages/parent-auth-page";
 import SubscriptionPage from "@/pages/subscription";
@@ -19,65 +21,126 @@ import AlertSettingsPage from "@/pages/alert-settings-page";
 import KidsLogin from "@/pages/kids-login";
 import NotFound from "@/pages/not-found";
 
-function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+function AuthGuard({ 
+  children, 
+  requireAuth = false, 
+  requireChild = false 
+}: { 
+  children: React.ReactNode;
+  requireAuth?: boolean;
+  requireChild?: boolean;
+}) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { child: childUser, isLoading: childLoading } = useChildAuth();
-  
-  console.log("Router debug:", { childUser, childLoading, isAuthenticated, isLoading });
+  const [, setLocation] = useLocation();
 
-  if (isLoading || childLoading) {
+  const isLoading = authLoading || (requireChild && childLoading);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (requireAuth && !isAuthenticated) {
+        setLocation('/parent/auth');
+      } else if (requireChild && !childUser) {
+        setLocation('/kids-login');
+      }
+    }
+  }, [isLoading, isAuthenticated, childUser, requireAuth, requireChild, setLocation]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen hero-gradient flex items-center justify-center">
         <div className="text-center">
           <div className="w-20 h-20 magic-gradient rounded-full mx-auto mb-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
           </div>
-          <p className="text-white text-xl font-bold">✨ Loading... ✨</p>
+          <p className="text-white text-xl font-bold">Loading...</p>
         </div>
       </div>
     );
   }
 
+  // Don't render children if auth requirements not met (redirect handled by useEffect)
+  if ((requireAuth && !isAuthenticated) || (requireChild && !childUser)) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+function Router() {
   return (
     <Switch>
-      {/* Kids Routes */}
-      <Route path="/kids-login" component={KidsLogin} />
-      <Route path="/kids">
-        {childUser ? <Home /> : <KidsLogin />}
-      </Route>
-      
-      {/* Parent Authentication Route */}
-      <Route path="/parent/auth" component={ParentAuthPage} />
-      
-      {/* Parent Dashboard - Full Management Interface */}
-      <Route path="/parent">
-        {isAuthenticated ? <ParentDashboard /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/subscription">
-        {isAuthenticated ? <SubscriptionPage /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/premium-enrollment">
-        {isAuthenticated ? <PremiumEnrollment /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/premium-checkout">
-        {isAuthenticated ? <PremiumCheckout /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/premium-success">
-        {isAuthenticated ? <PremiumSuccess /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/progress-reports">
-        {isAuthenticated ? <ProgressReportsPage /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/alert-settings">
-        {isAuthenticated ? <AlertSettingsPage /> : <ParentAuthPage />}
-      </Route>
-      <Route path="/alert-settings/:habitId">
-        {(params) => isAuthenticated ? <AlertSettingsPage habitId={params.habitId} /> : <ParentAuthPage />}
-      </Route>
-      
-      {/* Default Route */}
+      {/* Public Routes */}
       <Route path="/" component={Landing} />
-      
+      <Route path="/kids-login" component={KidsLogin} />
+      <Route path="/parent/auth" component={ParentAuthPage} />
+
+      {/* Kids Routes - Require child authentication */}
+      <Route path="/kids">
+        <AuthGuard requireChild={true}>
+          <Home />
+        </AuthGuard>
+      </Route>
+
+      {/* Parent Routes - Require parent authentication */}
+      <Route path="/parent">
+        <AuthGuard requireAuth={true}>
+          <ParentDashboard />
+        </AuthGuard>
+      </Route>
+
+      {/* Legacy route redirect */}
+      <Route path="/parent-dashboard">
+        <AuthGuard requireAuth={true}>
+          <ParentDashboard />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/subscription">
+        <AuthGuard requireAuth={true}>
+          <SubscriptionPage />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/premium-enrollment">
+        <AuthGuard requireAuth={true}>
+          <PremiumEnrollment />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/premium-checkout">
+        <AuthGuard requireAuth={true}>
+          <PremiumCheckout />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/premium-success">
+        <AuthGuard requireAuth={true}>
+          <PremiumSuccess />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/progress-reports">
+        <AuthGuard requireAuth={true}>
+          <ProgressReportsPage />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/alert-settings">
+        <AuthGuard requireAuth={true}>
+          <AlertSettingsPage />
+        </AuthGuard>
+      </Route>
+
+      <Route path="/alert-settings/:habitId">
+        {(params) => (
+          <AuthGuard requireAuth={true}>
+            <AlertSettingsPage habitId={params.habitId} />
+          </AuthGuard>
+        )}
+      </Route>
+
+      {/* Catch-all route */}
       <Route component={NotFound} />
     </Switch>
   );

@@ -46,10 +46,10 @@ export default function ProgressReportsPage() {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const dayCompletions = approvedCompletions.filter(c => c.date === dateStr);
       const xpEarned = dayCompletions.length * 10; // 10 XP per completion
-      
+
       weeklyData.push({
         day: date.toLocaleDateString('en-US', { weekday: 'short' }),
         xp: xpEarned,
@@ -107,7 +107,7 @@ export default function ProgressReportsPage() {
     while (streak < habitCompletions.length) {
       const dateStr = currentDate.toISOString().split('T')[0];
       const hasCompletion = habitCompletions.some(c => c.date === dateStr);
-      
+
       if (hasCompletion) {
         streak++;
         currentDate.setDate(currentDate.getDate() - 1);
@@ -139,13 +139,13 @@ export default function ProgressReportsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/parent-dashboard">
+              <Link href="/parent">
                 <Button variant="ghost" className="text-white hover:bg-white/20 border-white/30">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
               <div>
-                <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">📈 Progress Reports</h1>
+                <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Progress Reports</h1>
                 <p className="text-white/90 font-bold">Track {child.name}'s progress over time</p>
               </div>
             </div>
