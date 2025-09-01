@@ -32,18 +32,7 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#FF6B6B"
-        }
-      ],
-      "expo-camera",
-      "expo-image-picker",
-      "expo-local-authentication"
-    ],
+    "plugins": [],
     "extra": {
       "eas": {
         "projectId": "your-project-id-here"

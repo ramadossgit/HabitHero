@@ -1,15 +1,11 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#FF6B6B', '#4ECDC4', '#45B7D1']}
-        style={styles.gradient}
-      >
+      <View style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Hero Header */}
           <View style={styles.headerSection}>
@@ -67,7 +63,7 @@ export default function App() {
             </View>
           </View>
         </ScrollView>
-      </LinearGradient>
+      </View>
       <StatusBar style="light" />
     </View>
   );
@@ -79,6 +75,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+    backgroundColor: '#FF6B6B',
   },
   scrollContainer: {
     flexGrow: 1,
