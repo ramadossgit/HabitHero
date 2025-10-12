@@ -529,6 +529,7 @@ export default function ParentAuthPage() {
                             }
                             placeholder="John"
                             data-testid="input-register-firstname"
+                            onFocus={handleFocus("registerData.firstname")}
                           />
                         </div>
                         <div className="space-y-2">
@@ -544,7 +545,7 @@ export default function ParentAuthPage() {
                             }
                             placeholder="Smith"
                             data-testid="input-register-lastname"
-                            onFocus={handleFocus('registerData.lastName')}
+                            onFocus={handleFocus("registerData.lastName")}
                           />
                         </div>
                       </div>
