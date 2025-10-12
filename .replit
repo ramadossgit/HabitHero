@@ -1,0 +1,6 @@
+run = "[[run]]"
+entrypoint = "[[entrypoint]]"
+port = 8000
+[[browser]]
+open = true
+port = "${port}"
