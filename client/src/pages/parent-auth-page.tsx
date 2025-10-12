@@ -59,6 +59,41 @@ export default function ParentAuthPage() {
     password: "",
   });
 
+  function setupPlaceholderToggle(
+    inputId: string,
+    placeholderText: string,
+  ): void {
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+
+    if (!input) {
+      console.warn(`Input element with ID "${inputId}" not found.`);
+      return;
+    }
+
+    input.placeholder = placeholderText;
+
+    input.addEventListener("focus", () => {
+      input.placeholder = "";
+    });
+
+    input.addEventListener("blur", () => {
+      input.placeholder = placeholderText;
+    });
+  }
+
+  function handleFocus(inputId: string) {
+    return () => {
+      const input = document.getElementById(inputId) as HTMLInputElement | null;
+
+      if (!input) {
+        console.warn(`Input element with ID "${inputId}" not found.`);
+        return;
+      }
+
+      input.placeholder = "";
+    };
+  }
+
   // Registration form state
   const [registerData, setRegisterData] = useState({
     email: "",
@@ -244,15 +279,21 @@ export default function ParentAuthPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 className="font-semibold text-mint mb-2">🦸 Hero Characters</h4>
+                  <h4 className="font-semibold text-mint mb-2">
+                    🦸 Hero Characters
+                  </h4>
                   <ul className="space-y-1 text-white/90">
-                    <li>• Create custom avatars (robots, princesses, ninjas)</li>
+                    <li>
+                      • Create custom avatars (robots, princesses, ninjas)
+                    </li>
                     <li>• Unlock new gear and costumes</li>
                     <li>• Level up from novice to legendary hero</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-coral mb-2">🏆 Gamification</h4>
+                  <h4 className="font-semibold text-coral mb-2">
+                    🏆 Gamification
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Earn XP for completing habits</li>
                     <li>• Build streak counters</li>
@@ -260,7 +301,9 @@ export default function ParentAuthPage() {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sky mb-2">🎯 Daily Missions</h4>
+                  <h4 className="font-semibold text-sky mb-2">
+                    🎯 Daily Missions
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Turn chores into epic quests</li>
                     <li>• Photo proof submissions</li>
@@ -268,7 +311,9 @@ export default function ParentAuthPage() {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-purple mb-2">🎁 Reward System</h4>
+                  <h4 className="font-semibold text-purple mb-2">
+                    🎁 Reward System
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Earn reward points</li>
                     <li>• Custom family rewards</li>
@@ -284,7 +329,9 @@ export default function ParentAuthPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <h4 className="font-semibold text-mint mb-2">📊 Progress Tracking</h4>
+                  <h4 className="font-semibold text-mint mb-2">
+                    📊 Progress Tracking
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Real-time habit completion</li>
                     <li>• Weekly/monthly reports</li>
@@ -292,7 +339,9 @@ export default function ParentAuthPage() {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-coral mb-2">⚙️ Management Tools</h4>
+                  <h4 className="font-semibold text-coral mb-2">
+                    ⚙️ Management Tools
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Create custom habits</li>
                     <li>• Set reward values</li>
@@ -300,7 +349,9 @@ export default function ParentAuthPage() {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sky mb-2">👑 Premium Features</h4>
+                  <h4 className="font-semibold text-sky mb-2">
+                    👑 Premium Features
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• Auto-approval settings</li>
                     <li>• Voice recordings</li>
@@ -308,7 +359,9 @@ export default function ParentAuthPage() {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-purple mb-2">🔒 Safety & Control</h4>
+                  <h4 className="font-semibold text-purple mb-2">
+                    🔒 Safety & Control
+                  </h4>
                   <ul className="space-y-1 text-white/90">
                     <li>• COPPA compliant platform</li>
                     <li>• Screen time controls</li>
@@ -327,22 +380,34 @@ export default function ParentAuthPage() {
                   <div className="w-12 h-12 bg-mint rounded-full flex items-center justify-center mx-auto mb-2">
                     <span className="text-white font-bold">1</span>
                   </div>
-                  <h4 className="font-semibold text-mint mb-1">Create Account</h4>
-                  <p className="text-white/90">Sign up with your email - takes 30 seconds!</p>
+                  <h4 className="font-semibold text-mint mb-1">
+                    Create Account
+                  </h4>
+                  <p className="text-white/90">
+                    Sign up with your email - takes 30 seconds!
+                  </p>
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center mx-auto mb-2">
                     <span className="text-white font-bold">2</span>
                   </div>
-                  <h4 className="font-semibold text-coral mb-1">Add Children</h4>
-                  <p className="text-white/90">Set up profiles and choose hero avatars</p>
+                  <h4 className="font-semibold text-coral mb-1">
+                    Add Children
+                  </h4>
+                  <p className="text-white/90">
+                    Set up profiles and choose hero avatars
+                  </p>
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-sky rounded-full flex items-center justify-center mx-auto mb-2">
                     <span className="text-white font-bold">3</span>
                   </div>
-                  <h4 className="font-semibold text-sky mb-1">Start Adventures</h4>
-                  <p className="text-white/90">Create habits and watch the magic happen!</p>
+                  <h4 className="font-semibold text-sky mb-1">
+                    Start Adventures
+                  </h4>
+                  <p className="text-white/90">
+                    Create habits and watch the magic happen!
+                  </p>
                 </div>
               </div>
             </div>
@@ -479,6 +544,7 @@ export default function ParentAuthPage() {
                             }
                             placeholder="Smith"
                             data-testid="input-register-lastname"
+                            onFocus={handleFocus('registerData.lastName')}
                           />
                         </div>
                       </div>

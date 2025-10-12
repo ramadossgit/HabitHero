@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#FF6B6B"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.habitheroes.app",
