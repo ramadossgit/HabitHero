@@ -318,39 +318,39 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                 <div>
                   <Label htmlFor="icon" className="text-gray-700 dark:text-gray-300">Icon</Label>
                   <Select value={habitForm.icon} onValueChange={(value) => setHabitForm({ ...habitForm, icon: value })}>
-                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                      <SelectValue />
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" data-testid="select-icon">
+                      <SelectValue placeholder="Select an icon" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tooth">🦷 Tooth</SelectItem>
-                      <SelectItem value="bed">🛏️ Bed</SelectItem>
-                      <SelectItem value="heart">❤️ Heart</SelectItem>
-                      <SelectItem value="book">📚 Book</SelectItem>
-                      <SelectItem value="tint">💧 Water Drop</SelectItem>
-                      <SelectItem value="apple">🍎 Healthy Food</SelectItem>
-                      <SelectItem value="dumbbell">🏋️ Exercise</SelectItem>
-                      <SelectItem value="utensils">🍽️ Eating</SelectItem>
-                      <SelectItem value="shower">🚿 Shower</SelectItem>
-                      <SelectItem value="soccer">⚽ Sports</SelectItem>
-                      <SelectItem value="music">🎵 Music Practice</SelectItem>
-                      <SelectItem value="art">🎨 Art/Drawing</SelectItem>
-                      <SelectItem value="homework">📝 Homework</SelectItem>
-                      <SelectItem value="cleaning">✨ Cleaning</SelectItem>
+                      <SelectItem value="tooth">Tooth</SelectItem>
+                      <SelectItem value="bed">Bed</SelectItem>
+                      <SelectItem value="heart">Heart</SelectItem>
+                      <SelectItem value="book">Book</SelectItem>
+                      <SelectItem value="tint">Water Drop</SelectItem>
+                      <SelectItem value="apple">Healthy Food</SelectItem>
+                      <SelectItem value="dumbbell">Exercise</SelectItem>
+                      <SelectItem value="utensils">Eating</SelectItem>
+                      <SelectItem value="shower">Shower</SelectItem>
+                      <SelectItem value="soccer">Sports</SelectItem>
+                      <SelectItem value="music">Music Practice</SelectItem>
+                      <SelectItem value="art">Art Drawing</SelectItem>
+                      <SelectItem value="homework">Homework</SelectItem>
+                      <SelectItem value="cleaning">Cleaning</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="color" className="text-gray-700 dark:text-gray-300">Color</Label>
                   <Select value={habitForm.color} onValueChange={(value) => setHabitForm({ ...habitForm, color: value })}>
-                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                      <SelectValue />
+                    <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" data-testid="select-color">
+                      <SelectValue placeholder="Select a color" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="coral">🪸 Coral</SelectItem>
-                      <SelectItem value="turquoise">🌊 Turquoise</SelectItem>
-                      <SelectItem value="sky">☁️ Sky</SelectItem>
-                      <SelectItem value="mint">🌿 Mint</SelectItem>
-                      <SelectItem value="sunshine">☀️ Sunshine</SelectItem>
+                      <SelectItem value="coral">Coral</SelectItem>
+                      <SelectItem value="turquoise">Turquoise</SelectItem>
+                      <SelectItem value="sky">Sky</SelectItem>
+                      <SelectItem value="mint">Mint</SelectItem>
+                      <SelectItem value="sunshine">Sunshine</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
