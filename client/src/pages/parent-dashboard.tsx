@@ -3810,28 +3810,28 @@ function RewardApprovalSection({ childId }: { childId: string }) {
             onClick={() => handleGiveBonus(10, "Good behavior bonus")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="h-16 flex flex-col border-green-200 hover:border-green-400 hover:bg-green-50"
+            className="group h-16 flex flex-col border-green-200 hover:border-green-400 hover:bg-green-50"
           >
-            <span className="font-bold text-green-600 hover:text-blue-600">+10</span>
-            <span className="text-xs hover:text-blue-600">Good Behavior</span>
+            <span className="font-bold text-green-600 group-hover:text-blue-600">+10</span>
+            <span className="text-xs text-gray-600 group-hover:text-blue-600">Good Behavior</span>
           </Button>
           <Button
             onClick={() => handleGiveBonus(25, "Extra effort bonus")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="h-16 flex flex-col border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+            className="group h-16 flex flex-col border-blue-200 hover:border-blue-400 hover:bg-blue-50"
           >
-            <span className="font-bold text-blue-600 hover:text-blue-600">+25</span>
-            <span className="text-xs hover:text-blue-600">Extra Effort</span>
+            <span className="font-bold text-blue-600 group-hover:text-blue-600">+25</span>
+            <span className="text-xs text-gray-600 group-hover:text-blue-600">Extra Effort</span>
           </Button>
           <Button
             onClick={() => handleGiveBonus(50, "Outstanding achievement")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="h-16 flex flex-col border-purple-200 hover:border-purple-400 hover:bg-purple-50"
+            className="group h-16 flex flex-col border-purple-200 hover:border-purple-400 hover:bg-purple-50"
           >
-            <span className="font-bold text-purple-600 hover:text-blue-600">+50</span>
-            <span className="text-xs hover:text-blue-600">Outstanding!</span>
+            <span className="font-bold text-purple-600 group-hover:text-blue-600">+50</span>
+            <span className="text-xs text-gray-600 group-hover:text-blue-600">Outstanding!</span>
           </Button>
         </div>
       </div>
