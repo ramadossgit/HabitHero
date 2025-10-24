@@ -3413,7 +3413,8 @@ function RewardSettingsSection({
           {!showAddReward ? (
             <Button 
               onClick={() => setShowAddReward(true)}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+              variant="outline"
+              className="w-full"
             >
               + Add New Reward
             </Button>
