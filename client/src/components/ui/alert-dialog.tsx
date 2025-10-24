@@ -49,7 +49,7 @@ const AlertDialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 p-6 bg-gradient-to-r from-coral to-sunshine border-b",
+      "flex flex-col space-y-1 p-6 bg-gradient-to-r from-coral to-sunshine border-b",
       className
     )}
     {...props}
@@ -77,7 +77,7 @@ const AlertDialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold font-fredoka text-gray-800", className)}
+    className={cn("text-xl font-bold font-fredoka text-gray-800 drop-shadow-lg", className)}
     {...props}
   />
 ))
