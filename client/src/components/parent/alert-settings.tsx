@@ -549,12 +549,11 @@ function AlertSettingsContent({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
-                {ringtoneOptions.map((option) => (
+                {ringtoneOptions?.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <span className="mr-2">{option.emoji}</span>
-                    {option.label}
+                    {option.emoji} {option.label}
                   </SelectItem>
-                ))}
+                )) || []}
               </SelectContent>
             </Select>
           </div>
