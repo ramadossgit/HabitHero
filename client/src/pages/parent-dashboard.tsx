@@ -3399,7 +3399,7 @@ function RewardSettingsSection({
                         });
                       }}
                       disabled={updateRewardMutation.isPending || !editRewardName.trim()}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      variant="outline"
                     >
                       {updateRewardMutation.isPending ? "Saving..." : "✨ Save Changes"}
                     </Button>
@@ -3516,7 +3516,8 @@ function RewardSettingsSection({
                 <Button 
                   onClick={handleAddReward}
                   disabled={createRewardMutation.isPending}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                  variant="outline"
+                  className="flex-1"
                 >
                   {createRewardMutation.isPending ? "Creating..." : "🎁 Create Reward"}
                 </Button>
