@@ -322,20 +322,20 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tooth"><span className="emoji">🦷</span> Tooth</SelectItem>
-                      <SelectItem value="bed"><span className="emoji">🛏️</span> Bed</SelectItem>
-                      <SelectItem value="heart"><span className="emoji">❤️</span> Heart</SelectItem>
-                      <SelectItem value="book"><span className="emoji">📚</span> Book</SelectItem>
-                      <SelectItem value="tint"><span className="emoji">💧</span> Water Drop</SelectItem>
-                      <SelectItem value="apple"><span className="emoji">🍎</span> Healthy Food</SelectItem>
-                      <SelectItem value="dumbbell"><span className="emoji">🏋️</span> Exercise</SelectItem>
-                      <SelectItem value="utensils"><span className="emoji">🍽️</span> Eating</SelectItem>
-                      <SelectItem value="shower"><span className="emoji">🚿</span> Shower</SelectItem>
-                      <SelectItem value="soccer"><span className="emoji">⚽</span> Sports</SelectItem>
-                      <SelectItem value="music"><span className="emoji">🎵</span> Music Practice</SelectItem>
-                      <SelectItem value="art"><span className="emoji">🎨</span> Art/Drawing</SelectItem>
-                      <SelectItem value="homework"><span className="emoji">📝</span> Homework</SelectItem>
-                      <SelectItem value="cleaning"><span className="emoji">✨</span> Cleaning</SelectItem>
+                      <SelectItem value="tooth">🦷 Tooth</SelectItem>
+                      <SelectItem value="bed">🛏️ Bed</SelectItem>
+                      <SelectItem value="heart">❤️ Heart</SelectItem>
+                      <SelectItem value="book">📚 Book</SelectItem>
+                      <SelectItem value="tint">💧 Water Drop</SelectItem>
+                      <SelectItem value="apple">🍎 Healthy Food</SelectItem>
+                      <SelectItem value="dumbbell">🏋️ Exercise</SelectItem>
+                      <SelectItem value="utensils">🍽️ Eating</SelectItem>
+                      <SelectItem value="shower">🚿 Shower</SelectItem>
+                      <SelectItem value="soccer">⚽ Sports</SelectItem>
+                      <SelectItem value="music">🎵 Music Practice</SelectItem>
+                      <SelectItem value="art">🎨 Art/Drawing</SelectItem>
+                      <SelectItem value="homework">📝 Homework</SelectItem>
+                      <SelectItem value="cleaning">✨ Cleaning</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -346,11 +346,11 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="coral"><span className="emoji">🪸</span> Coral</SelectItem>
-                      <SelectItem value="turquoise"><span className="emoji">🌊</span> Turquoise</SelectItem>
-                      <SelectItem value="sky"><span className="emoji">☁️</span> Sky</SelectItem>
-                      <SelectItem value="mint"><span className="emoji">🌿</span> Mint</SelectItem>
-                      <SelectItem value="sunshine"><span className="emoji">☀️</span> Sunshine</SelectItem>
+                      <SelectItem value="coral">🪸 Coral</SelectItem>
+                      <SelectItem value="turquoise">🌊 Turquoise</SelectItem>
+                      <SelectItem value="sky">☁️ Sky</SelectItem>
+                      <SelectItem value="mint">🌿 Mint</SelectItem>
+                      <SelectItem value="sunshine">☀️ Sunshine</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
