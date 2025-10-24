@@ -1783,7 +1783,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
           description: "Could not play recording",
           variant: "destructive",
         });
-      });
+      });ox 
     }
   };
 
