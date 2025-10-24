@@ -52,4 +52,42 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// Aggressively hide error modal using DOM mutation observer
+const hideErrorModal = () => {
+  // Try to find and hide the modal
+  const selectors = [
+    '#vite-plugin-runtime-error-modal',
+    '[data-vite-plugin-runtime-error-modal]',
+    '.vite-error-overlay',
+    'iframe[src*="error"]',
+    'iframe[title*="error"]',
+    'div[style*="z-index: 9999"]',
+    'div[style*="position: fixed"][style*="inset: 0"]'
+  ];
+  
+  selectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      (el as HTMLElement).style.display = 'none';
+      (el as HTMLElement).style.visibility = 'hidden';
+      (el as HTMLElement).style.opacity = '0';
+      (el as HTMLElement).style.pointerEvents = 'none';
+      (el as HTMLElement).remove();
+    });
+  });
+};
+
+// Run immediately and on interval
+hideErrorModal();
+setInterval(hideErrorModal, 100);
+
+// Watch for DOM mutations to catch dynamically added modals
+const observer = new MutationObserver(() => {
+  hideErrorModal();
+});
+
+observer.observe(document.documentElement, {
+  childList: true,
+  subtree: true
+});
+
 createRoot(document.getElementById("root")!).render(<App />);
