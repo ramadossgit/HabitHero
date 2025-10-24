@@ -1456,11 +1456,11 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   // Ringtone options based on subscription
   const getRingtoneOptions = () => {
     const freeRingtones = [
-      { value: "gentle-chime", label: "🎵 Gentle Chime", preview: "gentle-chime.mp3" },
-      { value: "happy-bells", label: "🔔 Happy Bells", preview: "happy-bells.mp3" },
-      { value: "nature-sounds", label: "🌿 Nature Sounds", preview: "nature-sounds.mp3" },
-      { value: "soft-piano", label: "🎹 Soft Piano", preview: "soft-piano.mp3" },
-      { value: "cheerful-tune", label: "🎶 Cheerful Tune", preview: "cheerful-tune.mp3" }
+      { value: "gentle-chime", label: "🎵 Gentle Chime", preview: "gentle-chime.mp3", premium: false },
+      { value: "happy-bells", label: "🔔 Happy Bells", preview: "happy-bells.mp3", premium: false },
+      { value: "nature-sounds", label: "🌿 Nature Sounds", preview: "nature-sounds.mp3", premium: false },
+      { value: "soft-piano", label: "🎹 Soft Piano", preview: "soft-piano.mp3", premium: false },
+      { value: "cheerful-tune", label: "🎶 Cheerful Tune", preview: "cheerful-tune.mp3", premium: false }
     ];
 
     const premiumRingtones = [
