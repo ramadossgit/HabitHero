@@ -900,6 +900,7 @@ export default function ParentDashboard() {
               handleImageUpload={handleImageUpload}
             />
           </div>
+          </div>
         )}
 
         {/* Rewards Section */}
@@ -919,7 +920,7 @@ export default function ParentDashboard() {
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
             <RewardApprovalSection childId={child?.id || ''} />
           </div>
-          </div>
+        </div>
         )}
 
         {/* Progress Section */}
@@ -962,7 +963,7 @@ export default function ParentDashboard() {
               </div>
             </Card>
           </div>
-          </div>
+        </div>
         )}
 
         {/* Settings Section */}
@@ -994,7 +995,7 @@ export default function ParentDashboard() {
               </div>
             </Card>
           </div>
-          </div>
+        </div>
         )}
       </main>
 
