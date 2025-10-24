@@ -218,6 +218,58 @@ export default function ParentDashboard() {
     },
   });
 
+  // Delete master habit mutation
+  const deleteHabitMutation = useMutation({
+    mutationFn: async (habitId: string) => {
+      await apiRequest("DELETE", `/api/habits/${habitId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Deleted! 🗑️",
+        description: "Habit has been removed successfully!",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      if (children) {
+        children.forEach(child => {
+          queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/habits`] });
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete habit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete reward mutation
+  const deleteRewardMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      await apiRequest("DELETE", `/api/rewards/${rewardId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward Deleted! 🗑️",
+        description: "Reward has been removed successfully!",
+        variant: "destructive",
+      });
+      if (child) {
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/rewards`] });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete reward. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Auto-assign all master habits to all children mutation
   const autoAssignAllMutation = useMutation({
     mutationFn: async () => {
@@ -735,43 +787,6 @@ export default function ParentDashboard() {
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
         {/* Trial Status Banner */}
         <TrialStatusBanner />
-        
-        {/* Parent Profile Modal */}
-        {showParentProfile && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-fredoka text-xl text-gray-800">Parent Profile</h3>
-                <Button variant="ghost" onClick={() => setShowParentProfile(false)}>
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-              <div className="text-center mb-4">
-                <img 
-                  src={`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="%23ff6b6b"/><text x="48" y="60" text-anchor="middle" fill="white" font-size="36" font-family="Arial">${((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}</text></svg>`)}`} 
-                  alt="Parent Profile" 
-                  className="w-24 h-24 rounded-full mx-auto mb-3 border-4 border-sunshine"
-                />
-                <h4 className="font-bold text-gray-800">{(user as User)?.email}</h4>
-                <p className="text-gray-600 text-sm">Managing {children?.length || 0} hero{children?.length !== 1 ? 's' : ''}</p>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">Total Family XP</span>
-                  <span className="font-bold text-coral">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">Active Heroes</span>
-                  <span className="font-bold text-mint">{children?.length || 0}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">Account Type</span>
-                  <span className="font-bold text-sky">Parent</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
 
         {/* Hero Profile Cards */}
         <div className="mb-8 space-y-4">
@@ -911,6 +926,8 @@ export default function ParentDashboard() {
               children={children || []}
               user={user as User}
               autoAssignAllMutation={autoAssignAllMutation}
+              setDeleteHabitDialog={setDeleteHabitDialog}
+              deleteHabitMutation={deleteHabitMutation}
             />
           </div>
 
@@ -940,6 +957,7 @@ export default function ParentDashboard() {
               avatarTypes={avatarTypes}
               imagePreview={imagePreview}
               handleImageUpload={handleImageUpload}
+              setDeleteChildDialog={setDeleteChildDialog}
             />
           </div>
           </div>
@@ -955,6 +973,8 @@ export default function ParentDashboard() {
               showAddReward={showAddReward} 
               setShowAddReward={setShowAddReward}
               children={children || []}
+              setDeleteRewardDialog={setDeleteRewardDialog}
+              deleteRewardMutation={deleteRewardMutation}
             />
           </div>
 
@@ -1523,7 +1543,7 @@ function HabitAssignmentModal({
 }
 
 // Habit Management Section Component
-function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user, autoAssignAllMutation }: { 
+function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user, autoAssignAllMutation, setDeleteHabitDialog, deleteHabitMutation }: { 
   childId: string; 
   showAddHabit: boolean; 
   setShowAddHabit: (show: boolean) => void;
@@ -1532,6 +1552,8 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
   children: Child[];
   user?: User;
   autoAssignAllMutation: any;
+  setDeleteHabitDialog: (dialog: { open: boolean; habitId?: string; habitName?: string }) => void;
+  deleteHabitMutation: any;
 }) {
   const { toast } = useToast();
   const [habitName, setHabitName] = useState("");
@@ -1725,26 +1747,6 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
     },
   });
 
-  const deleteHabitMutation = useMutation({
-    mutationFn: async (habitId: string) => {
-      await apiRequest("DELETE", `/api/habits/${habitId}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Deleted! 🗑️",
-        description: "Habit has been removed successfully!",
-        variant: "destructive",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete habit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // For child habit status updates (assignment-level)
   const toggleHabitStatusMutation = useMutation({
@@ -2746,7 +2748,8 @@ function KidsManagementSection({
   setNewAvatarType,
   avatarTypes,
   imagePreview,
-  handleImageUpload
+  handleImageUpload,
+  setDeleteChildDialog
 }: { 
   children: Child[]; 
   createHeroMutation: any;
@@ -2761,6 +2764,7 @@ function KidsManagementSection({
   avatarTypes: any[];
   imagePreview: string;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setDeleteChildDialog: (dialog: { open: boolean; childId?: string; childName?: string }) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -3235,12 +3239,16 @@ function RewardSettingsSection({
   childId, 
   showAddReward, 
   setShowAddReward, 
-  children 
+  children,
+  setDeleteRewardDialog,
+  deleteRewardMutation
 }: { 
   childId: string; 
   showAddReward: boolean; 
   setShowAddReward: (show: boolean) => void; 
   children: Child[];
+  setDeleteRewardDialog: (dialog: { open: boolean; rewardId?: string; rewardName?: string }) => void;
+  deleteRewardMutation: any;
 }) {
   const { toast } = useToast();
   const [rewardName, setRewardName] = useState("");
@@ -3280,20 +3288,6 @@ function RewardSettingsSection({
         description: "Failed to create reward. Please try again.",
         variant: "destructive",
       });
-    },
-  });
-
-  const deleteRewardMutation = useMutation({
-    mutationFn: async (rewardId: string) => {
-      await apiRequest("DELETE", `/api/rewards/${rewardId}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Reward Deleted! 🗑️",
-        description: "Reward has been removed successfully!",
-        variant: "destructive",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/rewards`] });
     },
   });
 
