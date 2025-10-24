@@ -5,7 +5,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, Save, X } from "lucide-react";
 import AlertSettings from "@/components/parent/alert-settings";
 import type { Habit } from "@shared/schema";
 
@@ -123,59 +124,71 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
     : "Set default alert preferences for all new habits";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-mint/20 to-sky/20 p-4">
-      <div className="max-w-2xl mx-auto space-y-6 pt-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCancel}
-            className="flex items-center gap-2"
-            data-testid="button-back"
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-4xl h-[95vh] overflow-hidden flex flex-col">
+        {/* Header with coral-to-sunshine gradient matching controls popup */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-coral to-sunshine flex-shrink-0 min-h-[80px]">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={handleCancel} 
+              className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h2 className="font-fredoka text-lg sm:text-2xl text-gray-800 font-bold drop-shadow-lg">{pageTitle}</h2>
+              <p className="text-gray-700 text-xs sm:text-sm font-medium">{pageDescription}</p>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            onClick={handleCancel} 
+            className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30 flex-shrink-0" 
+            data-testid="button-close"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back
+            <X className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-fredoka text-gray-800">{pageTitle}</h1>
-            <p className="text-gray-600 text-sm">{pageDescription}</p>
+        </div>
+
+        {/* Main Content Area - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <AlertSettings
+            initialSettings={settings}
+            onSettingsChange={setSettings}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            isStandalone={false}
+            title={habitId ? "Habit Alert Settings" : "Default Alert Settings"}
+          />
+        </div>
+
+        {/* Footer with action buttons */}
+        <div className="flex-shrink-0 p-6 border-t bg-gray-50">
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending}
+              className="super-button"
+              data-testid="button-save"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending 
+                ? "Saving..." 
+                : "Save Settings"
+              }
+            </Button>
           </div>
         </div>
-
-        {/* Alert Settings Component */}
-        <AlertSettings
-          initialSettings={settings}
-          onSettingsChange={setSettings}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          isStandalone={true}
-          title={habitId ? "Habit Alert Settings" : "Default Alert Settings"}
-        />
-
-        {/* Additional Actions */}
-        <div className="flex gap-3 justify-end pt-4">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            data-testid="button-cancel"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending}
-            className="bg-coral hover:bg-coral/80"
-            data-testid="button-save"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending 
-              ? "Saving..." 
-              : "Save Settings"
-            }
-          </Button>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }
