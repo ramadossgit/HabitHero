@@ -3130,7 +3130,6 @@ function RewardSettingsSection({
   const [rewardDescription, setRewardDescription] = useState("");
   const [rewardCost, setRewardCost] = useState("100");
   const [rewardIcon, setRewardIcon] = useState("🎁");
-  const [selectedKids, setSelectedKids] = useState<string[]>([]);
   const [editingReward, setEditingReward] = useState<string | null>(null);
   const [editRewardName, setEditRewardName] = useState("");
   const [editRewardDescription, setEditRewardDescription] = useState("");
@@ -3156,7 +3155,6 @@ function RewardSettingsSection({
       setRewardDescription("");
       setRewardCost("100");
       setRewardIcon("🎁");
-      setSelectedKids([]);
       setShowAddReward(false);
     },
     onError: (error) => {
@@ -3221,27 +3219,17 @@ function RewardSettingsSection({
       });
       return;
     }
-    if (selectedKids.length === 0) {
-      toast({
-        title: "No kids selected",
-        description: "Please select at least one child for this reward!",
-        variant: "destructive",
-      });
-      return;
-    }
     
-    // Create reward for each selected kid
-    selectedKids.forEach(kidId => {
-      createRewardMutation.mutate({
-        childId: kidId,
-        name: rewardName.trim(),
-        description: rewardDescription.trim(),
-        type: "treat", // Default type for custom rewards
-        value: rewardName.trim(), // Use name as value
-        cost: parseInt(rewardCost),
-        costType: "xp", // Using XP cost type
-        isActive: true,
-      });
+    // Create reward for the current child
+    createRewardMutation.mutate({
+      childId: childId,
+      name: rewardName.trim(),
+      description: rewardDescription.trim(),
+      type: "treat", // Default type for custom rewards
+      value: rewardName.trim(), // Use name as value
+      cost: parseInt(rewardCost),
+      costType: "xp", // Using XP cost type
+      isActive: true,
     });
   };
 
@@ -3477,37 +3465,6 @@ function RewardSettingsSection({
                         <SelectItem value="500">500 XP</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-
-                {/* Kid Assignment for Rewards */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Assign to Kids</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {children.map((child) => (
-                      <div key={child.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`reward-kid-${child.id}`}
-                          checked={selectedKids.includes(child.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedKids([...selectedKids, child.id]);
-                            } else {
-                              setSelectedKids(selectedKids.filter(id => id !== child.id));
-                            }
-                          }}
-                          className="w-4 h-4 text-orange-500 border-2 border-orange-300 rounded focus:ring-orange-500"
-                        />
-                        <label htmlFor={`reward-kid-${child.id}`} className="text-sm font-medium text-gray-700 flex items-center">
-                          <span className="text-lg mr-1">{child.avatarType === 'robot' ? '🤖' : child.avatarType === 'princess' ? '👑' : child.avatarType === 'ninja' ? '🥷' : '🐾'}</span>
-                          {child.name} (Level {child.level})
-                        </label>
-                      </div>
-                    ))}
-                    {children.length === 0 && (
-                      <p className="text-sm text-gray-500 italic">No kids available. Add a child first.</p>
-                    )}
                   </div>
                 </div>
               </div>
