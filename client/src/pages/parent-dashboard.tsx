@@ -2560,10 +2560,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             className={ringtone.premium && !isPremium ? "opacity-50" : ""}
                             disabled={ringtone.premium && !isPremium}
                           >
-                            <span>{ringtone.label}</span>
-                            {ringtone.premium && !isPremium && (
-                              <span className="ml-2 text-xs text-gold">⭐ Premium</span>
-                            )}
+                            {ringtone.label}{ringtone.premium && !isPremium ? " ⭐ Premium" : ""}
                           </SelectItem>
                         )) || []}
                       </SelectContent>
