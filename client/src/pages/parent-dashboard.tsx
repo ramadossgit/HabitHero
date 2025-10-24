@@ -3019,7 +3019,7 @@ function KidsManagementSection({
           Add Another Hero
         </Button>
       ) : (
-        <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+        <div className="space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
           <h4 className="font-bold text-gray-800">Create New Hero</h4>
           
           <div className="space-y-3">
@@ -3028,33 +3028,25 @@ function KidsManagementSection({
               placeholder="Enter hero name..."
               value={newHeroName}
               onChange={(e) => setNewHeroName(e.target.value)}
-              className="border-2 border-purple-300"
+              className="border-2 border-blue-300"
             />
             
             {/* Image Upload Section */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Custom Avatar Image (Optional)</label>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 {imagePreview ? (
-                  <div className="relative">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="w-16 h-16 rounded-full border-2 border-purple-300 object-cover"
-                    />
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-12 h-12 rounded-full border-2 border-blue-300 object-cover"
+                  />
                 ) : (
-                  <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
+                  <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
                     <span className="text-gray-400 text-xs">📷</span>
                   </div>
                 )}
-                <div className="flex-1">
+                <div>
                   <input
                     type="file"
                     accept="image/*"
@@ -3067,11 +3059,10 @@ function KidsManagementSection({
                   />
                   <label
                     htmlFor="avatar-upload-new"
-                    className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-lg cursor-pointer hover:bg-purple-200 transition-colors text-sm font-bold"
+                    className="inline-block px-3 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors text-sm font-bold"
                   >
-                    📷 Upload Image
+                    📷 Upload
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">Upload a custom avatar or use default type below</p>
                 </div>
               </div>
             </div>
@@ -3081,13 +3072,13 @@ function KidsManagementSection({
                 <div
                   key={type.id}
                   onClick={() => setNewAvatarType(type.id)}
-                  className={`p-3 rounded-lg cursor-pointer border-2 text-center ${
+                  className={`p-2 rounded-lg cursor-pointer border-2 text-center ${
                     newAvatarType === type.id
-                      ? 'border-purple-500 bg-purple-100'
-                      : 'border-gray-200 hover:border-purple-300'
+                      ? 'border-blue-500 bg-blue-100'
+                      : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{type.name.split(' ')[0]}</div>
+                  <div className="text-xl mb-1">{type.name.split(' ')[0]}</div>
                   <div className="text-xs text-gray-600">{type.name.split(' ').slice(1).join(' ')}</div>
                 </div>
               ))}
@@ -3098,19 +3089,20 @@ function KidsManagementSection({
             <Button 
               onClick={handleAddHero}
               disabled={createHeroMutation.isPending}
-              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white"
+              className="bg-blue-500 hover:bg-blue-600 text-white"
             >
               {createHeroMutation.isPending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Saving...
+                </>
               ) : (
-                <Plus className="w-4 h-4 mr-2" />
+                <>✨ Save Changes</>
               )}
-              Create Hero
             </Button>
             <Button 
               onClick={() => setShowAddHero(false)}
               variant="outline"
-              className="flex-1"
             >
               Cancel
             </Button>
