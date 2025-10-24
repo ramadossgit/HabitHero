@@ -29,6 +29,8 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
   const { data: userProfile, isLoading: profileLoading } = useQuery<any>({
     queryKey: ["/api/auth/user"],
     enabled: !habitId, // Only load when setting global defaults
+    refetchOnMount: true, // Always fetch fresh data when opening settings
+    staleTime: 0, // Consider data immediately stale to force refetch
   });
 
   const isLoading = habitLoading || profileLoading;
