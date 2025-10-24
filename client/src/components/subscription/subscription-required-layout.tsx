@@ -10,7 +10,9 @@ interface SubscriptionRequiredLayoutProps {
   user: User;
 }
 
-export default function SubscriptionRequiredLayout({ user }: SubscriptionRequiredLayoutProps) {
+export default function SubscriptionRequiredLayout({
+  user,
+}: SubscriptionRequiredLayoutProps) {
   const [, setLocation] = useLocation();
 
   return (
@@ -27,7 +29,8 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
             🎭 Habit Heroes Premium
           </h1>
           <p className="text-lg text-gray-600">
-            Your trial has ended. Upgrade to continue your family's habit-building journey!
+            Your trial has ended. Upgrade to continue your family's
+            habit-building journey!
           </p>
         </div>
 
@@ -35,7 +38,9 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
         <Alert className="mb-6 border-coral-200 bg-gradient-to-r from-coral-50 to-orange-50">
           <Lock className="h-5 w-5 text-coral-600" />
           <AlertDescription className="text-gray-700">
-            <strong>Trial Period Ended:</strong> To continue managing your family's habits, rewards, and progress tracking, please upgrade to a Premium subscription.
+            <strong>Trial Period Ended:</strong> To continue managing your
+            family's habits, rewards, and progress tracking, please upgrade to a
+            Premium subscription.
           </AlertDescription>
         </Alert>
 
@@ -101,10 +106,11 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
               🎯 Ready to Continue Your Journey?
             </h3>
             <p className="text-gray-600 mb-6">
-              Join thousands of families building better habits together with Habit Heroes Premium.
+              Join thousands of families building better habits together with
+              Habit Heroes Premium.
             </p>
             <Link href="/subscription">
-              <Button 
+              <Button
                 className="super-button text-xl px-8 py-4 font-fredoka"
                 data-testid="button-upgrade-to-premium"
               >
@@ -114,7 +120,8 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
               </Button>
             </Link>
             <p className="text-sm text-gray-500 mt-4">
-              Starting at $4.99/month • Cancel anytime • 30-day money-back guarantee
+              Starting at $4.99/month • Cancel anytime • 30-day money-back
+              guarantee
             </p>
           </CardContent>
         </Card>
@@ -122,9 +129,9 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
         {/* Navigation Links */}
         <div className="text-center mt-8">
           <div className="space-x-4">
-            <Link href="/login">
-              <Button 
-                variant="ghost" 
+            <Link href="/parent/auth?mode=login">
+              <Button
+                variant="ghost"
                 className="text-gray-600 hover:text-gray-800"
                 data-testid="link-back-to-login"
               >
@@ -132,8 +139,8 @@ export default function SubscriptionRequiredLayout({ user }: SubscriptionRequire
               </Button>
             </Link>
             <Link href="/subscription">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="text-coral-600 hover:text-coral-800"
                 data-testid="link-view-plans"
               >

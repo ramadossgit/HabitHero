@@ -53,30 +53,44 @@
   --shadow-2xl: 0px 2px 0px 0px hsl(202.8169, 89.1213%, 53.1373%, 0.00);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-  
+
   /* Kid-Centric Design Colors - Following design standards guide */
-  --hero-blue: #4285F4; /* Trust, reliability */
-  --success-green: #34A853; /* Achievement, growth */
-  --energy-orange: #FF6B35; /* Enthusiasm, motivation */
-  --joy-yellow: #FBBC04; /* Happiness, optimism */
-  
+  --hero-blue: #4285F4;
+  /* Trust, reliability */
+  --success-green: #34A853;
+  /* Achievement, growth */
+  --energy-orange: #FF6B35;
+  /* Enthusiasm, motivation */
+  --joy-yellow: #FBBC04;
+  /* Happiness, optimism */
+
   /* Existing colors adapted for compatibility */
-  --coral: #FF6B35; /* Energy orange for primary actions */
-  --turquoise: #4285F4; /* Hero blue for secondary elements */
-  --sky: #4285F4; /* Hero blue for info */
-  --mint: #34A853; /* Success green for success states */
-  --sunshine: #FBBC04; /* Joy yellow for highlights */
-  --purple: #8E44AD; /* Balanced purple for special elements */
-  --orange: #FF6B35; /* Energy orange */
-  --lime: #34A853; /* Success green for energy */
-  --lavender: #DDA0DD; /* Soft lavender for calm elements */
-  --gold: #FBBC04; /* Joy yellow for premium features */
-  
+  --coral: #FF6B35;
+  /* Energy orange for primary actions */
+  --turquoise: #4285F4;
+  /* Hero blue for secondary elements */
+  --sky: #4285F4;
+  /* Hero blue for info */
+  --mint: #34A853;
+  /* Success green for success states */
+  --sunshine: #FBBC04;
+  /* Joy yellow for highlights */
+  --purple: #8E44AD;
+  /* Balanced purple for special elements */
+  --orange: #FF6B35;
+  /* Energy orange */
+  --lime: #34A853;
+  /* Success green for energy */
+  --lavender: #DDA0DD;
+  /* Soft lavender for calm elements */
+  --gold: #FBBC04;
+  /* Joy yellow for premium features */
+
   /* Kid-Friendly Gradients */
   --rainbow-gradient: linear-gradient(45deg, #4285F4, #34A853, #FF6B35, #FBBC04, #8E44AD);
   --hero-gradient: linear-gradient(135deg, #4285F4 0%, #34A853 30%, #FBBC04 60%, #FF6B35 100%);
   --magic-gradient: radial-gradient(circle, #8E44AD 0%, #DDA0DD 50%, #FF6B35 100%);
-  
+
   /* Background patterns */
   --light-bg: #F8F9FA;
   --card-bg: rgba(255, 255, 255, 0.95);
@@ -148,47 +162,111 @@
   .font-fredoka {
     font-family: var(--font-fredoka);
   }
-  
+
   .emoji {
     font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
     font-variation-settings: 'OPSZ' 32;
     font-size: 1.2em;
   }
-  
+
   /* Color utilities with new vibrant colors */
-  .text-coral { color: var(--coral); }
-  .bg-coral { background-color: var(--coral); }
-  .border-coral { border-color: var(--coral); }
-  
-  .text-turquoise { color: var(--turquoise); }
-  .bg-turquoise { background-color: var(--turquoise); }
-  .border-turquoise { border-color: var(--turquoise); }
-  
-  .text-sky { color: var(--sky); }
-  .bg-sky { background-color: var(--sky); }
-  .border-sky { border-color: var(--sky); }
-  
-  .text-mint { color: var(--mint); }
-  .bg-mint { background-color: var(--mint); }
-  .border-mint { border-color: var(--mint); }
-  
-  .text-sunshine { color: var(--sunshine); }
-  .bg-sunshine { background-color: var(--sunshine); }
-  .border-sunshine { border-color: var(--sunshine); }
-  
-  .text-purple { color: var(--purple); }
-  .bg-purple { background-color: var(--purple); }
-  .border-purple { border-color: var(--purple); }
-  
-  .text-orange { color: var(--orange); }
-  .bg-orange { background-color: var(--orange); }
-  .border-orange { border-color: var(--orange); }
-  
+  .text-coral {
+    color: var(--coral);
+  }
+
+  .bg-coral {
+    background-color: var(--coral);
+  }
+
+  .border-coral {
+    border-color: var(--coral);
+  }
+
+  .text-turquoise {
+    color: var(--turquoise);
+  }
+
+  .bg-turquoise {
+    background-color: var(--turquoise);
+  }
+
+  .border-turquoise {
+    border-color: var(--turquoise);
+  }
+
+  .text-sky {
+    color: var(--sky);
+  }
+
+  .bg-sky {
+    background-color: var(--sky);
+  }
+
+  .border-sky {
+    border-color: var(--sky);
+  }
+
+  .text-mint {
+    color: var(--mint);
+  }
+
+  .bg-mint {
+    background-color: var(--mint);
+  }
+
+  .border-mint {
+    border-color: var(--mint);
+  }
+
+  .text-sunshine {
+    color: var(--sunshine);
+  }
+
+  .bg-sunshine {
+    background-color: var(--sunshine);
+  }
+
+  .border-sunshine {
+    border-color: var(--sunshine);
+  }
+
+  .text-purple {
+    color: var(--purple);
+  }
+
+  .bg-purple {
+    background-color: var(--purple);
+  }
+
+  .border-purple {
+    border-color: var(--purple);
+  }
+
+  .text-orange {
+    color: var(--orange);
+  }
+
+  .bg-orange {
+    background-color: var(--orange);
+  }
+
+  .border-orange {
+    border-color: var(--orange);
+  }
+
   /* Amazing gradient backgrounds */
-  .rainbow-gradient { background: var(--rainbow-gradient); }
-  .hero-gradient { background: var(--hero-gradient); }
-  .magic-gradient { background: var(--magic-gradient); }
-  
+  .rainbow-gradient {
+    background: var(--rainbow-gradient);
+  }
+
+  .hero-gradient {
+    background: var(--hero-gradient);
+  }
+
+  .magic-gradient {
+    background: var(--magic-gradient);
+  }
+
   /* Glass morphism effects */
   .glass-card {
     background: var(--glass-bg);
@@ -196,7 +274,7 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
-  
+
   /* Fun card effects */
   .fun-card {
     background: var(--card-bg);
@@ -206,13 +284,13 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateY(0);
   }
-  
+
   .fun-card:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(69, 183, 209, 0.3);
     border-color: var(--mint);
   }
-  
+
   /* Exciting title styling */
   .hero-title {
     background: var(--hero-gradient);
@@ -226,57 +304,120 @@
     background-size: 300% 300%;
     animation: gradient-shift 4s ease-in-out infinite;
   }
-  
+
   @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
   }
-  
+
   /* Magical glow effects */
   .magic-glow {
     box-shadow: 0 0 30px var(--purple), 0 0 60px var(--purple);
     animation: glow 2s ease-in-out infinite alternate;
   }
-  
+
   @keyframes glow {
-    from { box-shadow: 0 0 20px var(--purple), 0 0 40px var(--purple); }
-    to { box-shadow: 0 0 30px var(--coral), 0 0 60px var(--coral); }
+    from {
+      box-shadow: 0 0 20px var(--purple), 0 0 40px var(--purple);
+    }
+
+    to {
+      box-shadow: 0 0 30px var(--coral), 0 0 60px var(--coral);
+    }
   }
-  
+
   /* Bouncy animations */
   .bounce-in {
     animation: bounceIn 1s ease-out;
   }
-  
+
   @keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+      transform: scale(0.3);
+      opacity: 0;
+    }
+
+    50% {
+      transform: scale(1.05);
+    }
+
+    70% {
+      transform: scale(0.9);
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
-  
+
   /* Floating animation for avatars */
   .float {
     animation: float 3s ease-in-out infinite;
   }
-  
+
   @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
   }
-  
+
   /* Wiggle animation for interactive elements */
   .wiggle {
     animation: wiggle 1s ease-in-out infinite;
   }
-  
+
   @keyframes wiggle {
-    0%, 7%, 14%, 21%, 28%, 35%, 42%, 49%, 56%, 63%, 70%, 77%, 84%, 91%, 98%, 100% { transform: rotate(0deg); }
-    3.5% { transform: rotate(2deg); }
-    10.5%, 24.5%, 38.5% { transform: rotate(-2deg); }
-    17.5%, 31.5%, 45.5% { transform: rotate(2deg); }
+
+    0%,
+    7%,
+    14%,
+    21%,
+    28%,
+    35%,
+    42%,
+    49%,
+    56%,
+    63%,
+    70%,
+    77%,
+    84%,
+    91%,
+    98%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    3.5% {
+      transform: rotate(2deg);
+    }
+
+    10.5%,
+    24.5%,
+    38.5% {
+      transform: rotate(-2deg);
+    }
+
+    17.5%,
+    31.5%,
+    45.5% {
+      transform: rotate(2deg);
+    }
   }
-  
+
   /* Rainbow text for special elements */
   .rainbow-text {
     background: var(--rainbow-gradient);
@@ -285,12 +426,19 @@
     background-clip: text;
     animation: rainbow-shift 3s ease-in-out infinite;
   }
-  
+
   @keyframes rainbow-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
   }
-  
+
   /* Super cool button styles */
   .super-button {
     background: var(--hero-gradient);
@@ -306,7 +454,7 @@
     position: relative;
     overflow: hidden;
   }
-  
+
   .super-button::before {
     content: '';
     position: absolute;
@@ -317,33 +465,36 @@
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
     transition: left 0.5s;
   }
-  
+
   .super-button:hover::before {
     left: 100%;
   }
-  
+
   .super-button:hover {
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
-  
+
   .super-button:active {
     transform: translateY(-1px) scale(1.02);
   }
-  
+
   /* Onboarding Tutorial Animations */
   @keyframes bounce-in {
     0% {
       opacity: 0;
       transform: scale(0.3);
     }
+
     50% {
       opacity: 1;
       transform: scale(1.05);
     }
+
     70% {
       transform: scale(0.9);
     }
+
     100% {
       opacity: 1;
       transform: scale(1);
@@ -355,6 +506,7 @@
       opacity: 0;
       transform: translateX(50px);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0);
@@ -366,6 +518,7 @@
       opacity: 0;
       transform: translateX(-50px);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0);
@@ -377,6 +530,7 @@
       opacity: 0;
       transform: translateY(30px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -400,7 +554,7 @@
   }
 
   /* Kid-Centric UI Improvements */
-  
+
   /* Large Touch Targets - Minimum 48px for mobile */
   .touch-target {
     min-height: 48px;
@@ -409,10 +563,11 @@
     border-radius: 12px;
     transition: all 0.2s ease;
   }
-  
+
   /* Enhanced Button Styles for Kids */
   .kid-button {
-    min-height: 56px; /* Extra large for small fingers */
+    min-height: 56px;
+    /* Extra large for small fingers */
     padding: 16px 24px;
     font-size: 18px;
     font-weight: 700;
@@ -425,17 +580,17 @@
     position: relative;
     overflow: hidden;
   }
-  
+
   .kid-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   }
-  
+
   .kid-button:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
-  
+
   /* High Contrast Text for Readability */
   .readable-text {
     color: #333333;
@@ -443,14 +598,14 @@
     line-height: 1.5;
     font-weight: 600;
   }
-  
+
   .readable-text-large {
     color: #333333;
     font-size: 20px;
     line-height: 1.4;
     font-weight: 700;
   }
-  
+
   /* Card Improvements for Better Visibility */
   .kid-card {
     background: white;
@@ -464,13 +619,13 @@
     flex-direction: column;
     justify-content: center;
   }
-  
+
   .kid-card:hover {
     border-color: var(--hero-blue);
     transform: translateY(-4px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
-  
+
   /* Focus Indicators for Keyboard Navigation */
   .kid-button:focus,
   .touch-target:focus,
@@ -478,14 +633,14 @@
     outline: 3px solid var(--hero-blue);
     outline-offset: 2px;
   }
-  
+
   /* Responsive Grid for Different Devices */
   .responsive-grid {
     display: grid;
     gap: 16px;
     grid-template-columns: 1fr;
   }
-  
+
   /* Mobile (default) - single column */
   @media (min-width: 640px) {
     .responsive-grid {
@@ -493,23 +648,23 @@
       gap: 20px;
     }
   }
-  
+
   /* Tablet */
   @media (min-width: 768px) {
     .responsive-grid {
       grid-template-columns: repeat(2, 1fr);
       gap: 24px;
     }
-    
+
     .readable-text {
       font-size: 18px;
     }
-    
+
     .readable-text-large {
       font-size: 24px;
     }
   }
-  
+
   /* Desktop */
   @media (min-width: 1024px) {
     .responsive-grid {
@@ -517,7 +672,7 @@
       gap: 28px;
     }
   }
-  
+
   /* Loading States for Better UX */
   .loading-spinner {
     width: 40px;
@@ -527,12 +682,17 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
+
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
-  
+
   /* Success/Error States */
   .success-indicator {
     background: var(--success-green);
@@ -543,7 +703,7 @@
     text-align: center;
     box-shadow: 0 4px 16px rgba(52, 168, 83, 0.3);
   }
-  
+
   .error-indicator {
     background: #DC3545;
     color: white;
@@ -553,16 +713,16 @@
     text-align: center;
     box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
   }
-  
+
   /* Safe Navigation Areas */
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   /* Thumb-Friendly Bottom Navigation */
   .bottom-nav {
     position: fixed;
@@ -578,7 +738,7 @@
     align-items: center;
     gap: 12px;
   }
-  
+
   .bottom-nav-item {
     display: flex;
     flex-direction: column;
@@ -593,11 +753,26 @@
     color: #666666;
     text-decoration: none;
   }
-  
+
   .bottom-nav-item:hover,
   .bottom-nav-item.active {
     background: var(--hero-blue);
     color: white;
     transform: translateY(-2px);
   }
+
+  input::placeholder {
+    color: #888;
+    /* Light grey */
+    font-style: italic;
+    /* Optional: makes it look more like a hint */
+  }
+
+  #register-firstName::placeholder,
+  #register-lastName::placeholder,
+  #register-email::placeholder,
+  #register-phone::placeholder {
+    color: #888;
+  }
+
 }

@@ -199,7 +199,7 @@ export default function OnboardingTutorial({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-coral to-sunshine relative">
           <div className="flex items-center gap-3">
@@ -234,46 +234,50 @@ export default function OnboardingTutorial({
           </div>
         </div>
 
-        {/* Content */}
-        <div
-          className={`p-8 transition-all duration-300 ${isAnimating ? "opacity-50 transform scale-95" : "opacity-100 transform scale-100"}`}
-        >
-          <div className="text-center mb-8">
-            <div
-              className={`mx-auto mb-4 ${step.animation}`}
-              style={{ animationDelay: isAnimating ? "0ms" : "300ms" }}
-            >
-              {step.icon}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div
+            className={`transition-all duration-300 ${isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"}`}
+          >
+            <div className="text-center mb-8">
+              <div
+                className={`mx-auto mb-4 ${step.animation}`}
+                style={{ animationDelay: isAnimating ? "0ms" : "300ms" }}
+              >
+                {step.icon}
+              </div>
+              <h3 className="font-fredoka text-2xl text-gray-800 mb-3 hero-title">
+                {step.title}
+              </h3>
+              <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                {step.description}
+              </p>
             </div>
-            <h3 className="font-fredoka text-2xl text-gray-800 mb-3 hero-title">
-              {step.title}
-            </h3>
-            <p className="text-gray-600 text-lg leading-relaxed mb-6">
-              {step.description}
-            </p>
-          </div>
 
-          {/* Key Highlights */}
-          <div className="bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg p-6 mb-8 border border-mint/20">
-            <h4 className="font-fredoka text-lg text-gray-800 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-mint" />
-              Key Features:
-            </h4>
-            <div className="space-y-2">
-              {step.highlights.map((highlight, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-3 fade-in-up`}
-                  style={{ animationDelay: `${(index + 1) * 100}ms` }}
-                >
-                  <div className="w-2 h-2 bg-mint rounded-full"></div>
-                  <span className="text-gray-700">{highlight}</span>
-                </div>
-              ))}
+            {/* Key Highlights */}
+            <div className="bg-gradient-to-r from-mint/10 to-sky/10 rounded-lg p-6 mb-8 border border-mint/20">
+              <h4 className="font-fredoka text-lg text-gray-800 mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-mint" />
+                Key Features:
+              </h4>
+              <div className="space-y-2">
+                {step.highlights.map((highlight, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3"
+                    style={{ animation: "fadeInUp 0.4s ease forwards", animationDelay: `${(index + 1) * 100}ms` }}
+                  >
+                    <div className="w-2 h-2 bg-mint rounded-full"></div>
+                    <span className="text-gray-700">{highlight}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Tutorial Navigation */}
+        {/* Fixed Navigation Footer */}
+        <div className="px-8 py-6 bg-white border-t">
           <div className="flex items-center justify-between">
             <Button
               variant="outline"

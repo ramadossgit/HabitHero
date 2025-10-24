@@ -36,6 +36,7 @@ export default function ParentDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showHabitAssignment, setShowHabitAssignment] = useState(false);
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'habits' | 'kids' | 'rewards' | 'reports' | 'controls'>('dashboard');
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],

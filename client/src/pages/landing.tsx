@@ -11,17 +11,11 @@ import {
 
 export default function Landing() {
   const [, setLocation] = useLocation();
-  
+
   return (
     <div className="min-h-screen hero-gradient relative overflow-hidden flex flex-col">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-sunshine rounded-full float"></div>
-        <div className="absolute top-40 right-32 w-24 h-24 bg-purple rounded-full float" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-40 left-32 w-20 h-20 bg-mint rounded-full float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange rounded-full float" style={{ animationDelay: '0.5s' }}></div>
-      </div>
-      
+      {/* Background circles REMOVED */}
+
       <div className="container mx-auto px-4 py-6 relative z-10 flex-1 flex flex-col justify-center">
         {/* Header with amazing title - More compact */}
         <div className="text-center mb-8">
@@ -40,42 +34,42 @@ export default function Landing() {
         {/* Key Features - Compact Icons */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8 max-w-4xl mx-auto">
           <div className="text-center bounce-in">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-coral rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-coral rounded-full flex items-center justify-center mb-2 mx-auto float">
               <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">Hero Avatars</p>
           </div>
-          
+
           <div className="text-center bounce-in" style={{ animationDelay: '0.1s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-turquoise rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float" style={{ animationDelay: '0.5s' }}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-turquoise rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '0.5s' }}>
               <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">XP & Rewards</p>
           </div>
-          
+
           <div className="text-center bounce-in" style={{ animationDelay: '0.2s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-sky rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float" style={{ animationDelay: '1s' }}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-sky rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '1s' }}>
               <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">Daily Missions</p>
           </div>
-          
+
           <div className="text-center bounce-in" style={{ animationDelay: '0.3s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-mint rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float" style={{ animationDelay: '1.5s' }}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-mint rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '1.5s' }}>
               <Gamepad2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">Mini-Games</p>
           </div>
-          
+
           <div className="text-center bounce-in" style={{ animationDelay: '0.4s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float" style={{ animationDelay: '2s' }}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '2s' }}>
               <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">Parent Control</p>
           </div>
-          
+
           <div className="text-center bounce-in" style={{ animationDelay: '0.5s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple rounded-full flex items-center justify-center mb-2 mx-auto magic-glow float" style={{ animationDelay: '2.5s' }}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '2.5s' }}>
               <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <p className="text-white font-bold text-xs sm:text-sm">Safe & Secure</p>

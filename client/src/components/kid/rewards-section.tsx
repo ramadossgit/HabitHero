@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { 
   Gift, 
   Play, 
@@ -24,6 +25,7 @@ interface RewardsSectionProps {
 
 export default function RewardsSection({ childId, userSubscriptionStatus }: RewardsSectionProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const defaultMiniGames = [
     {
@@ -187,6 +189,13 @@ export default function RewardsSection({ childId, userSubscriptionStatus }: Rewa
             <Button 
               size="sm"
               className="bg-white text-coral hover:bg-gray-100"
+              onClick={() => {
+                toast({
+                  title: "Ask your parent!",
+                  description: "Your parent needs to upgrade to Premium to unlock mini-games.",
+                });
+              }}
+              data-testid="button-upgrade-premium"
             >
               Upgrade
             </Button>

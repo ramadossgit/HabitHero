@@ -5,17 +5,17 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Shield, 
-  Crown, 
-  Zap, 
-  Star, 
+import {
+  Shield,
+  Crown,
+  Zap,
+  Star,
   Coins,
   Lock,
   ShoppingBag,
   Sword,
   Gem,
-  Eye
+  Eye,
 } from "lucide-react";
 import type { Child, GearShopItem } from "@shared/schema";
 
@@ -33,7 +33,10 @@ export default function GearShop({ child }: GearShopProps) {
 
   const purchaseGearMutation = useMutation({
     mutationFn: async ({ gearId, cost }: { gearId: string; cost: number }) => {
-      await apiRequest("POST", `/api/children/${child.id}/purchase-gear`, { gearId, cost });
+      await apiRequest("POST", `/api/children/${child.id}/purchase-gear`, {
+        gearId,
+        cost,
+      });
     },
     onSuccess: () => {
       toast({
@@ -123,12 +126,16 @@ export default function GearShop({ child }: GearShopProps) {
     },
   ];
 
-  const gearItemsArray = Array.isArray(gearItems) && gearItems.length > 0 ? gearItems : defaultGearItems;
+  const gearItemsArray =
+    Array.isArray(gearItems) && gearItems.length > 0
+      ? gearItems
+      : defaultGearItems;
   const unlockedGear = (child.unlockedGear as string[]) || [];
 
-  const filteredGear = selectedGearType === "all" 
-    ? gearItemsArray 
-    : gearItemsArray.filter(item => item.gearType === selectedGearType);
+  const filteredGear =
+    selectedGearType === "all"
+      ? gearItemsArray
+      : gearItemsArray.filter((item) => item.gearType === selectedGearType);
 
   const getGearTypeIcon = (gearType: string) => {
     const icons = {
@@ -178,7 +185,7 @@ export default function GearShop({ child }: GearShopProps) {
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -212,7 +219,11 @@ export default function GearShop({ child }: GearShopProps) {
               variant={selectedGearType === type.id ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedGearType(type.id)}
-              className={selectedGearType === type.id ? "bg-orange-500 hover:bg-orange-600" : ""}
+              className={
+                selectedGearType === type.id
+                  ? "bg-orange hover:bg-orange-600"
+                  : ""
+              }
               data-testid={`filter-${type.id}`}
             >
               <IconComponent className="w-4 h-4 mr-2" />
@@ -230,19 +241,25 @@ export default function GearShop({ child }: GearShopProps) {
           const canAfford = (child.rewardPoints || 0) >= item.cost;
 
           return (
-            <Card 
-              key={item.id} 
-              className={`border-2 ${getRarityColor(item.rarity)} ${isOwned ? 'opacity-75' : ''}`}
+            <Card
+              key={item.id}
+              className={`border-2 ${getRarityColor(item.rarity)} ${isOwned ? "opacity-75" : ""}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRarityColor(item.rarity)}`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center ${getRarityColor(item.rarity)}`}
+                    >
                       <IconComponent className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-nunito font-bold text-gray-800">{item.name}</h4>
-                      <span className={`text-xs px-2 py-1 rounded-full text-white ${getRarityBadgeColor(item.rarity)}`}>
+                      <h4 className="font-nunito font-bold text-gray-800">
+                        {item.name}
+                      </h4>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full text-white ${getRarityBadgeColor(item.rarity)}`}
+                      >
                         {item.rarity.toUpperCase()}
                       </span>
                     </div>
@@ -255,20 +272,24 @@ export default function GearShop({ child }: GearShopProps) {
                 </div>
 
                 <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                
+
                 {item.effect && (
                   <div className="flex items-center space-x-1 mb-3">
                     <Zap className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs font-medium text-yellow-700">{item.effect}</span>
+                    <span className="text-xs font-medium text-yellow-700">
+                      {item.effect}
+                    </span>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1">
                     <Coins className="w-4 h-4 text-yellow-500" />
-                    <span className="font-nunito font-bold text-gray-800">{item.cost}</span>
+                    <span className="font-nunito font-bold text-gray-800">
+                      {item.cost}
+                    </span>
                   </div>
-                  
+
                   {isOwned ? (
                     <Button
                       variant="outline"
@@ -312,7 +333,9 @@ export default function GearShop({ child }: GearShopProps) {
         <div className="text-center py-8">
           <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No gear items found</p>
-          <p className="text-sm text-gray-400">Check back later for new gear!</p>
+          <p className="text-sm text-gray-400">
+            Check back later for new gear!
+          </p>
         </div>
       )}
     </Card>

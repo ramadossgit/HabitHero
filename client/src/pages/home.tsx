@@ -61,7 +61,11 @@ export default function Home() {
   const completeMissionMutation = useMutation({
     mutationFn: async (habitId: string) => {
       console.log("Completing habit:", habitId);
-      const response = await apiRequest("POST", `/api/habits/${habitId}/complete`, {});
+      const response = await apiRequest(
+        "POST",
+        `/api/habits/${habitId}/complete`,
+        {},
+      );
       console.log("Completion response:", response);
       return response;
     },
@@ -71,15 +75,31 @@ export default function Home() {
         title: "Mission Complete! 🎉",
         description: "Great job! You earned XP and reward points!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id, "completions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children", (loggedInChild as Child)?.id, "completions", "today"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/children", (loggedInChild as Child)?.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "/api/children",
+          (loggedInChild as Child)?.id,
+          "completions",
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "/api/children",
+          (loggedInChild as Child)?.id,
+          "completions",
+          "today",
+        ],
+      });
     },
     onError: (error) => {
       console.error("Mission completion failed:", error);
       toast({
         title: "Oops!",
-        description: error.message || "Could not complete mission. Please try again.",
+        description:
+          error.message || "Could not complete mission. Please try again.",
         variant: "destructive",
       });
     },
@@ -87,25 +107,27 @@ export default function Home() {
 
   // Status calculation function - same as DailyMissions component
   const getHabitStatus = (habitId: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayCompletions = todaysCompletions.filter(c => c.date === today);
-    const habitCompletions = todayCompletions.filter(c => c.habitId === habitId);
-    
-    if (habitCompletions.length === 0) return 'available';
-    
+    const today = new Date().toISOString().split("T")[0];
+    const todayCompletions = todaysCompletions.filter((c) => c.date === today);
+    const habitCompletions = todayCompletions.filter(
+      (c) => c.habitId === habitId,
+    );
+
+    if (habitCompletions.length === 0) return "available";
+
     // Check for approved first - if approved, habit is done
-    const approved = habitCompletions.find(c => c.status === 'approved');
-    if (approved) return 'approved';
-    
+    const approved = habitCompletions.find((c) => c.status === "approved");
+    if (approved) return "approved";
+
     // Check for pending - if there's a pending, show pending
-    const pending = habitCompletions.find(c => c.status === 'pending');
-    if (pending) return 'pending';
-    
+    const pending = habitCompletions.find((c) => c.status === "pending");
+    if (pending) return "pending";
+
     // If only rejected, allow try again
-    const rejected = habitCompletions.find(c => c.status === 'rejected');
-    if (rejected) return 'rejected';
-    
-    return 'available';
+    const rejected = habitCompletions.find((c) => c.status === "rejected");
+    if (rejected) return "rejected";
+
+    return "available";
   };
 
   if (childAuthLoading) {
@@ -207,75 +229,72 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen hero-gradient safe-area-top">
+    <div className="min-h-screen hero-gradient">
       {/* Hero Header */}
       <HeroHeader child={currentChild} />
 
-      {/* Main Content - Kid-friendly layout */}
-      <div className="container mx-auto px-4 pb-24">
+      {/* Main Content */}
+      <div className="container mx-auto px-4 pb-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="responsive-grid grid-cols-2 sm:grid-cols-4 mb-6 bg-white/95 backdrop-blur-sm border-4 border-white/30 rounded-2xl p-2 shadow-lg">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/90 backdrop-blur-sm border border-white/20">
             <TabsTrigger
               value="missions"
-              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-hero-blue data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
+              className="flex items-center gap-2 data-[state=active]:bg-coral data-[state=active]:text-white font-bold text-gray-700"
               disabled={!featuresEnabled.habits}
-              data-testid="tab-missions"
             >
               {featuresEnabled.habits ? (
-                <Gamepad2 className="w-6 h-6" />
+                <Gamepad2 className="w-4 h-4" />
               ) : (
-                <Lock className="w-6 h-6" />
+                <Lock className="w-4 h-4" />
               )}
-              <span className="readable-text text-sm">🎮 Missions</span>
+              <span className="hidden sm:inline">Missions</span>
             </TabsTrigger>
             <TabsTrigger
               value="customize"
-              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-success-green data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
+              className="flex items-center gap-2 data-[state=active]:bg-mint data-[state=active]:text-white font-bold text-gray-700"
               disabled={!featuresEnabled.gearShop}
-              data-testid="tab-customize"
             >
               {featuresEnabled.gearShop ? (
-                <Settings className="w-6 h-6" />
+                <Settings className="w-4 h-4" />
               ) : (
-                <Lock className="w-6 h-6" />
+                <Lock className="w-4 h-4" />
               )}
-              <span className="readable-text text-sm">🎨 Style</span>
+              <span className="hidden sm:inline">Customize</span>
             </TabsTrigger>
             <TabsTrigger
               value="rewards"
-              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-joy-yellow data-[state=active]:text-gray-800 font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
+              className="flex items-center gap-2 data-[state=active]:bg-sunshine data-[state=active]:text-gray-800 font-bold text-gray-700"
               disabled={!featuresEnabled.rewards}
-              data-testid="tab-rewards"
             >
               {featuresEnabled.rewards ? (
-                <Trophy className="w-6 h-6" />
+                <Trophy className="w-4 h-4" />
               ) : (
-                <Lock className="w-6 h-6" />
+                <Lock className="w-4 h-4" />
               )}
-              <span className="readable-text text-sm">🏆 Prizes</span>
+              <span className="hidden sm:inline">Rewards</span>
             </TabsTrigger>
             <TabsTrigger
               value="progress"
-              className="kid-button flex flex-col items-center gap-1 data-[state=active]:bg-purple data-[state=active]:text-white font-bold text-gray-700 py-3 px-4 touch-target min-h-16"
-              data-testid="tab-progress"
+              className="flex items-center gap-2 data-[state=active]:bg-sunshine data-[state=active]:text-gray-800 font-bold text-gray-700"
             >
-              <Star className="w-6 h-6" />
-              <span className="readable-text text-sm">📊 Stats</span>
+              <Star className="w-4 h-4" />
+              <span className="hidden sm:inline">Progress</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="missions" className="space-y-6">
             {featuresEnabled.habits ? (
-              <div className="space-y-6">
-                {/* Enhanced Habit Health Meter - Kid-friendly */}
-                <div className="kid-card bg-gradient-to-r from-hero-blue/10 to-success-green/10 border-hero-blue p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-fredoka text-2xl sm:text-3xl readable-text-large text-gray-800 flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-r from-hero-blue to-success-green rounded-full flex items-center justify-center magic-glow">
-                        <Star className="w-6 h-6 text-white" />
-                      </div>
-                      🌟 Hero Health Meter
-                    </h2>
+              <>
+                {/* Enhanced Habit Health Meter */}
+                <Card className="fun-card border-4 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="font-fredoka text-2xl text-gray-800 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                          <Star className="w-5 h-5 text-white" />
+                        </div>
+                        Habit Health Meter
+                      </h2>
                       {/* Smaller health indicator */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-gradient-to-r from-red-400 to-green-400 rounded-full border-2 border-white shadow-sm"></div>
@@ -284,6 +303,7 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
+
                     <div className="bg-white/70 rounded-lg p-4 border-2 border-purple-200">
                       <div className="text-sm text-gray-600 mb-2 font-medium">
                         Health Score
@@ -311,20 +331,22 @@ export default function Home() {
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  {/* Enhanced Daily Missions Section - Kid-friendly */}
-                <div className="kid-card bg-gradient-to-r from-energy-orange/10 to-joy-yellow/10 border-energy-orange p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-energy-orange to-joy-yellow rounded-full flex items-center justify-center magic-glow">
-                      <Gamepad2 className="w-8 h-8 text-white" />
+                {/* Enhanced Daily Missions Section */}
+                <Card className="fun-card border-4 border-coral bg-gradient-to-r from-coral/5 to-orange/5">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center">
+                        <Gamepad2 className="w-6 h-6 text-white" />
+                      </div>
+                      <h2 className="font-fredoka text-3xl text-gray-800">
+                        Today's Hero Missions
+                      </h2>
                     </div>
-                    <h2 className="font-fredoka text-3xl sm:text-4xl readable-text-large text-gray-800">
-                      🎮 Today's Hero Missions
-                    </h2>
-                  </div>
 
-                  <div className="responsive-grid gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {habits.map((habit) => {
                         const status = getHabitStatus(habit.id);
                         const completion = todaysCompletions.find(
@@ -332,7 +354,8 @@ export default function Home() {
                         );
                         const isCompleted = status === "approved";
                         const isPending = status === "pending";
-                        const canComplete = status === "available" || status === "rejected";
+                        const canComplete =
+                          status === "available" || status === "rejected";
 
                         return (
                           <Card
@@ -413,25 +436,28 @@ export default function Home() {
                                     <>
                                       <div className="w-4 h-4 bg-coral rounded-full animate-pulse"></div>
                                       <span className="text-coral font-bold text-sm">
-                                        {status === 'rejected' ? 'Try Again' : 'Ready'}
+                                        {status === "rejected"
+                                          ? "Try Again"
+                                          : "Ready"}
                                       </span>
                                     </>
                                   )}
                                 </div>
 
                                 {canComplete && (
-                                  <Button 
+                                  <Button
                                     className="super-button px-4 py-2 text-sm font-bold"
-                                    onClick={() => completeMissionMutation.mutate(habit.id)}
+                                    onClick={() =>
+                                      completeMissionMutation.mutate(habit.id)
+                                    }
                                     disabled={completeMissionMutation.isPending}
                                     data-testid={`complete-habit-${habit.id}`}
                                   >
-                                    {completeMissionMutation.isPending 
-                                      ? "Completing..." 
-                                      : status === 'rejected' 
-                                        ? "Try Again!" 
-                                        : "Complete!"
-                                    }
+                                    {completeMissionMutation.isPending
+                                      ? "Completing..."
+                                      : status === "rejected"
+                                        ? "Try Again!"
+                                        : "Complete!"}
                                   </Button>
                                 )}
 
@@ -461,8 +487,9 @@ export default function Home() {
                         </p>
                       </div>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
+              </>
             ) : (
               <Alert className="border-2 border-orange-300 bg-orange-50">
                 <Lock className="h-5 w-5 text-orange-600" />
