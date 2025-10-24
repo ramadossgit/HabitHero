@@ -27,7 +27,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
   const [habitForm, setHabitForm] = useState({
     name: "",
     description: "",
-    icon: "star",
+    icon: "tooth",
     xpReward: 50,
     color: "mint",
     reminderEnabled: false,
