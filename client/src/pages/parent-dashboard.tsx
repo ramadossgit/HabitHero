@@ -3136,6 +3136,7 @@ function RewardSettingsSection({
   const [editRewardDescription, setEditRewardDescription] = useState("");
   const [editRewardCost, setEditRewardCost] = useState("100");
   const [editRewardIcon, setEditRewardIcon] = useState("🎁");
+  const [editSelectedKids, setEditSelectedKids] = useState<string[]>([]);
 
   const { data: rewards, isLoading } = useQuery<Reward[]>({
     queryKey: [`/api/children/${childId}/rewards`],
@@ -3283,6 +3284,7 @@ function RewardSettingsSection({
                         setEditRewardDescription(reward.description || "");
                         setEditRewardCost(reward.cost.toString());
                         setEditRewardIcon("🎁");
+                        setEditSelectedKids([reward.childId]);
                       }}
                       className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
                     >
@@ -3362,9 +3364,13 @@ function RewardSettingsSection({
                             <input
                               type="checkbox"
                               id={`edit-reward-kid-${child.id}`}
-                              checked={true} // For now, assume all rewards are assigned to all kids
+                              checked={editSelectedKids.includes(child.id)}
                               onChange={(e) => {
-                                // TODO: Handle kid assignment changes for existing rewards
+                                if (e.target.checked) {
+                                  setEditSelectedKids([...editSelectedKids, child.id]);
+                                } else {
+                                  setEditSelectedKids(editSelectedKids.filter(id => id !== child.id));
+                                }
                               }}
                               className="w-4 h-4 text-orange-500 border-2 border-orange-300 rounded focus:ring-orange-500"
                             />
@@ -3404,6 +3410,7 @@ function RewardSettingsSection({
                         setEditRewardDescription("");
                         setEditRewardCost("100");
                         setEditRewardIcon("🎁");
+                        setEditSelectedKids([]);
                       }}
                       variant="outline"
                     >
