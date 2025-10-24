@@ -2168,7 +2168,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                                 className={ringtone.premium && !isPremium ? "opacity-50" : ""}
                                 disabled={ringtone.premium && !isPremium}
                               >
-                                {ringtone.label}{ringtone.premium && !isPremium ? " ⭐ Premium" : ""}
+                                {`${ringtone.label}${ringtone.premium && !isPremium ? " ⭐ Premium" : ""}`}
                               </SelectItem>
                             )) || []}
                           </SelectContent>
@@ -2560,7 +2560,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             className={ringtone.premium && !isPremium ? "opacity-50" : ""}
                             disabled={ringtone.premium && !isPremium}
                           >
-                            {ringtone.label}{ringtone.premium && !isPremium ? " ⭐ Premium" : ""}
+                            {`${ringtone.label}${ringtone.premium && !isPremium ? " ⭐ Premium" : ""}`}
                           </SelectItem>
                         )) || []}
                       </SelectContent>
