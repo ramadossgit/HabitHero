@@ -48,6 +48,7 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
   useEffect(() => {
     if (habitId && habit) {
       // Load from habit
+      console.log('Loading settings from habit:', habit);
       setSettings({
         reminderEnabled: habit.reminderEnabled || false,
         reminderTime: habit.reminderTime || "",
@@ -57,9 +58,17 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
         timeRangeStart: habit.timeRangeStart || "07:00",
         timeRangeEnd: habit.timeRangeEnd || "20:00",
       });
-    } else if (!habitId && userProfile?.reminderSettings) {
+    } else if (!habitId && userProfile) {
       // Load from user profile
-      const rs = userProfile.reminderSettings;
+      console.log('Loading settings from user profile:', userProfile);
+      const rs = userProfile.reminderSettings || {
+        enabled: false,
+        voiceEnabled: false,
+        ringtoneEnabled: true,
+        defaultRingtone: "default",
+        reminderTime: 5
+      };
+      console.log('Extracted reminder settings:', rs);
       setSettings({
         reminderEnabled: rs.enabled || false,
         reminderTime: "",
@@ -98,14 +107,16 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
 
   const updateGlobalSettingsMutation = useMutation({
     mutationFn: async (alertSettings: any) => {
+      const reminderSettings = {
+        enabled: alertSettings.reminderEnabled,
+        voiceEnabled: alertSettings.voiceReminderEnabled,
+        ringtoneEnabled: true,
+        defaultRingtone: alertSettings.customRingtone,
+        reminderTime: alertSettings.reminderDuration
+      };
+      console.log('Saving reminder settings:', reminderSettings);
       await apiRequest("PATCH", `/api/profile`, {
-        reminderSettings: {
-          enabled: alertSettings.reminderEnabled,
-          voiceEnabled: alertSettings.voiceReminderEnabled,
-          ringtoneEnabled: true,
-          defaultRingtone: alertSettings.customRingtone,
-          reminderTime: alertSettings.reminderDuration
-        }
+        reminderSettings
       });
     },
     onSuccess: () => {
