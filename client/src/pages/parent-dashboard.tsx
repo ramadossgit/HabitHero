@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera, Mic, Play, Volume2 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -38,6 +39,12 @@ export default function ParentDashboard() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showHabitAssignment, setShowHabitAssignment] = useState(false);
   const [activeSection, setActiveSection] = useState<'overview' | 'habits' | 'children' | 'rewards' | 'progress' | 'settings'>('overview');
+  
+  // Alert dialog states
+  const [removeHabitDialog, setRemoveHabitDialog] = useState<{ open: boolean; habitId?: string; childName?: string }>({ open: false });
+  const [deleteHabitDialog, setDeleteHabitDialog] = useState<{ open: boolean; habitId?: string; habitName?: string }>({ open: false });
+  const [deleteChildDialog, setDeleteChildDialog] = useState<{ open: boolean; childId?: string; childName?: string }>({ open: false });
+  const [deleteRewardDialog, setDeleteRewardDialog] = useState<{ open: boolean; rewardId?: string; rewardName?: string }>({ open: false });
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -171,6 +178,41 @@ export default function ParentDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete hero profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove habit assignment from child
+  const removeHabitMutation = useMutation({
+    mutationFn: async ({ habitId }: { habitId: string }) => {
+      const response = await apiRequest("DELETE", `/api/habits/${habitId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to remove habit from child");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Habit Removed!",
+        description: "Habit has been removed from child.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+      // Invalidate all child habits to refresh the display
+      if (children) {
+        children.forEach(child => {
+          queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/habits`] });
+        });
+      }
+    },
+    onError: (error) => {
+      console.error("Habit removal error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove habit from child.",
         variant: "destructive",
       });
     },
@@ -1025,8 +1067,119 @@ export default function ParentDashboard() {
           isOpen={showHabitAssignment}
           onClose={() => setShowHabitAssignment(false)}
           children={children || []}
+          onRemoveHabit={(habitId: string, childName: string) => setRemoveHabitDialog({ open: true, habitId, childName })}
+          removeHabitMutation={removeHabitMutation}
         />
       )}
+
+      {/* Alert Dialogs */}
+      {/* Remove Habit Dialog */}
+      <AlertDialog open={removeHabitDialog.open} onOpenChange={(open) => setRemoveHabitDialog({ ...removeHabitDialog, open })}>
+        <AlertDialogContent data-testid="dialog-remove-habit">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Habit</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            Are you sure you want to remove this habit from {removeHabitDialog.childName}? This action cannot be undone.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove-habit">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-remove-habit"
+              onClick={() => {
+                if (removeHabitDialog.habitId) {
+                  removeHabitMutation.mutate({ habitId: removeHabitDialog.habitId });
+                }
+                setRemoveHabitDialog({ open: false });
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Habit Dialog */}
+      <AlertDialog open={deleteHabitDialog.open} onOpenChange={(open) => setDeleteHabitDialog({ ...deleteHabitDialog, open })}>
+        <AlertDialogContent data-testid="dialog-delete-habit">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Habit</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{deleteHabitDialog.habitName}"? This action cannot be undone and will remove this habit from all children.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-habit">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-delete-habit"
+              onClick={() => {
+                if (deleteHabitDialog.habitId) {
+                  deleteHabitMutation.mutate(deleteHabitDialog.habitId);
+                }
+                setDeleteHabitDialog({ open: false });
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Child Dialog */}
+      <AlertDialog open={deleteChildDialog.open} onOpenChange={(open) => setDeleteChildDialog({ ...deleteChildDialog, open })}>
+        <AlertDialogContent data-testid="dialog-delete-child">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Hero Profile</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            Are you sure you want to delete {deleteChildDialog.childName}'s hero profile? This action cannot be undone and will permanently delete all their progress, habits, and rewards.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-child">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-delete-child"
+              onClick={() => {
+                if (deleteChildDialog.childId) {
+                  deleteChildMutation.mutate(deleteChildDialog.childId);
+                }
+                setDeleteChildDialog({ open: false });
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Reward Dialog */}
+      <AlertDialog open={deleteRewardDialog.open} onOpenChange={(open) => setDeleteRewardDialog({ ...deleteRewardDialog, open })}>
+        <AlertDialogContent data-testid="dialog-delete-reward">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Reward</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{deleteRewardDialog.rewardName}"? This action cannot be undone.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-reward">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-delete-reward"
+              onClick={() => {
+                if (deleteRewardDialog.rewardId) {
+                  deleteRewardMutation.mutate(deleteRewardDialog.rewardId);
+                }
+                setDeleteRewardDialog({ open: false });
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
         </div>
       </div>
     </div>
@@ -1037,11 +1190,15 @@ export default function ParentDashboard() {
 function HabitAssignmentModal({ 
   isOpen, 
   onClose, 
-  children 
+  children,
+  onRemoveHabit,
+  removeHabitMutation
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   children: Child[];
+  onRemoveHabit: (habitId: string, childName: string) => void;
+  removeHabitMutation: any;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1106,39 +1263,6 @@ function HabitAssignmentModal({
       toast({
         title: "Error",
         description: "Failed to assign habit to child.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Remove habit assignment from child
-  const removeHabitMutation = useMutation({
-    mutationFn: async ({ habitId }: { habitId: string }) => {
-      const response = await apiRequest("DELETE", `/api/habits/${habitId}`);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to remove habit from child");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Removed!",
-        description: "Habit has been removed from child.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
-      // Invalidate all child habits to refresh the display
-      children.forEach(child => {
-        queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/habits`] });
-      });
-    },
-    onError: (error) => {
-      console.error("Habit removal error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove habit from child.",
         variant: "destructive",
       });
     },
@@ -1306,11 +1430,7 @@ function HabitAssignmentModal({
                                             size="sm"
                                             variant="destructive"
                                             onClick={() => {
-                                              if (confirm(`Remove this habit from ${child.name}?`)) {
-                                                removeHabitMutation.mutate({
-                                                  habitId: childHabit!.id
-                                                });
-                                              }
+                                              onRemoveHabit(childHabit!.id, child.name);
                                             }}
                                             disabled={removeHabitMutation.isPending}
                                             className="text-xs px-3 py-2 min-h-[32px] min-w-[70px]"
@@ -2348,9 +2468,7 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                       </Button>
                       <Button
                         onClick={() => {
-                          if (confirm(`Delete "${habit.name}" habit? This cannot be undone.`)) {
-                            deleteHabitMutation.mutate(habit.id);
-                          }
+                          setDeleteHabitDialog({ open: true, habitId: habit.id, habitName: habit.name });
                         }}
                         disabled={deleteHabitMutation.isPending}
                         size="sm"
@@ -2826,12 +2944,11 @@ function KidsManagementSection({
                   </Button>
                   <Button
                     onClick={() => {
-                      if (confirm(`Delete ${child.name}'s hero profile? This cannot be undone.`)) {
-                        deleteChildMutation.mutate(child.id);
-                      }
+                      setDeleteChildDialog({ open: true, childId: child.id, childName: child.name });
                     }}
                     disabled={deleteChildMutation.isPending}
                     className="bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-1 text-xs"
+                    data-testid={`button-delete-child-${child.id}`}
                   >
                     {deleteChildMutation.isPending ? "..." : "🗑️"}
                   </Button>
@@ -3280,12 +3397,11 @@ function RewardSettingsSection({
                     </Button>
                     <Button
                       onClick={() => {
-                        if (confirm(`Delete "${reward.name}" reward? This cannot be undone.`)) {
-                          deleteRewardMutation.mutate(reward.id);
-                        }
+                        setDeleteRewardDialog({ open: true, rewardId: reward.id, rewardName: reward.name });
                       }}
                       disabled={deleteRewardMutation.isPending}
                       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                      data-testid={`button-delete-reward-${reward.id}`}
                     >
                       {deleteRewardMutation.isPending ? "..." : "🗑️"}
                     </Button>
