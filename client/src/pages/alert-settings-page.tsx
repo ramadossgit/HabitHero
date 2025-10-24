@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -20,20 +20,57 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
   const { toast } = useToast();
 
   // Get habit data if editing an existing habit
-  const { data: habit, isLoading } = useQuery<Habit>({
+  const { data: habit, isLoading: habitLoading } = useQuery<Habit>({
     queryKey: ["/api/habits", habitId],
     enabled: !!habitId,
   });
 
-  const [settings, setSettings] = useState({
-    reminderEnabled: habit?.reminderEnabled || false,
-    reminderTime: habit?.reminderTime || "",
-    voiceReminderEnabled: habit?.voiceReminderEnabled || false,
-    customRingtone: habit?.customRingtone || "default",
-    reminderDuration: 5, // Default 5 minutes
-    timeRangeStart: habit?.timeRangeStart || "07:00",
-    timeRangeEnd: habit?.timeRangeEnd || "20:00",
+  // Get user profile data for global settings
+  const { data: userProfile, isLoading: profileLoading } = useQuery<any>({
+    queryKey: ["/api/auth/user"],
+    enabled: !habitId, // Only load when setting global defaults
   });
+
+  const isLoading = habitLoading || profileLoading;
+
+  // Initialize settings from habit or user profile
+  const [settings, setSettings] = useState({
+    reminderEnabled: false,
+    reminderTime: "",
+    voiceReminderEnabled: false,
+    customRingtone: "default",
+    reminderDuration: 5,
+    timeRangeStart: "07:00",
+    timeRangeEnd: "20:00",
+  });
+
+  // Update settings when data loads
+  useEffect(() => {
+    if (habitId && habit) {
+      // Load from habit
+      setSettings({
+        reminderEnabled: habit.reminderEnabled || false,
+        reminderTime: habit.reminderTime || "",
+        voiceReminderEnabled: habit.voiceReminderEnabled || false,
+        customRingtone: habit.customRingtone || "default",
+        reminderDuration: 5,
+        timeRangeStart: habit.timeRangeStart || "07:00",
+        timeRangeEnd: habit.timeRangeEnd || "20:00",
+      });
+    } else if (!habitId && userProfile?.reminderSettings) {
+      // Load from user profile
+      const rs = userProfile.reminderSettings;
+      setSettings({
+        reminderEnabled: rs.enabled || false,
+        reminderTime: "",
+        voiceReminderEnabled: rs.voiceEnabled || false,
+        customRingtone: rs.defaultRingtone || "default",
+        reminderDuration: rs.reminderTime || 5,
+        timeRangeStart: "07:00",
+        timeRangeEnd: "20:00",
+      });
+    }
+  }, [habitId, habit, userProfile]);
 
   const updateHabitMutation = useMutation({
     mutationFn: async (alertSettings: any) => {
