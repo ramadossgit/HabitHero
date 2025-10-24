@@ -2161,21 +2161,19 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {ringtoneOptions.map((ringtone) => (
+                            {ringtoneOptions?.map((ringtone) => (
                               <SelectItem 
                                 key={ringtone.value} 
                                 value={ringtone.value}
                                 className={ringtone.premium && !isPremium ? "opacity-50" : ""}
                                 disabled={ringtone.premium && !isPremium}
                               >
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{ringtone.label}</span>
-                                  {ringtone.premium && !isPremium && (
-                                    <span className="text-xs text-gold">⭐ Premium</span>
-                                  )}
-                                </div>
+                                <span>{ringtone.label}</span>
+                                {ringtone.premium && !isPremium && (
+                                  <span className="ml-2 text-xs text-gold">⭐ Premium</span>
+                                )}
                               </SelectItem>
-                            ))}
+                            )) || []}
                           </SelectContent>
                         </Select>
                         <div className="flex items-center space-x-2 mt-1">
@@ -2558,21 +2556,19 @@ function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHa
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {ringtoneOptions.map((ringtone) => (
+                        {ringtoneOptions?.map((ringtone) => (
                           <SelectItem 
                             key={ringtone.value} 
                             value={ringtone.value}
                             className={ringtone.premium && !isPremium ? "opacity-50" : ""}
                             disabled={ringtone.premium && !isPremium}
                           >
-                            <div className="flex items-center justify-between w-full">
-                              <span>{ringtone.label}</span>
-                              {ringtone.premium && !isPremium && (
-                                <span className="text-xs text-gold">⭐ Premium</span>
-                              )}
-                            </div>
+                            <span>{ringtone.label}</span>
+                            {ringtone.premium && !isPremium && (
+                              <span className="ml-2 text-xs text-gold">⭐ Premium</span>
+                            )}
                           </SelectItem>
-                        ))}
+                        )) || []}
                       </SelectContent>
                     </Select>
                     <div className="flex items-center space-x-2 mt-1">
