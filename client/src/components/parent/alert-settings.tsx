@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,12 @@ export default function AlertSettings({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Sync internal state when initialSettings prop changes
+  useEffect(() => {
+    console.log('AlertSettings - Syncing with new initialSettings:', initialSettings);
+    setSettings(initialSettings);
+  }, [initialSettings]);
 
   const updateSettings = (newSettings: Partial<AlertSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
