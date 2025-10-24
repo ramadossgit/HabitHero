@@ -16,6 +16,7 @@ import HabitApproval from "../components/parent/habit-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
+import ParentDashboardSidebar from "@/components/parent/ParentDashboardSidebar";
 import { TrialBanner } from "@/components/subscription/trial-banner";
 import TrialStatusBanner from "@/components/subscription/trial-status-banner";
 import SubscriptionManagementCard from "@/components/subscription/subscription-management-card";
