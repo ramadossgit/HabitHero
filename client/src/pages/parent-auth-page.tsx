@@ -443,7 +443,7 @@ export default function ParentAuthPage() {
                     <TabsContent value="login">
                       <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="login-email">Email</Label>
+                          <Label htmlFor="login-email">Email <span className="text-red-500">*</span></Label>
                           <Input
                             id="login-email"
                             type="email"
@@ -457,7 +457,7 @@ export default function ParentAuthPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="login-password">Password</Label>
+                          <Label htmlFor="login-password">Password <span className="text-red-500">*</span></Label>
                           <div className="relative">
                             <Input
                               id="login-password"
@@ -499,7 +499,7 @@ export default function ParentAuthPage() {
                       <form onSubmit={handleRegister} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="register-firstName">First Name *</Label>
+                            <Label htmlFor="register-firstName">First Name <span className="text-red-500">*</span></Label>
                             <Input
                               id="register-firstName"
                               value={registerData.firstName}
@@ -513,7 +513,7 @@ export default function ParentAuthPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="register-lastName">Last Name *</Label>
+                            <Label htmlFor="register-lastName">Last Name <span className="text-red-500">*</span></Label>
                             <Input
                               id="register-lastName"
                               value={registerData.lastName}
@@ -529,7 +529,7 @@ export default function ParentAuthPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="register-email">Email *</Label>
+                          <Label htmlFor="register-email">Email <span className="text-red-500">*</span></Label>
                           <Input
                             id="register-email"
                             type="email"
@@ -570,7 +570,7 @@ export default function ParentAuthPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="register-password">Password *</Label>
+                          <Label htmlFor="register-password">Password <span className="text-red-500">*</span></Label>
                           <div className="relative">
                             <Input
                               id="register-password"
@@ -597,7 +597,7 @@ export default function ParentAuthPage() {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="register-confirmPassword">Confirm Password *</Label>
+                          <Label htmlFor="register-confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
                           <div className="relative">
                             <Input
                               id="register-confirmPassword"

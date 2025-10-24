@@ -392,7 +392,7 @@ export default function ParentDashboard() {
 
                 {/* Name Input */}
                 <div className="space-y-3">
-                  <label className="font-nunito font-bold text-gray-800 text-lg">🦸 Hero Name</label>
+                  <label className="font-nunito font-bold text-gray-800 text-lg">🦸 Hero Name <span className="text-red-500">*</span></label>
                   <Input
                     type="text"
                     placeholder="Enter your child's name..."
@@ -2855,7 +2855,7 @@ function KidsManagementSection({
                 <h4 className="font-bold text-gray-800 mb-3">✏️ Edit Hero Profile</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-bold text-gray-700">Hero Name</label>
+                    <label className="text-sm font-bold text-gray-700">Hero Name <span className="text-red-500">*</span></label>
                     <Input
                       type="text"
                       placeholder="Enter hero name..."

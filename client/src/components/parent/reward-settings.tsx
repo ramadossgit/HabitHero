@@ -235,7 +235,7 @@ export default function RewardSettings({ childId }: RewardSettingsProps) {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="name">Reward Name</Label>
+                <Label htmlFor="name">Reward Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="name"
                   value={rewardForm.name}

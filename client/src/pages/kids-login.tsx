@@ -126,7 +126,7 @@ export default function KidsLogin() {
               {/* Family Code Input */}
               <div>
                 <label className="block text-gray-800 mb-2 text-sm sm:text-base font-medium px-1">
-                  🏠 Family Code
+                  🏠 Family Code <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
@@ -140,7 +140,7 @@ export default function KidsLogin() {
               {/* Username Input */}
               <div>
                 <label className="block text-gray-800 mb-2 text-sm sm:text-base font-medium px-1">
-                  🦸 Hero Username
+                  🦸 Hero Username <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
@@ -153,7 +153,7 @@ export default function KidsLogin() {
               {/* PIN Input with Eye Toggle */}
               <div className="relative">
                 <label className="block text-gray-800 mb-2 text-sm sm:text-base font-medium px-1">
-                  🔐 Secret PIN
+                  🔐 Secret PIN <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type={showPin ? "text" : "password"}

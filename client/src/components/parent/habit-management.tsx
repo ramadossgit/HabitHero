@@ -259,7 +259,7 @@ export default function HabitManagement({ childId }: HabitManagementProps) {
 
               
               <div>
-                <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name</Label>
+                <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Habit Name <span className="text-red-500">*</span></Label>
                 <Input
                   id="name"
                   value={habitForm.name}
