@@ -37,7 +37,7 @@ export default function ParentDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showHabitAssignment, setShowHabitAssignment] = useState(false);
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'habits' | 'kids' | 'rewards' | 'reports' | 'controls'>('dashboard');
+  const [activeSection, setActiveSection] = useState<'overview' | 'habits' | 'children' | 'rewards' | 'progress' | 'settings'>('overview');
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/children"],
@@ -580,7 +580,17 @@ export default function ParentDashboard() {
   const badgesEarned = calculateBadgesEarned();
 
   return (
-    <div className="min-h-screen hero-gradient">
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Sidebar Navigation */}
+      <ParentDashboardSidebar 
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        user={user as User}
+      />
+      
+      {/* Main Dashboard Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="min-h-screen hero-gradient">
       <header className="text-white p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Family Code Display */}
@@ -786,43 +796,71 @@ export default function ParentDashboard() {
           })}
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
-          <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
-            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-mint">
-              <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-mint mx-auto mb-2 sm:mb-3" />
-              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{completionRate}%</div>
-              <div className="text-gray-600 font-bold text-xs sm:text-base">Completion Rate</div>
-            </Card>
-          </div>
-          <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-orange-500">
-              <Flame className="w-8 h-8 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-2 sm:mb-3" />
-              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{currentStreak}</div>
-              <div className="text-gray-600 font-bold text-xs sm:text-base">Current Streak</div>
-            </Card>
-          </div>
-          <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-sunshine">
-              <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-sunshine mx-auto mb-2 sm:mb-3" />
-              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{badgesEarned}</div>
-              <div className="text-gray-600 font-bold text-xs sm:text-base">Badges Earned</div>
-            </Card>
-          </div>
-          <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-            <Card className="fun-card p-3 sm:p-6 text-center border-4 border-coral">
-              <Star className="w-8 h-8 sm:w-12 sm:h-12 text-coral mx-auto mb-2 sm:mb-3" />
-              <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child?.level || 1}</div>
-              <div className="text-gray-600 font-bold text-xs sm:text-base">Current Level</div>
-            </Card>
-          </div>
-        </div>
+        {/* Overview Section - Quick Stats */}
+        {activeSection === 'overview' && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
+              <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
+                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-mint">
+                  <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-mint mx-auto mb-2 sm:mb-3" />
+                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{completionRate}%</div>
+                  <div className="text-gray-600 font-bold text-xs sm:text-base">Completion Rate</div>
+                </Card>
+              </div>
+              <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
+                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-orange-500">
+                  <Flame className="w-8 h-8 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-2 sm:mb-3" />
+                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{currentStreak}</div>
+                  <div className="text-gray-600 font-bold text-xs sm:text-base">Current Streak</div>
+                </Card>
+              </div>
+              <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
+                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-sunshine">
+                  <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-sunshine mx-auto mb-2 sm:mb-3" />
+                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{badgesEarned}</div>
+                  <div className="text-gray-600 font-bold text-xs sm:text-base">Badges Earned</div>
+                </Card>
+              </div>
+              <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
+                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-coral">
+                  <Star className="w-8 h-8 sm:w-12 sm:h-12 text-coral mx-auto mb-2 sm:mb-3" />
+                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child?.level || 1}</div>
+                  <div className="text-gray-600 font-bold text-xs sm:text-base">Current Level</div>
+                </Card>
+              </div>
+            </div>
 
-        {/* Management Sections */}
-        <div className="space-y-8">
-          {/* Habit Management Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-            <HabitManagementSection 
+            {/* Summary of all sections for overview */}
+            <div className="space-y-6">
+              <Card className="p-6 border-2 border-mint">
+                <h3 className="font-fredoka text-xl text-gray-800 mb-4">Quick Overview</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-mint/10 rounded-lg">
+                    <UserRound className="w-8 h-8 text-mint" />
+                    <div>
+                      <div className="font-bold text-gray-800">{children?.length || 0} Heroes</div>
+                      <div className="text-sm text-gray-600">Active in your family</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-coral/10 rounded-lg">
+                    <Check className="w-8 h-8 text-coral" />
+                    <div>
+                      <div className="font-bold text-gray-800">{(habits as any[])?.filter(h => h.isActive).length || 0} Active Habits</div>
+                      <div className="text-sm text-gray-600">Daily missions</div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* Habits Section */}
+        {activeSection === 'habits' && (
+          <div className="space-y-8">
+            {/* Habit Management Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
+              <HabitManagementSection 
               childId={child?.id || ''} 
               showAddHabit={showAddHabit} 
               setShowAddHabit={setShowAddHabit}
@@ -838,10 +876,15 @@ export default function ParentDashboard() {
           <div className="bounce-in" style={{ animationDelay: '0.25s' }}>
             <HabitApproval children={children} />
           </div>
+          </div>
+        )}
 
-          {/* Kids Management Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-            <KidsManagementSection 
+        {/* Children Section */}
+        {activeSection === 'children' && (
+          <div className="space-y-8">
+            {/* Kids Management Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
+              <KidsManagementSection 
               children={children} 
               createHeroMutation={createHeroMutation}
               deleteChildMutation={deleteChildMutation}
@@ -857,10 +900,14 @@ export default function ParentDashboard() {
               handleImageUpload={handleImageUpload}
             />
           </div>
+        )}
 
-          {/* Reward Settings Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
-            <RewardSettingsSection 
+        {/* Rewards Section */}
+        {activeSection === 'rewards' && (
+          <div className="space-y-8">
+            {/* Reward Settings Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
+              <RewardSettingsSection 
               childId={child?.id || ''} 
               showAddReward={showAddReward} 
               setShowAddReward={setShowAddReward}
@@ -872,10 +919,15 @@ export default function ParentDashboard() {
           <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
             <RewardApprovalSection childId={child?.id || ''} />
           </div>
+          </div>
+        )}
 
-          {/* Progress Reports Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.45s' }}>
-            <Card className="fun-card p-4 sm:p-8 border-4 border-coral">
+        {/* Progress Section */}
+        {activeSection === 'progress' && (
+          <div className="space-y-8">
+            {/* Progress Reports Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.45s' }}>
+              <Card className="fun-card p-4 sm:p-8 border-4 border-coral">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center">
                   <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-coral mr-2 sm:mr-3" />
@@ -910,15 +962,20 @@ export default function ParentDashboard() {
               </div>
             </Card>
           </div>
-
-          {/* Subscription Management Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
-            <SubscriptionManagementCard />
           </div>
+        )}
 
-          {/* Parental Controls Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.55s' }}>
-            <Card 
+        {/* Settings Section */}
+        {activeSection === 'settings' && (
+          <div className="space-y-8">
+            {/* Subscription Management Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
+              <SubscriptionManagementCard />
+            </div>
+
+            {/* Parental Controls Section */}
+            <div className="bounce-in" style={{ animationDelay: '0.55s' }}>
+              <Card 
               className="fun-card p-4 sm:p-8 border-4 border-red-500 cursor-pointer hover:scale-105 transition-transform"
               onClick={() => setShowParentControls(true)}
               data-testid="card-parental-controls"
@@ -937,7 +994,8 @@ export default function ParentDashboard() {
               </div>
             </Card>
           </div>
-        </div>
+          </div>
+        )}
       </main>
 
       {/* Parent Controls Modal */}
@@ -968,6 +1026,8 @@ export default function ParentDashboard() {
           children={children || []}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -6,20 +6,20 @@ import { useLocation } from "wouter";
 import type { User } from "@shared/schema";
 
 interface SidebarProps {
-  activeSection: 'dashboard' | 'habits' | 'kids' | 'rewards' | 'reports' | 'controls';
-  onSectionChange: (section: 'dashboard' | 'habits' | 'kids' | 'rewards' | 'reports' | 'controls') => void;
+  activeSection: 'overview' | 'habits' | 'children' | 'rewards' | 'progress' | 'settings';
+  onSectionChange: (section: 'overview' | 'habits' | 'children' | 'rewards' | 'progress' | 'settings') => void;
   user?: User;
 }
 
 const menuItems = [
   {
-    id: 'dashboard' as const,
+    id: 'overview' as const,
     label: 'Overview',
     icon: Home,
     description: 'Dashboard home'
   },
   {
-    id: 'kids' as const,
+    id: 'children' as const,
     label: 'Children',
     icon: Users,
     description: 'Manage heroes'
@@ -37,16 +37,16 @@ const menuItems = [
     description: 'Reward settings'
   },
   {
-    id: 'reports' as const,
+    id: 'progress' as const,
     label: 'Progress',
     icon: BarChart3,
     description: 'Reports & analytics'
   },
   {
-    id: 'controls' as const,
-    label: 'Controls',
-    icon: Shield,
-    description: 'Parental controls'
+    id: 'settings' as const,
+    label: 'Settings',
+    icon: Settings,
+    description: 'Settings & controls'
   }
 ];
 
