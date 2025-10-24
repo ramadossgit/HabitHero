@@ -61,7 +61,7 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
 
   const updateGlobalSettingsMutation = useMutation({
     mutationFn: async (alertSettings: any) => {
-      await apiRequest("PATCH", `/api/auth/user`, {
+      await apiRequest("PATCH", `/api/profile`, {
         reminderSettings: {
           enabled: alertSettings.reminderEnabled,
           voiceEnabled: alertSettings.voiceReminderEnabled,
@@ -77,6 +77,7 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
         description: "Default alert preferences have been saved for all future habits.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       setLocation("/parent-dashboard");
     },
     onError: (error) => {
