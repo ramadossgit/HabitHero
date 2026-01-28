@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: habithero-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: habithero
+      POSTGRES_PASSWORD: habithero_dev_password
+      POSTGRES_DB: habithero
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habithero"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application Server
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: habithero-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://habithero:habithero_dev_password@postgres:5432/habithero
+      SESSION_SECRET: ${SESSION_SECRET:-change_me_in_production_to_a_random_64_character_string}
+      # Optional: Uncomment to enable Stripe
+      # STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: habithero-network

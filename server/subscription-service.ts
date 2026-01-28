@@ -2,17 +2,28 @@ import Stripe from 'stripe';
 import { storage } from './storage';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from '../shared/subscription-plans';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+// Make Stripe optional for local development
+const stripeEnabled = !!process.env.STRIPE_SECRET_KEY;
+
+if (!stripeEnabled) {
+  console.log("⚠️  STRIPE_SECRET_KEY not set - Subscription features will be disabled in local development");
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = stripeEnabled ? new Stripe(process.env.STRIPE_SECRET_KEY!) : null;
 
 export class SubscriptionService {
+  // Helper to check if Stripe is enabled
+  private static checkStripeEnabled() {
+    if (!stripe || !stripeEnabled) {
+      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable to enable subscription features.');
+    }
+  }
+
   // Create Stripe customer
   static async createCustomer(userId: string, email: string, name: string) {
+    this.checkStripeEnabled();
     try {
-      const customer = await stripe.customers.create({
+      const customer = await stripe!.customers.create({
         email,
         name,
         metadata: { userId }
@@ -28,6 +39,7 @@ export class SubscriptionService {
 
   // Create subscription
   static async createSubscription(userId: string, planId: string) {
+    this.checkStripeEnabled();
     try {
       const user = await storage.getUserById(userId);
       if (!user) throw new Error('User not found');
@@ -131,6 +143,7 @@ export class SubscriptionService {
 
   // Complete subscription after successful payment
   static async completeSubscription(paymentIntentId: string) {
+    this.checkStripeEnabled();
     try {
       // Retrieve the PaymentIntent to get metadata
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -255,6 +268,7 @@ export class SubscriptionService {
 
   // Cancel subscription
   static async cancelSubscription(userId: string) {
+    this.checkStripeEnabled();
     try {
       const user = await storage.getUserById(userId);
       if (!user?.stripeSubscriptionId) {
@@ -284,6 +298,10 @@ export class SubscriptionService {
 
   // Check subscription status and update if needed
   static async syncSubscriptionStatus(userId: string) {
+    if (!stripe || !stripeEnabled) {
+      // Return user without syncing if Stripe is not configured
+      return await storage.getUserById(userId);
+    }
     try {
       const user = await storage.getUserById(userId);
       if (!user?.stripeSubscriptionId) return user;
