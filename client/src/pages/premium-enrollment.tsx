@@ -8,40 +8,23 @@ import { Link, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
+import { SUBSCRIPTION_PLANS } from "@shared/subscription-plans";
 
 // Stripe is optional for local development
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY
   ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
   : null;
 
-const plans = [
-  {
-    id: "monthly",
-    name: "Monthly Premium",
-    price: 4.99,
-    period: "month",
-    popular: false,
-    priceId: "price_monthly"
-  },
-  {
-    id: "quarterly",
-    name: "Quarterly Premium", 
-    price: 12.99,
-    period: "3 months",
-    popular: true,
-    savings: "Save 13%",
-    priceId: "price_quarterly"
-  },
-  {
-    id: "yearly",
-    name: "Yearly Premium",
-    price: 39.99,
-    period: "year",
-    popular: false,
-    savings: "Save 33%",
-    priceId: "price_yearly"
-  }
-];
+// Derived from the single source of truth (shared/subscription-plans) so
+// prices and savings only ever need to change in one place.
+const plans = SUBSCRIPTION_PLANS.map((p) => ({
+  id: p.id,
+  name: `${p.name.replace(' Plan', '')} Premium`,
+  price: p.price,
+  period: p.interval === 'year' ? 'year' : p.intervalCount > 1 ? `${p.intervalCount} months` : 'month',
+  popular: !!p.popular,
+  savings: p.savings,
+}));
 
 interface Feature {
   icon: LucideIcon;
@@ -106,7 +89,15 @@ export default function PremiumEnrollment() {
     },
     onSuccess: async (data) => {
       console.log('Subscription created:', data);
-      if (data.clientSecret) {
+      if (data.devMode) {
+        // Local development without Stripe: subscription activated directly
+        toast({
+          title: "Premium Activated (dev mode) 🧪",
+          description: "Stripe is not configured, so the subscription was simulated locally.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      } else if (data.clientSecret) {
         const stripe = await stripePromise;
         if (!stripe) {
           throw new Error('Stripe failed to load');

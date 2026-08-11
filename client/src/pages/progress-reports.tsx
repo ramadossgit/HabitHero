@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,12 +7,13 @@ import { Link } from "wouter";
 import type { Habit, HabitCompletion, Child } from "@shared/schema";
 
 export default function ProgressReportsPage() {
-  // Get the first child for now (can be extended for multiple children)
   const { data: children } = useQuery<Child[]>({
     queryKey: ["/api/children"],
   });
 
-  const child = children?.[0];
+  // The parent explicitly picks whose report to view — never auto-switch
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const child = children?.find((c) => c.id === selectedChildId) ?? children?.[0];
 
   const { data: habits = [] } = useQuery<Habit[]>({
     queryKey: ["/api/children", child?.id, "habits"],
@@ -48,7 +50,8 @@ export default function ProgressReportsPage() {
       const dateStr = date.toISOString().split('T')[0];
 
       const dayCompletions = approvedCompletions.filter(c => c.date === dateStr);
-      const xpEarned = dayCompletions.length * 10; // 10 XP per completion
+      // Sum the XP each completion actually granted
+      const xpEarned = dayCompletions.reduce((sum, c) => sum + (c.xpEarned || 0), 0);
 
       weeklyData.push({
         day: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -60,7 +63,9 @@ export default function ProgressReportsPage() {
     return {
       totalXP: child?.totalXp || 0,
       currentLevel: child?.level || 1,
-      bestStreak: 5, // Calculate from actual data
+      bestStreak: habits.length
+        ? Math.max(0, ...habits.map((h) => calculateHabitStreak(h.id)))
+        : 0,
       activeHabits: habits.length,
       weeklyData
     };
@@ -87,7 +92,7 @@ export default function ProgressReportsPage() {
         completions: habitCompletions.length,
         streak,
         completionRate,
-        xpEarned: habitCompletions.length * 10
+        xpEarned: habitCompletions.reduce((sum, c) => sum + (c.xpEarned || 0), 0)
       };
     });
   };
@@ -158,6 +163,27 @@ export default function ProgressReportsPage() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
+        {/* Child selector — the report never switches on its own */}
+        {(children?.length ?? 0) > 1 && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {children!.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedChildId(c.id)}
+                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors ${
+                  child?.id === c.id
+                    ? "bg-white text-coral border-white"
+                    : "bg-white/10 text-white border-white/30 hover:bg-white/20"
+                }`}
+                data-testid={`report-child-${c.id}`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Overview Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="p-4 text-center border-4 border-mint">

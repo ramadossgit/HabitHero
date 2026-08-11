@@ -217,7 +217,7 @@ export default function VoiceCommandHandler({ children, voiceCommandsEnabled }: 
         onClick={toggleListening}
         className={`w-14 h-14 rounded-full shadow-lg transition-all ${
           isListening 
-            ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+            ? 'bg-destructive hover:bg-destructive/80 animate-pulse'
             : 'bg-mint hover:bg-mint/80'
         }`}
       >

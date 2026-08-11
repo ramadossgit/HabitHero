@@ -143,7 +143,7 @@ export default function RewardApproval({ childId }: RewardApprovalProps) {
                 <Button
                   onClick={() => handleApprove(transaction.id)}
                   disabled={approveRewardMutation.isPending}
-                  className="bg-green-500 hover:bg-green-600 text-white"
+                  className="bg-mint hover:bg-mint/80 text-white"
                   size="sm"
                   data-testid={`button-approve-${transaction.id}`}
                 >

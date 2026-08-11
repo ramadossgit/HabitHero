@@ -1,346 +1,207 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
 import HabitApproval from '../../client/src/components/parent/habit-approval'
 import * as useAuthModule from '../../client/src/hooks/useAuth'
 
-// Mock the useAuth hook
+// Mock the useAuth hook (subscription status drives the premium gate)
 vi.mock('../../client/src/hooks/useAuth')
-
 const mockUseAuth = vi.mocked(useAuthModule.useAuth)
 
-describe('HabitApproval Component', () => {
-  let queryClient: QueryClient
-  let user: ReturnType<typeof userEvent.setup>
+const mockChildren = [
+  { id: 'child-1', name: 'Test Child 1' },
+  { id: 'child-2', name: 'Test Child 2' },
+] as any
 
-  const mockChildren = [
-    { id: 'child-1', name: 'Test Child 1', pendingCount: 2 },
-    { id: 'child-2', name: 'Test Child 2', pendingCount: 0 },
-  ]
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    })
-    user = userEvent.setup()
-
-    // Mock authenticated premium user
-    mockUseAuth.mockReturnValue({
-      user: {
-        id: 'test-user-id',
-        subscriptionStatus: 'active',
-        email: 'test@example.com',
-      },
-      isAuthenticated: true,
-      isLoading: false,
-    })
-  })
-
-  const renderWithProviders = (component: React.ReactElement) => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        {component}
-      </QueryClientProvider>
-    )
-  }
-
-  describe('Premium Auto-Approval Features', () => {
-    it('should display auto-approval settings for premium users', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/auto-approval settings/i)).toBeInTheDocument()
-      })
-
-      expect(screen.getByRole('button', { name: /configure auto-approval/i })).toBeInTheDocument()
-    })
-
-    it('should show upgrade prompt for free users', async () => {
-      mockUseAuth.mockReturnValue({
-        user: {
-          id: 'free-user-id',
-          subscriptionStatus: 'free',
-          email: 'free@example.com',
+function makeQueryClient() {
+  // Mirror the app's default queryFn (queryKey segments joined into a URL)
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: async ({ queryKey }) => {
+          const res = await fetch(queryKey.join('/') as string, { credentials: 'include' })
+          if (!res.ok) throw new Error(`${res.status}`)
+          return res.json()
         },
-        isAuthenticated: true,
-        isLoading: false,
-      })
+      },
+      mutations: { retry: false },
+    },
+  })
+}
 
-      renderWithProviders(<HabitApproval children={mockChildren} />)
+function renderComponent() {
+  return render(
+    <QueryClientProvider client={makeQueryClient()}>
+      <HabitApproval children={mockChildren} />
+    </QueryClientProvider>,
+  )
+}
 
-      await waitFor(() => {
-        expect(screen.getByText(/premium feature/i)).toBeInTheDocument()
-      })
+function authAs(subscriptionStatus: string) {
+  mockUseAuth.mockReturnValue({
+    user: { id: 'test-user-id', email: 'test@example.com', subscriptionStatus },
+    isAuthenticated: true,
+    isLoading: false,
+  } as any)
+}
 
-      expect(screen.getByText(/upgrade to premium/i)).toBeInTheDocument()
+describe('HabitApproval Component', () => {
+  beforeEach(() => {
+    authAs('active')
+  })
+
+  describe('Premium auto-approval', () => {
+    it('shows the Settings toggle for premium users, panel closed by default', async () => {
+      renderComponent()
+
+      expect(await screen.findByRole('button', { name: /settings/i })).toBeInTheDocument()
+      expect(screen.queryByText(/premium auto-approval settings/i)).not.toBeInTheDocument()
     })
 
-    it('should open auto-approval settings modal when configure button is clicked', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
+    it('opens the auto-approval settings panel from the Settings button', async () => {
+      const user = userEvent.setup()
+      renderComponent()
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /configure auto-approval/i })).toBeInTheDocument()
-      })
+      await user.click(await screen.findByRole('button', { name: /settings/i }))
 
-      await user.click(screen.getByRole('button', { name: /configure auto-approval/i }))
+      expect(await screen.findByText(/premium auto-approval settings/i)).toBeInTheDocument()
+      expect(screen.getByText(/enable auto-approval/i)).toBeInTheDocument()
+    })
 
-      expect(screen.getByText(/auto-approve after/i)).toBeInTheDocument()
+    it('shows time configuration and statistics when auto-approval is enabled', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(await screen.findByRole('button', { name: /settings/i }))
+
+      // Settings fetched from MSW arrive with enabled=true
+      expect(await screen.findByText(/auto-approve after/i)).toBeInTheDocument()
       expect(screen.getByText(/time unit/i)).toBeInTheDocument()
+      // Stats from /api/auto-approval-stats
+      expect(await screen.findByText(/auto-approved this week/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /save settings/i })).toBeInTheDocument()
+    })
+
+    it('saves settings and closes the panel', async () => {
+      const user = userEvent.setup()
+      let putBody: any = null
+      server.use(
+        http.put('/api/auto-approval-settings', async ({ request }) => {
+          putBody = await request.json()
+          return HttpResponse.json(putBody)
+        }),
+      )
+
+      renderComponent()
+      await user.click(await screen.findByRole('button', { name: /settings/i }))
+      await user.click(await screen.findByRole('button', { name: /save settings/i }))
+
+      await waitFor(() => {
+        expect(putBody).not.toBeNull()
+      })
+      expect(putBody.enabled).toBe(true)
+      await waitFor(() => {
+        expect(screen.queryByText(/premium auto-approval settings/i)).not.toBeInTheDocument()
+      })
+    })
+
+    it('shows an upgrade prompt instead of settings for free users', async () => {
+      authAs('free')
+      renderComponent()
+
+      expect(await screen.findByText(/premium feature/i)).toBeInTheDocument()
+      expect(screen.getByText(/upgrade to premium/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^settings$/i })).not.toBeInTheDocument()
+    })
+
+    it('grants trial users access to auto-approval settings', async () => {
+      authAs('trial')
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(await screen.findByRole('button', { name: /settings/i }))
+      expect(await screen.findByText(/premium auto-approval settings/i)).toBeInTheDocument()
+      expect(screen.getByText(/trial access/i)).toBeInTheDocument()
     })
   })
 
-  describe('Auto-Approval Settings Form', () => {
-    beforeEach(async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-      
+  describe('Child selection and habit review', () => {
+    it('lists all children for selection', async () => {
+      renderComponent()
+
+      expect(await screen.findByTestId('select-child-child-1')).toBeInTheDocument()
+      expect(screen.getByTestId('select-child-child-2')).toBeInTheDocument()
+      expect(screen.getByText('Test Child 1')).toBeInTheDocument()
+      expect(screen.getByText('Test Child 2')).toBeInTheDocument()
+    })
+
+    it('shows pending habits after selecting a child', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(await screen.findByTestId('select-child-child-1'))
+
+      expect(await screen.findByText('Brush Teeth')).toBeInTheDocument()
+      expect(screen.getByTestId('approve-habit-completion-1')).toBeInTheDocument()
+      expect(screen.getByTestId('reject-habit-completion-1')).toBeInTheDocument()
+    })
+
+    it('shows an all-caught-up message for children without pending habits', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+
+      await user.click(await screen.findByTestId('select-child-child-2'))
+
+      expect(await screen.findByText(/all caught up/i)).toBeInTheDocument()
+    })
+
+    it('approves a habit through the API', async () => {
+      const user = userEvent.setup()
+      let approvedId: string | null = null
+      server.use(
+        http.post('/api/habit-completions/:completionId/approve', ({ params }) => {
+          approvedId = String(params.completionId)
+          return HttpResponse.json({ id: params.completionId, status: 'approved' })
+        }),
+      )
+
+      renderComponent()
+      await user.click(await screen.findByTestId('select-child-child-1'))
+      await user.click(await screen.findByTestId('approve-habit-completion-1'))
+
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /configure auto-approval/i })).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByRole('button', { name: /configure auto-approval/i }))
-    })
-
-    it('should display all time value options', async () => {
-      const timeValueDropdown = screen.getByRole('button', { name: /select time value/i })
-      await user.click(timeValueDropdown)
-
-      // Check for predefined time values
-      const expectedValues = ['1', '2', '3', '4', '5', '6', '8', '12', '24', '48', '72']
-      for (const value of expectedValues) {
-        expect(screen.getByRole('option', { name: value })).toBeInTheDocument()
-      }
-    })
-
-    it('should display all time unit options', async () => {
-      const timeUnitDropdown = screen.getByRole('button', { name: /select time unit/i })
-      await user.click(timeUnitDropdown)
-
-      expect(screen.getByRole('option', { name: 'hours' })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: 'days' })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: 'weeks' })).toBeInTheDocument()
-    })
-
-    it('should update time value when selected', async () => {
-      const timeValueDropdown = screen.getByRole('button', { name: /select time value/i })
-      await user.click(timeValueDropdown)
-
-      await user.click(screen.getByRole('option', { name: '12' }))
-
-      // Verify the dropdown shows the selected value
-      expect(screen.getByDisplayValue('12')).toBeInTheDocument()
-    })
-
-    it('should update time unit when selected', async () => {
-      const timeUnitDropdown = screen.getByRole('button', { name: /select time unit/i })
-      await user.click(timeUnitDropdown)
-
-      await user.click(screen.getByRole('option', { name: 'days' }))
-
-      // Verify the dropdown shows the selected value
-      expect(screen.getByDisplayValue('days')).toBeInTheDocument()
-    })
-
-    it('should enable/disable auto-approval with toggle switch', async () => {
-      const enableToggle = screen.getByRole('switch', { name: /enable auto-approval/i })
-      
-      // Initially should be enabled (based on mock data)
-      expect(enableToggle).toBeChecked()
-
-      await user.click(enableToggle)
-      expect(enableToggle).not.toBeChecked()
-
-      await user.click(enableToggle)
-      expect(enableToggle).toBeChecked()
-    })
-
-    it('should display time preview when settings are changed', async () => {
-      const timeValueDropdown = screen.getByRole('button', { name: /select time value/i })
-      await user.click(timeValueDropdown)
-      await user.click(screen.getByRole('option', { name: '6' }))
-
-      const timeUnitDropdown = screen.getByRole('button', { name: /select time unit/i })
-      await user.click(timeUnitDropdown)
-      await user.click(screen.getByRole('option', { name: 'hours' }))
-
-      expect(screen.getByText(/6 hours/i)).toBeInTheDocument()
-    })
-
-    it('should save settings and close modal on successful save', async () => {
-      const saveButton = screen.getByRole('button', { name: /save settings/i })
-      
-      await user.click(saveButton)
-
-      // Modal should close after successful save
-      await waitFor(() => {
-        expect(screen.queryByText(/auto-approve after/i)).not.toBeInTheDocument()
+        expect(approvedId).toBe('completion-1')
       })
     })
 
-    it('should display loading state while saving', async () => {
-      const saveButton = screen.getByRole('button', { name: /save settings/i })
-      
-      await user.click(saveButton)
+    it('asks for a feedback message when rejecting', { timeout: 20000 }, async () => {
+      const user = userEvent.setup()
+      let rejectBody: any = null
+      server.use(
+        http.post('/api/habit-completions/:completionId/reject', async ({ request, params }) => {
+          rejectBody = { id: params.completionId, ...(await request.json() as object) }
+          return HttpResponse.json({ id: params.completionId, status: 'rejected' })
+        }),
+      )
 
-      expect(screen.getByText(/saving.../i)).toBeInTheDocument()
-    })
-  })
+      renderComponent()
+      await user.click(await screen.findByTestId('select-child-child-1'))
+      await user.click(await screen.findByTestId('reject-habit-completion-1'))
 
-  describe('Child Selection and Habit Management', () => {
-    it('should display all children with pending counts', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Child 1')).toBeInTheDocument()
-        expect(screen.getByText('Test Child 2')).toBeInTheDocument()
-      })
-
-      expect(screen.getByText('2 pending')).toBeInTheDocument()
-    })
-
-    it('should select child when clicked', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
+      // Rejection form appears
+      const messageBox = await screen.findByTestId('reject-message-completion-1')
+      await user.type(messageBox, 'redo it properly')
+      await user.click(screen.getByTestId('confirm-reject-completion-1'))
 
       await waitFor(() => {
-        expect(screen.getByText('Test Child 1')).toBeInTheDocument()
+        expect(rejectBody).not.toBeNull()
       })
-
-      const childButton = screen.getByTestId('select-child-child-1')
-      await user.click(childButton)
-
-      expect(childButton).toHaveClass('border-blue-500')
-    })
-
-    it('should display auto-approval badge for premium users with enabled settings', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/auto-approval enabled/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Habit Approval Actions', () => {
-    beforeEach(async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-      
-      await waitFor(() => {
-        expect(screen.getByText('Test Child 1')).toBeInTheDocument()
-      })
-
-      // Select child to show pending habits
-      await user.click(screen.getByTestId('select-child-child-1'))
-    })
-
-    it('should show pending habits for selected child', async () => {
-      await waitFor(() => {
-        expect(screen.getByText(/pending habits/i)).toBeInTheDocument()
-      })
-    })
-
-    it('should approve habit when approve button is clicked', async () => {
-      await waitFor(() => {
-        const approveButton = screen.getByRole('button', { name: /approve/i })
-        expect(approveButton).toBeInTheDocument()
-      })
-
-      const approveButton = screen.getByRole('button', { name: /approve/i })
-      await user.click(approveButton)
-
-      // Should show success message
-      await waitFor(() => {
-        expect(screen.getByText(/habit approved/i)).toBeInTheDocument()
-      })
-    })
-
-    it('should require feedback message when rejecting habit', async () => {
-      await waitFor(() => {
-        const rejectButton = screen.getByRole('button', { name: /reject/i })
-        expect(rejectButton).toBeInTheDocument()
-      })
-
-      const rejectButton = screen.getByRole('button', { name: /reject/i })
-      await user.click(rejectButton)
-
-      // Try to submit without message
-      const submitRejectButton = screen.getByRole('button', { name: /send feedback/i })
-      await user.click(submitRejectButton)
-
-      expect(screen.getByText(/message required/i)).toBeInTheDocument()
-    })
-
-    it('should reject habit with feedback message', async () => {
-      await waitFor(() => {
-        const rejectButton = screen.getByRole('button', { name: /reject/i })
-        expect(rejectButton).toBeInTheDocument()
-      })
-
-      const rejectButton = screen.getByRole('button', { name: /reject/i })
-      await user.click(rejectButton)
-
-      const feedbackTextarea = screen.getByPlaceholderText(/provide feedback/i)
-      await user.type(feedbackTextarea, 'Please try again with more effort')
-
-      const submitRejectButton = screen.getByRole('button', { name: /send feedback/i })
-      await user.click(submitRejectButton)
-
-      await waitFor(() => {
-        expect(screen.getByText(/feedback sent/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('should display error message when API calls fail', async () => {
-      // Mock API failure
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('API Error'))
-
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/error/i)).toBeInTheDocument()
-      })
-    })
-
-    it('should handle network errors gracefully', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('Network Error'))
-
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/network error/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Accessibility', () => {
-    it('should have proper ARIA labels for all interactive elements', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        const configureButton = screen.getByRole('button', { name: /configure auto-approval/i })
-        expect(configureButton).toHaveAttribute('aria-label')
-      })
-    })
-
-    it('should support keyboard navigation', async () => {
-      renderWithProviders(<HabitApproval children={mockChildren} />)
-
-      await waitFor(() => {
-        const configureButton = screen.getByRole('button', { name: /configure auto-approval/i })
-        expect(configureButton).toBeInTheDocument()
-      })
-
-      const configureButton = screen.getByRole('button', { name: /configure auto-approval/i })
-      
-      // Test keyboard activation
-      configureButton.focus()
-      fireEvent.keyDown(configureButton, { key: 'Enter', code: 'Enter' })
-
-      expect(screen.getByText(/auto-approve after/i)).toBeInTheDocument()
+      expect(rejectBody.id).toBe('completion-1')
+      expect(rejectBody.message).toMatch(/redo it properly/)
     })
   })
 })

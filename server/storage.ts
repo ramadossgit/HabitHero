@@ -12,6 +12,8 @@ import {
   weekendChallenges,
   gearShopItems,
   rewardTransactions,
+  gamePurchases,
+  gameProgress,
   type User,
   type UpsertUser,
   type Child,
@@ -37,6 +39,8 @@ import {
   type InsertGearShopItem,
   type RewardTransaction,
   type InsertRewardTransaction,
+  type GamePurchase,
+  type GameProgress,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, desc, sql, or } from "drizzle-orm";
@@ -79,6 +83,7 @@ export interface IStorage {
   
   // Habit completion operations
   getHabitCompletions(childId: string, startDate?: string, endDate?: string): Promise<HabitCompletion[]>;
+  countHabitCompletions(habitId: string): Promise<number>;
   createHabitCompletion(completion: InsertHabitCompletion): Promise<HabitCompletion>;
   getHabitStreak(habitId: string, childId: string): Promise<number>;
   getTodaysCompletions(childId: string): Promise<HabitCompletion[]>;
@@ -101,6 +106,18 @@ export interface IStorage {
   
   // Mini-game operations
   getAllMiniGames(): Promise<MiniGame[]>;
+
+  // Mini-game purchase operations (points held in escrow until parent review)
+  getGamePurchasesByChild(childId: string): Promise<GamePurchase[]>;
+  getGamePurchase(purchaseId: string): Promise<GamePurchase | undefined>;
+  getPendingGamePurchasesByParent(parentId: string): Promise<(GamePurchase & { childName: string })[]>;
+  createGamePurchase(childId: string, gameId: string, gameTitle: string, cost: number): Promise<GamePurchase>;
+  reviewGamePurchase(purchaseId: string, approve: boolean, reviewedBy: string, parentMessage?: string): Promise<GamePurchase>;
+
+  // Mini-game progress operations
+  getGameProgressByChild(childId: string): Promise<GameProgress[]>;
+  unlockGameLevel(childId: string, gameId: string, level: number, cost: number): Promise<GameProgress>;
+  recordGameSession(childId: string, gameId: string, level: number, score: number): Promise<GameProgress>;
   
   // Parental controls operations
   getParentalControls(childId: string): Promise<ParentalControls | undefined>;
@@ -112,14 +129,15 @@ export interface IStorage {
   getAllAvatarShopItems(): Promise<AvatarShopItem[]>;
   createAvatarShopItem(item: InsertAvatarShopItem): Promise<AvatarShopItem>;
   purchaseAvatar(childId: string, avatarType: string, cost: number): Promise<Child>;
-  
+  saveAvatarState(childId: string, avatarId: string, equipped: Record<string, string>): Promise<Child>;
+  recordPremiumInterest(childId: string, module?: string): Promise<Child>;
+
   // Weekend challenge operations
   getWeekendChallenges(childId: string): Promise<WeekendChallenge[]>;
   createWeekendChallenge(challenge: InsertWeekendChallenge): Promise<WeekendChallenge>;
   acceptWeekendChallenge(challengeId: string): Promise<WeekendChallenge>;
   completeWeekendChallenge(challengeId: string, pointsEarned: number): Promise<WeekendChallenge>;
-  updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child>;
-  
+
   // Gear shop operations
   getAllGearShopItems(): Promise<GearShopItem[]>;
   createGearShopItem(item: InsertGearShopItem): Promise<GearShopItem>;
@@ -277,27 +295,14 @@ export class DatabaseStorage implements IStorage {
     };
 
     const [newChild] = await db.insert(children).values(childWithCredentials).returning();
-    
-    // No default habits - let parents decide what habits to add
 
-    // Create default parental controls
+    // No default habits and NO default rewards — every family designs their
+    // own. Parents know what motivates their kid; the app must not presume.
+    // (Parental controls are technical safety settings, not content, so
+    // those still get sensible defaults.)
     await db.insert(parentalControls).values({
       childId: newChild.id,
     });
-
-    // Create default rewards
-    const defaultRewards = [
-      { name: "Extra Screen Time (30 min)", description: "Bonus screen time for good habits", type: "screen_time", value: "30_minutes", cost: 3, costType: "habits" },
-      { name: "Special Treat", description: "Choose a special snack", type: "treat", value: "special_snack", cost: 5, costType: "habits" },
-      { name: "Choose Dinner Menu", description: "Pick what the family has for dinner", type: "privilege", value: "dinner_choice", cost: 5, costType: "streak" },
-    ];
-
-    for (const reward of defaultRewards) {
-      await db.insert(rewards).values({
-        childId: newChild.id,
-        ...reward,
-      });
-    }
 
     return newChild;
   }
@@ -346,15 +351,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child> {
-    const [child] = await db.select().from(children).where(eq(children.id, childId));
-    if (!child) throw new Error("Child not found");
-
-    const newRewardPoints = child.rewardPoints + pointsGained;
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
 
     const [updatedChild] = await db
       .update(children)
       .set({
-        rewardPoints: newRewardPoints,
+        rewardPoints: (child.rewardPoints || 0) + pointsGained,
         updatedAt: new Date(),
       })
       .where(eq(children.id, childId))
@@ -384,6 +389,30 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(masterHabits.id, id))
       .returning();
+
+    // Propagate shared fields to every assigned child habit so kids'
+    // devices stay in sync — most importantly isActive: an inactive
+    // master must disappear from kid dashboards immediately.
+    if (updatedMasterHabit) {
+      const sharedFields = [
+        "name", "description", "icon", "xpReward", "color", "frequency",
+        "isActive", "reminderEnabled", "voiceReminderEnabled", "customRingtone",
+        "reminderDuration", "voiceRecording", "voiceRecordingName",
+        "timeRangeStart", "timeRangeEnd", "startDate", "endDate",
+        "occurrenceLimit", "schedule",
+      ] as const;
+      const propagate: Record<string, unknown> = {};
+      for (const key of sharedFields) {
+        if (key in updates) propagate[key] = (updates as any)[key];
+      }
+      if (Object.keys(propagate).length > 0) {
+        await db
+          .update(habits)
+          .set({ ...propagate, updatedAt: new Date() })
+          .where(eq(habits.masterHabitId, id));
+      }
+    }
+
     return updatedMasterHabit;
   }
 
@@ -475,6 +504,15 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(habitCompletions.completedAt));
   }
 
+  async countHabitCompletions(habitId: string): Promise<number> {
+    // Rejected attempts don't count toward a habit's occurrence goal
+    const rows = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(habitCompletions)
+      .where(and(eq(habitCompletions.habitId, habitId), sql`${habitCompletions.status} != 'rejected'`));
+    return rows[0]?.count ?? 0;
+  }
+
   async createHabitCompletion(completion: InsertHabitCompletion): Promise<HabitCompletion> {
     // Calculate streak
     const streak = await this.getHabitStreak(completion.habitId, completion.childId);
@@ -562,7 +600,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(habitCompletions.completedAt));
   }
 
-  async getAllPendingHabitCompletions(): Promise<any[]> {
+  async getAllPendingHabitCompletions(parentId: string): Promise<any[]> {
+    // MUST stay scoped to the requesting parent — without the parentId
+    // filter this returned every family's children and habits.
     return await db
       .select({
         completion: habitCompletions,
@@ -572,7 +612,7 @@ export class DatabaseStorage implements IStorage {
       .from(habitCompletions)
       .innerJoin(habits, eq(habitCompletions.habitId, habits.id))
       .innerJoin(children, eq(habitCompletions.childId, children.id))
-      .where(eq(habitCompletions.status, "pending"))
+      .where(and(eq(habitCompletions.status, "pending"), eq(children.parentId, parentId)))
       .orderBy(desc(habitCompletions.completedAt));
   }
 
@@ -605,6 +645,15 @@ export class DatabaseStorage implements IStorage {
     await this.updateChildXP(completion.childId, completion.xpEarned);
     if (completion.rewardPointsEarned > 0) {
       await this.updateChildRewardPoints(completion.childId, completion.rewardPointsEarned);
+      await this.createRewardTransaction({
+        childId: completion.childId,
+        type: 'earned',
+        amount: completion.rewardPointsEarned,
+        source: 'habit_completion',
+        description: `Earned ${completion.rewardPointsEarned} points for an approved habit`,
+        requiresApproval: false,
+        isApproved: true,
+      });
     }
 
     return approvedCompletion;
@@ -746,6 +795,210 @@ export class DatabaseStorage implements IStorage {
   // Mini-game operations
   async getAllMiniGames(): Promise<MiniGame[]> {
     return await db.select().from(miniGames).where(eq(miniGames.isActive, true));
+  }
+
+  // Mini-game purchase operations
+  async getGamePurchasesByChild(childId: string): Promise<GamePurchase[]> {
+    return await db
+      .select()
+      .from(gamePurchases)
+      .where(eq(gamePurchases.childId, childId))
+      .orderBy(desc(gamePurchases.requestedAt));
+  }
+
+  async getGamePurchase(purchaseId: string): Promise<GamePurchase | undefined> {
+    const [purchase] = await db.select().from(gamePurchases).where(eq(gamePurchases.id, purchaseId));
+    return purchase;
+  }
+
+  async getPendingGamePurchasesByParent(parentId: string): Promise<(GamePurchase & { childName: string })[]> {
+    const rows = await db
+      .select({ purchase: gamePurchases, childName: children.name })
+      .from(gamePurchases)
+      .innerJoin(children, eq(gamePurchases.childId, children.id))
+      .where(and(eq(children.parentId, parentId), eq(gamePurchases.status, "pending")))
+      .orderBy(desc(gamePurchases.requestedAt));
+    return rows.map((r) => ({ ...r.purchase, childName: r.childName }));
+  }
+
+  async createGamePurchase(childId: string, gameId: string, gameTitle: string, cost: number): Promise<GamePurchase> {
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+
+    const existing = await db
+      .select()
+      .from(gamePurchases)
+      .where(
+        and(
+          eq(gamePurchases.childId, childId),
+          eq(gamePurchases.gameId, gameId),
+          or(eq(gamePurchases.status, "pending"), eq(gamePurchases.status, "approved")),
+        ),
+      );
+    if (existing.some((p) => p.status === "approved")) {
+      throw new Error("Game already purchased");
+    }
+    if (existing.some((p) => p.status === "pending")) {
+      throw new Error("Purchase already waiting for parent approval");
+    }
+
+    if ((child.rewardPoints || 0) < cost) {
+      throw new Error("Not enough reward points");
+    }
+
+    // Deduct the points up front (escrow); they come back if the parent rejects
+    await db
+      .update(children)
+      .set({ rewardPoints: (child.rewardPoints || 0) - cost, updatedAt: new Date() })
+      .where(eq(children.id, childId));
+
+    await this.createRewardTransaction({
+      childId,
+      type: "spent",
+      amount: -cost,
+      source: "game_purchase",
+      description: `Requested mini-game: ${gameTitle} (waiting for parent approval)`,
+    });
+
+    const [purchase] = await db
+      .insert(gamePurchases)
+      .values({ childId, gameId, gameTitle, pointsCost: cost, status: "pending" })
+      .returning();
+    return purchase;
+  }
+
+  async reviewGamePurchase(purchaseId: string, approve: boolean, reviewedBy: string, parentMessage?: string): Promise<GamePurchase> {
+    const purchase = await this.getGamePurchase(purchaseId);
+    if (!purchase) {
+      throw new Error("Purchase request not found");
+    }
+    if (purchase.status !== "pending") {
+      throw new Error("Purchase request has already been reviewed");
+    }
+
+    const [updated] = await db
+      .update(gamePurchases)
+      .set({
+        status: approve ? "approved" : "rejected",
+        reviewedAt: new Date(),
+        reviewedBy,
+        parentMessage: parentMessage || null,
+      })
+      .where(eq(gamePurchases.id, purchaseId))
+      .returning();
+
+    if (approve) {
+      // Unlock the game at level 1 for the child
+      const [existingProgress] = await db
+        .select()
+        .from(gameProgress)
+        .where(and(eq(gameProgress.childId, purchase.childId), eq(gameProgress.gameId, purchase.gameId)));
+      if (!existingProgress) {
+        await db.insert(gameProgress).values({
+          childId: purchase.childId,
+          gameId: purchase.gameId,
+          unlockedLevels: 1,
+        });
+      }
+    } else {
+      // Refund the escrowed points back to the child
+      await this.updateChildRewardPoints(purchase.childId, purchase.pointsCost);
+      await this.createRewardTransaction({
+        childId: purchase.childId,
+        type: "earned",
+        amount: purchase.pointsCost,
+        source: "game_purchase_refund",
+        description: `Refund: parent declined mini-game "${purchase.gameTitle}"`,
+      });
+    }
+
+    return updated;
+  }
+
+  // Mini-game progress operations
+  async getGameProgressByChild(childId: string): Promise<GameProgress[]> {
+    return await db.select().from(gameProgress).where(eq(gameProgress.childId, childId));
+  }
+
+  async unlockGameLevel(childId: string, gameId: string, level: number, cost: number): Promise<GameProgress> {
+    const child = await this.getChild(childId);
+    if (!child) {
+      throw new Error("Child not found");
+    }
+
+    const [progress] = await db
+      .select()
+      .from(gameProgress)
+      .where(and(eq(gameProgress.childId, childId), eq(gameProgress.gameId, gameId)));
+    if (!progress) {
+      throw new Error("Game is not unlocked yet. Ask your parent to approve the purchase first!");
+    }
+    if (progress.unlockedLevels >= level) {
+      throw new Error("Level already unlocked");
+    }
+    if (level !== progress.unlockedLevels + 1) {
+      throw new Error("Levels must be unlocked in order");
+    }
+    if ((child.rewardPoints || 0) < cost) {
+      throw new Error("Not enough reward points");
+    }
+
+    await db
+      .update(children)
+      .set({ rewardPoints: (child.rewardPoints || 0) - cost, updatedAt: new Date() })
+      .where(eq(children.id, childId));
+
+    await this.createRewardTransaction({
+      childId,
+      type: "spent",
+      amount: -cost,
+      source: "game_level_unlock",
+      description: `Unlocked level ${level} of mini-game ${gameId}`,
+    });
+
+    const [updated] = await db
+      .update(gameProgress)
+      .set({ unlockedLevels: level, updatedAt: new Date() })
+      .where(eq(gameProgress.id, progress.id))
+      .returning();
+    return updated;
+  }
+
+  async recordGameSession(childId: string, gameId: string, level: number, score: number): Promise<GameProgress> {
+    const [progress] = await db
+      .select()
+      .from(gameProgress)
+      .where(and(eq(gameProgress.childId, childId), eq(gameProgress.gameId, gameId)));
+    if (!progress) {
+      throw new Error("Game is not unlocked for this child");
+    }
+    if (level > progress.unlockedLevels) {
+      throw new Error("Level is not unlocked");
+    }
+
+    const [updated] = await db
+      .update(gameProgress)
+      .set({
+        highScore: Math.max(progress.highScore, score),
+        timesPlayed: progress.timesPlayed + 1,
+        lastPlayedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(gameProgress.id, progress.id))
+      .returning();
+
+    // Games grant hero XP only — never reward points — and replays pay a
+    // token amount unless the child beats their personal best. Completing
+    // habits stays the only meaningful way to progress.
+    const isNewBest = score > progress.highScore;
+    const xpAward = isNewBest ? score : Math.min(score, 10);
+    if (xpAward > 0) {
+      await this.updateChildXP(childId, xpAward);
+    }
+
+    return updated;
   }
 
   // Parental controls operations
@@ -902,24 +1155,6 @@ export class DatabaseStorage implements IStorage {
     return updatedChallenge;
   }
 
-  async updateChildRewardPoints(childId: string, pointsGained: number): Promise<Child> {
-    const child = await this.getChild(childId);
-    if (!child) {
-      throw new Error("Child not found");
-    }
-
-    const [updatedChild] = await db
-      .update(children)
-      .set({
-        rewardPoints: (child.rewardPoints || 0) + pointsGained,
-        updatedAt: new Date(),
-      })
-      .where(eq(children.id, childId))
-      .returning();
-
-    return updatedChild;
-  }
-
   // Gear shop operations
   async getAllGearShopItems(): Promise<GearShopItem[]> {
     return await db.select().from(gearShopItems).where(eq(gearShopItems.isActive, true));
@@ -966,6 +1201,38 @@ export class DatabaseStorage implements IStorage {
       description: `Purchased gear item: ${gearId}`,
     });
 
+    return updatedChild;
+  }
+
+  // Modular avatar system: save the child's selected base avatar + equipped gear.
+  async saveAvatarState(childId: string, avatarId: string, equipped: Record<string, string>): Promise<Child> {
+    const [updatedChild] = await db
+      .update(children)
+      .set({ avatarId, equippedGear: equipped, updatedAt: new Date() })
+      .where(eq(children.id, childId))
+      .returning();
+    if (!updatedChild) throw new Error("Child not found");
+    return updatedChild;
+  }
+
+  // Freemium funnel: record that a child asked to unlock premium content in a
+  // given module, keeping a per-module tally the parent can see.
+  async recordPremiumInterest(childId: string, module?: string): Promise<Child> {
+    const current = await this.getChild(childId);
+    if (!current) throw new Error("Child not found");
+    const modules = { ...((current.premiumInterestModules as Record<string, number>) || {}) };
+    if (module) modules[module] = (modules[module] || 0) + 1;
+    const [updatedChild] = await db
+      .update(children)
+      .set({
+        premiumInterestCount: sql`${children.premiumInterestCount} + 1`,
+        premiumInterestAt: new Date(),
+        premiumInterestModules: modules,
+        updatedAt: new Date(),
+      })
+      .where(eq(children.id, childId))
+      .returning();
+    if (!updatedChild) throw new Error("Child not found");
     return updatedChild;
   }
 

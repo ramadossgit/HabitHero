@@ -130,7 +130,7 @@ export default function ParentalControls({ childId }: ParentalControlsProps) {
               <Button
                 onClick={handleSave}
                 disabled={updateControlsMutation.isPending}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-purple hover:bg-purple/80 text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {updateControlsMutation.isPending ? "Saving..." : "Save Changes"}

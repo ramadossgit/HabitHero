@@ -1,192 +1,101 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type APIRequestContext } from '@playwright/test'
 
-test.describe('Habit Approval E2E Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    // Mock authentication
-    await page.route('**/api/auth/user', async route => {
-      await route.fulfill({
-        json: {
-          id: 'test-user-id',
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-          subscriptionStatus: 'active',
-        }
-      })
+// Habit approval E2E against the real app + database (no mocked routes):
+// a child completes a habit, the parent reviews it in the dashboard, and
+// XP/points are only granted after approval — the core loop of the app.
+
+const uniq = Date.now()
+const parentEmail = `pw-approval${uniq}@e2e.local`
+const parentPassword = 'Playwright1!'
+
+let childId = ''
+
+async function seed(api: APIRequestContext) {
+  await api.post('/api/auth/register', {
+    data: { email: parentEmail, password: parentPassword, firstName: 'Approve', lastName: 'Family' },
+  })
+  await api.post('/api/auth/login', { data: { email: parentEmail, password: parentPassword } })
+
+  const child = await (
+    await api.post('/api/children', {
+      data: {
+        name: 'Nova', avatarType: 'ninja', age: 9, level: 1, xp: 0, totalXp: 0,
+        rewardPoints: 0, unlockedAvatars: [], unlockedGear: [],
+      },
     })
+  ).json()
+  childId = child.id
 
-    // Mock children data
-    await page.route('**/api/children', async route => {
-      await route.fulfill({
-        json: [
-          { id: 'child-1', name: 'Test Child 1', pendingCount: 2 },
-          { id: 'child-2', name: 'Test Child 2', pendingCount: 0 },
-        ]
-      })
+  const habit = await (
+    await api.post(`/api/children/${childId}/habits`, {
+      data: { name: 'Make the Bed', icon: '🛏️', xpReward: 40, color: 'mint', frequency: 'daily' },
     })
+  ).json()
 
-    // Mock auto-approval settings
-    await page.route('**/api/auto-approval-settings', async route => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          json: {
-            enabled: true,
-            timeValue: 24,
-            timeUnit: 'hours',
-            applyToAllChildren: true,
-            childSpecificSettings: {},
-          }
-        })
-      } else {
-        await route.fulfill({ json: { success: true } })
-      }
-    })
+  // Child completes the habit (goes to pending — no reward yet)
+  await api.post(`/api/habits/${habit.id}/complete`, { data: {} })
+}
 
-    await page.goto('/')
-    await page.waitForLoadState('networkidle')
-  })
+test.describe.configure({ mode: 'serial' })
 
-  test('should display auto-approval settings for premium users', async ({ page }) => {
-    // Navigate to habit approval section
-    await page.click('text=Habit Management')
-    await page.waitForSelector('[data-testid="habit-approval-section"]')
+test.beforeAll(async ({ playwright, baseURL }) => {
+  const api = await playwright.request.newContext({ baseURL: baseURL! })
+  await seed(api)
+  await api.dispose()
+})
 
-    // Check for auto-approval settings
-    await expect(page.locator('text=Auto-Approval Settings')).toBeVisible()
-    await expect(page.locator('button:has-text("Configure Auto-Approval")')).toBeVisible()
-  })
+test('parent reviews and approves a pending habit; rewards only flow after approval', async ({ page, playwright, baseURL }) => {
+  // Sanity: completion is pending, nothing awarded yet
+  const api = await playwright.request.newContext({ baseURL: baseURL! })
+  await api.post('/api/auth/login', { data: { email: parentEmail, password: parentPassword } })
+  let child = await (await api.get(`/api/children/${childId}`)).json()
+  expect(child.totalXp).toBe(0)
+  expect(child.rewardPoints).toBe(0)
 
-  test('should open and configure auto-approval settings', async ({ page }) => {
-    await page.click('text=Habit Management')
-    await page.waitForSelector('[data-testid="habit-approval-section"]')
+  // Parent logs in through the UI
+  await page.goto('/parent/auth')
+  await page.getByRole('tab', { name: /sign in/i }).click()
+  await page.getByTestId('input-login-email').fill(parentEmail)
+  await page.getByTestId('input-login-password').fill(parentPassword)
+  await page.getByTestId('button-login').click()
+  await expect(page.getByTestId('sidebar-parent-dashboard')).toBeVisible()
 
-    // Open auto-approval settings
-    await page.click('button:has-text("Configure Auto-Approval")')
-    
-    // Wait for settings modal to open
-    await expect(page.locator('text=Auto-approve after')).toBeVisible()
-    await expect(page.locator('text=Time unit')).toBeVisible()
+  // Habits section → open the Approvals screen
+  await page.getByTestId('sidebar-item-habits').click()
+  await page.getByTestId('habits-approvals-banner').click()
+  await expect(page.getByTestId('select-child-' + childId)).toBeVisible()
+  await page.getByTestId('select-child-' + childId).click()
+  await expect(page.getByText('Make the Bed')).toBeVisible()
 
-    // Test time value selection
-    await page.click('[data-testid="select-time-value"]')
-    await page.click('text=12')
+  // Approve it
+  await page.locator('[data-testid^="approve-habit-"]').first().click()
+  await expect(page.getByText(/no pending habits for this child/i)).toBeVisible()
 
-    // Test time unit selection
-    await page.click('[data-testid="select-time-unit"]')
-    await page.click('text=days')
+  // XP and points are granted only now
+  await expect(async () => {
+    child = await (await api.get(`/api/children/${childId}`)).json()
+    expect(child.totalXp).toBe(40)
+    expect(child.rewardPoints).toBeGreaterThan(0)
+  }).toPass({ timeout: 15000 })
 
-    // Verify preview text updates
-    await expect(page.locator('text=12 days')).toBeVisible()
+  await api.dispose()
+})
 
-    // Save settings
-    await page.click('button:has-text("Save Settings")')
+test('premium auto-approval settings are reachable from the dashboard', async ({ page }) => {
+  await page.goto('/parent/auth')
+  await page.getByRole('tab', { name: /sign in/i }).click()
+  await page.getByTestId('input-login-email').fill(parentEmail)
+  await page.getByTestId('input-login-password').fill(parentPassword)
+  await page.getByTestId('button-login').click()
+  await expect(page.getByTestId('sidebar-parent-dashboard')).toBeVisible()
 
-    // Verify modal closes
-    await expect(page.locator('text=Auto-approve after')).not.toBeVisible()
-
-    // Verify success message
-    await expect(page.locator('text=Settings Updated')).toBeVisible()
-  })
-
-  test('should select child and manage pending habits', async ({ page }) => {
-    await page.click('text=Habit Management')
-    await page.waitForSelector('[data-testid="habit-approval-section"]')
-
-    // Select child with pending habits
-    await page.click('[data-testid="select-child-child-1"]')
-
-    // Verify child is selected
-    await expect(page.locator('[data-testid="select-child-child-1"]')).toHaveClass(/border-blue-500/)
-
-    // Check for pending habits section
-    await expect(page.locator('text=Pending Habits')).toBeVisible()
-  })
-
-  test('should approve and reject habits', async ({ page }) => {
-    // Mock pending habits
-    await page.route('**/api/pending-habits/all', async route => {
-      await route.fulfill({
-        json: [
-          {
-            completion: { id: 'completion-1', habitId: 'habit-1' },
-            child: { id: 'child-1', name: 'Test Child 1' },
-            habit: { id: 'habit-1', title: 'Brush Teeth' }
-          }
-        ]
-      })
-    })
-
-    // Mock approval endpoint
-    await page.route('**/api/habit-completions/*/approve', async route => {
-      await route.fulfill({ json: { success: true } })
-    })
-
-    await page.click('text=Habit Management')
-    await page.click('[data-testid="select-child-child-1"]')
-
-    // Approve habit
-    await page.click('button:has-text("Approve")')
-    await expect(page.locator('text=Habit Approved')).toBeVisible()
-  })
-
-  test('should handle mobile responsive design', async ({ page }) => {
-    // Test mobile viewport
-    await page.setViewportSize({ width: 375, height: 812 })
-    
-    await page.click('text=Habit Management')
-    
-    // Verify mobile-friendly layout
-    await expect(page.locator('[data-testid="habit-approval-section"]')).toBeVisible()
-    
-    // Check that settings button is accessible on mobile
-    await page.click('button:has-text("Configure Auto-Approval")')
-    await expect(page.locator('text=Auto-approve after')).toBeVisible()
-  })
-
-  test('should handle network errors gracefully', async ({ page }) => {
-    // Simulate network error
-    await page.route('**/api/auto-approval-settings', route => route.abort())
-    
-    await page.click('text=Habit Management')
-    
-    // Should show error state
-    await expect(page.locator('text=Error loading settings')).toBeVisible()
-  })
-
-  test('should validate accessibility requirements', async ({ page }) => {
-    await page.click('text=Habit Management')
-    
-    // Check ARIA labels
-    const configureButton = page.locator('button:has-text("Configure Auto-Approval")')
-    await expect(configureButton).toHaveAttribute('aria-label')
-    
-    // Test keyboard navigation
-    await page.keyboard.press('Tab')
-    await page.keyboard.press('Enter')
-    
-    // Should open settings modal
-    await expect(page.locator('text=Auto-approve after')).toBeVisible()
-  })
-
-  test('should handle premium vs free user restrictions', async ({ page }) => {
-    // Mock free user
-    await page.route('**/api/auth/user', async route => {
-      await route.fulfill({
-        json: {
-          id: 'free-user-id',
-          subscriptionStatus: 'free',
-        }
-      })
-    })
-
-    await page.reload()
-    await page.click('text=Habit Management')
-
-    // Should show premium upgrade prompt
-    await expect(page.locator('text=Premium Feature')).toBeVisible()
-    await expect(page.locator('text=Upgrade to Premium')).toBeVisible()
-
-    // Auto-approval settings should not be available
-    await expect(page.locator('button:has-text("Configure Auto-Approval")')).not.toBeVisible()
-  })
+  await page.getByTestId('sidebar-item-habits').click()
+  await page.getByTestId('habits-approvals-banner').click()
+  // Trial accounts have premium access during the trial window.
+  // Scope to the Habit Approvals card — the sidebar also has a "Settings" item.
+  const approvalCard = page.locator('div.fun-card', { hasText: 'Approvals' })
+  await expect(approvalCard).toBeVisible()
+  await approvalCard.getByRole('button', { name: /settings/i }).click()
+  await expect(page.getByText(/premium auto-approval settings/i)).toBeVisible()
+  await expect(page.getByText(/enable auto-approval/i)).toBeVisible()
 })

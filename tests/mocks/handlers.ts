@@ -75,6 +75,31 @@ export const handlers = [
     ])
   }),
 
+  // Per-child pending habits (used once a child is selected)
+  http.get('/api/children/:childId/pending-habits', ({ params }) => {
+    if (params.childId !== 'child-1') {
+      return HttpResponse.json([])
+    }
+    return HttpResponse.json([
+      {
+        completion: {
+          id: 'completion-1',
+          habitId: 'habit-1',
+          childId: 'child-1',
+          completedAt: new Date().toISOString(),
+          status: 'pending',
+          xpEarned: 10,
+        },
+        habit: {
+          id: 'habit-1',
+          name: 'Brush Teeth',
+          description: 'Brush teeth twice daily',
+          xpReward: 10,
+        },
+      },
+    ])
+  }),
+
   // Auto-approval endpoints
   http.get('/api/auto-approval-settings', () => {
     return HttpResponse.json({

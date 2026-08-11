@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+import { SUBSCRIPTION_PLANS } from "@shared/subscription-plans";
 
 export default function SubscriptionManagementCard() {
   const [, setLocation] = useLocation();
@@ -57,18 +58,24 @@ export default function SubscriptionManagementCard() {
   };
 
   const getPlanDetails = () => {
-    switch (user.subscriptionPlan) {
-      case 'monthly':
-        return { name: 'Premium Monthly', price: '$4.99/month', color: 'text-sky' };
-      case 'quarterly':
-        return { name: 'Premium Quarterly', price: '$12.99/quarter', color: 'text-coral' };
-      case 'yearly':
-        return { name: 'Premium Yearly', price: '$39.99/year', color: 'text-mint' };
-      case 'family':
-        return { name: 'Family Plan', price: '$59.99/year', color: 'text-purple' };
-      default:
-        return { name: 'Free Trial', price: 'Free for 7 days', color: 'text-mint' };
+    // Price/period come from the single source of truth so this label is
+    // always correct when plans change.
+    const colorById: Record<string, string> = {
+      monthly: 'text-sky', quarterly: 'text-coral', yearly: 'text-mint', family: 'text-purple',
+    };
+    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === user.subscriptionPlan);
+    if (plan) {
+      const per = plan.interval === 'year' ? 'year' : plan.intervalCount > 1 ? 'quarter' : 'month';
+      return {
+        name: `Premium ${plan.name.replace(' Plan', '')}`,
+        price: `$${plan.price}/${per}`,
+        color: colorById[plan.id] ?? 'text-sky',
+      };
     }
+    if (user.subscriptionPlan === 'family') {
+      return { name: 'Family Plan', price: '$59.99/year', color: 'text-purple' };
+    }
+    return { name: 'Free Trial', price: 'Free for 7 days', color: 'text-mint' };
   };
 
   const planDetails = getPlanDetails();

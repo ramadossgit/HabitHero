@@ -44,6 +44,8 @@ export const users = pgTable("users", {
     reminderTime: 15
   }),
   emailVerified: boolean("email_verified").default(false),
+  // Premium: auto-approve pending habit completions after a delay
+  autoApprovalSettings: jsonb("auto_approval_settings"),
   // Subscription fields
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
@@ -66,12 +68,23 @@ export const children = pgTable("children", {
   pin: varchar("pin"), // 4-digit PIN for child login
   avatarType: varchar("avatar_type").notNull().default("robot"), // robot, princess, ninja, animal
   avatarUrl: varchar("avatar_url"),
+  age: integer("age"), // Child's age in years, used to filter mini-games by age group
   level: integer("level").notNull().default(1),
   xp: integer("xp").notNull().default(0),
   totalXp: integer("total_xp").notNull().default(0),
   rewardPoints: integer("reward_points").notNull().default(0), // Points for purchasing avatars
   unlockedAvatars: jsonb("unlocked_avatars").default(["robot"]), // Available avatars for user
   unlockedGear: jsonb("unlocked_gear").default([]),
+  // Modular avatar system: the selected base avatar id and the equipped gear
+  // map ({ slot: gearItemId }). See shared/avatar-system.ts.
+  avatarId: varchar("avatar_id"),
+  equippedGear: jsonb("equipped_gear").default({}),
+  // Freemium funnel: how many times the child asked to unlock premium content,
+  // when they last asked, and a per-module breakdown ({ games, avatars, gear })
+  // so the parent knows exactly which modules their child is excited about.
+  premiumInterestCount: integer("premium_interest_count").notNull().default(0),
+  premiumInterestAt: timestamp("premium_interest_at"),
+  premiumInterestModules: jsonb("premium_interest_modules").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -96,6 +109,12 @@ export const masterHabits = pgTable("master_habits", {
   voiceRecordingName: varchar("voice_recording_name"),
   timeRangeStart: varchar("time_range_start").default("09:00"),
   timeRangeEnd: varchar("time_range_end").default("21:00"),
+  // Scheduling: when the habit starts, when it ends (by date and/or after a
+  // number of occurrences), and frequency detail (daily times / weekly days)
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  occurrenceLimit: integer("occurrence_limit"),
+  schedule: jsonb("schedule"), // { times?: ("morning"|"evening"|"night")[], weekdays?: number[] }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -121,6 +140,11 @@ export const habits = pgTable("habits", {
   voiceRecordingName: varchar("voice_recording_name"), // Name for the recording
   timeRangeStart: varchar("time_range_start").default("07:00"), // Start time for habit completion
   timeRangeEnd: varchar("time_range_end").default("20:00"), // End time for habit completion
+  // Scheduling (copied from the master habit on assignment)
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  occurrenceLimit: integer("occurrence_limit"),
+  schedule: jsonb("schedule"), // { times?: ("morning"|"evening"|"night")[], weekdays?: number[] }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -183,6 +207,35 @@ export const miniGames = pgTable("mini_games", {
   unlockRequirement: integer("unlock_requirement").notNull().default(2), // habits needed
   isActive: boolean("is_active").notNull().default(true),
 });
+
+// Mini-game purchases made with reward points; every purchase requires
+// parent approval. Points are deducted (held in escrow) when the child
+// requests the purchase and refunded if the parent rejects it.
+export const gamePurchases = pgTable("game_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  gameId: varchar("game_id").notNull(), // id from shared/games catalog
+  gameTitle: varchar("game_title").notNull(),
+  pointsCost: integer("points_cost").notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected
+  parentMessage: text("parent_message"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+});
+
+// Per-child progress in each purchased mini-game (levels + scores)
+export const gameProgress = pgTable("game_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: "cascade" }),
+  gameId: varchar("game_id").notNull(),
+  unlockedLevels: integer("unlocked_levels").notNull().default(1), // 1..3
+  highScore: integer("high_score").notNull().default(0),
+  timesPlayed: integer("times_played").notNull().default(0),
+  lastPlayedAt: timestamp("last_played_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [unique("uq_game_progress_child_game").on(table.childId, table.gameId)]);
 
 // Avatar shop items that can be purchased with reward points
 export const avatarShopItems = pgTable("avatar_shop_items", {
@@ -369,6 +422,20 @@ export const weekendChallengesRelations = relations(weekendChallenges, ({ one })
   }),
 }));
 
+export const gamePurchasesRelations = relations(gamePurchases, ({ one }) => ({
+  child: one(children, {
+    fields: [gamePurchases.childId],
+    references: [children.id],
+  }),
+}));
+
+export const gameProgressRelations = relations(gameProgress, ({ one }) => ({
+  child: one(children, {
+    fields: [gameProgress.childId],
+    references: [children.id],
+  }),
+}));
+
 export const parentalControlsRelations = relations(parentalControls, ({ one }) => ({
   child: one(children, {
     fields: [parentalControls.childId],
@@ -440,6 +507,18 @@ export const insertGearShopItemSchema = createInsertSchema(gearShopItems).omit({
   createdAt: true,
 });
 
+export const insertGamePurchaseSchema = createInsertSchema(gamePurchases).omit({
+  id: true,
+  requestedAt: true,
+  reviewedAt: true,
+});
+
+export const insertGameProgressSchema = createInsertSchema(gameProgress).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertRewardTransactionSchema = createInsertSchema(rewardTransactions).omit({
   id: true,
   createdAt: true,
@@ -496,3 +575,7 @@ export type GearShopItem = typeof gearShopItems.$inferSelect;
 export type InsertGearShopItem = z.infer<typeof insertGearShopItemSchema>;
 export type RewardTransaction = typeof rewardTransactions.$inferSelect;
 export type InsertRewardTransaction = z.infer<typeof insertRewardTransactionSchema>;
+export type GamePurchase = typeof gamePurchases.$inferSelect;
+export type InsertGamePurchase = z.infer<typeof insertGamePurchaseSchema>;
+export type GameProgress = typeof gameProgress.$inferSelect;
+export type InsertGameProgress = z.infer<typeof insertGameProgressSchema>;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -6,11 +6,15 @@ import { useChildAuth } from "@/hooks/useChildAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import KidBottomNav, { type KidTab } from "@/components/kid/KidBottomNav";
 import HeroHeader from "@/components/kid/hero-header";
 import DailyMissions from "@/components/kid/daily-missions";
 import HeroCustomization from "@/components/kid/hero-customization";
+import AvatarStudio from "@/components/kid/avatar-studio";
 import RewardsSection from "@/components/kid/rewards-section";
+import GameZone from "@/components/kid/game-zone";
 import WeeklyProgress from "@/components/kid/weekly-progress";
 import HabitHealthMeter from "@/components/kid/habit-health-meter";
 import {
@@ -23,6 +27,7 @@ import {
   Clock,
   CheckCircle,
 } from "lucide-react";
+import { isHabitScheduledOn } from "@shared/habit-schedule";
 import type {
   Child,
   ParentalControls,
@@ -30,9 +35,29 @@ import type {
   HabitCompletion,
 } from "@shared/schema";
 
+// Friendly fallback if a single tab's content ever errors — the header and
+// bottom menu stay put so the kid can always navigate to another section.
+function TabError() {
+  return (
+    <div className="fun-card border-4 border-purple-300 bg-white p-6 text-center">
+      <div className="text-4xl mb-2">🐣</div>
+      <h3 className="font-fredoka text-lg text-gray-800">Oops, this bit needs a moment</h3>
+      <p className="text-gray-600 text-sm mb-4">Tap another button below, or try again.</p>
+      <Button onClick={() => window.location.reload()} className="super-button font-bold rounded-full">
+        Try again
+      </Button>
+    </div>
+  );
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState("missions");
   const { toast } = useToast();
+
+  // Switching kid tabs should always open at the top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   // Single-user experience - only for logged in children
   const {
@@ -42,9 +67,17 @@ export default function Home() {
   } = useChildAuth();
 
   // Fetch habits and completions for health meter
+  const kidPolling = {
+    // Approvals happen on the parent's device; poll so the kid sees them
+    staleTime: 15_000,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+  } as const;
+
   const { data: habits = [] } = useQuery<Habit[]>({
     queryKey: ["/api/children", (loggedInChild as Child)?.id, "habits"],
     enabled: !!(loggedInChild as Child)?.id,
+    ...kidPolling,
   });
 
   const { data: todaysCompletions = [] } = useQuery<HabitCompletion[]>({
@@ -55,6 +88,7 @@ export default function Home() {
       "today",
     ],
     enabled: !!(loggedInChild as Child)?.id,
+    ...kidPolling,
   });
 
   // Mission completion mutation - same as DailyMissions component
@@ -129,6 +163,25 @@ export default function Home() {
 
     return "available";
   };
+
+  // Only habits scheduled for today appear as missions (weekly habits on
+  // their days, monthly on their day, and nothing before its start date
+  // or after its end date)
+  const todaysHabits = habits.filter((h) => h.isActive !== false && isHabitScheduledOn(h));
+
+  // Health score counts each habit at most once, no matter how many
+  // completion rows it has today (a rejected try + a redo used to double
+  // count and push the meter past 100%)
+  const today = new Date().toISOString().split("T")[0];
+  const completedHabitsToday = new Set(
+    todaysCompletions
+      .filter((c) => c.date === today && c.status !== "rejected")
+      .map((c) => c.habitId),
+  ).size;
+  const healthPercent =
+    todaysHabits.length > 0
+      ? Math.min(100, Math.round((completedHabitsToday / todaysHabits.length) * 100))
+      : 0;
 
   if (childAuthLoading) {
     return (
@@ -229,106 +282,51 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen hero-gradient">
+    <div className="min-h-[100dvh] hero-gradient">
       {/* Hero Header */}
       <HeroHeader child={currentChild} />
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 pb-8">
+      {/* Main Content — bottom nav lives in the thumb zone */}
+      <div className="container mx-auto px-4 pb-[calc(5rem+var(--safe-bottom))]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-white/90 backdrop-blur-sm border border-white/20">
-            <TabsTrigger
-              value="missions"
-              className="flex items-center gap-2 data-[state=active]:bg-coral data-[state=active]:text-white font-bold text-gray-700"
-              disabled={!featuresEnabled.habits}
-            >
-              {featuresEnabled.habits ? (
-                <Gamepad2 className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Missions</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="customize"
-              className="flex items-center gap-2 data-[state=active]:bg-mint data-[state=active]:text-white font-bold text-gray-700"
-              disabled={!featuresEnabled.gearShop}
-            >
-              {featuresEnabled.gearShop ? (
-                <Settings className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Customize</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="rewards"
-              className="flex items-center gap-2 data-[state=active]:bg-sunshine data-[state=active]:text-gray-800 font-bold text-gray-700"
-              disabled={!featuresEnabled.rewards}
-            >
-              {featuresEnabled.rewards ? (
-                <Trophy className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">Rewards</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="progress"
-              className="flex items-center gap-2 data-[state=active]:bg-sunshine data-[state=active]:text-gray-800 font-bold text-gray-700"
-            >
-              <Star className="w-4 h-4" />
-              <span className="hidden sm:inline">Progress</span>
-            </TabsTrigger>
-          </TabsList>
+          <KidBottomNav
+            active={activeTab as KidTab}
+            onSelect={(t) => setActiveTab(t)}
+            featuresEnabled={featuresEnabled}
+          />
 
-          <TabsContent value="missions" className="space-y-6">
+          <TabsContent value="missions" className="space-y-3 md:space-y-6">
+            <ErrorBoundary fallback={<TabError />}>
             {featuresEnabled.habits ? (
               <>
                 {/* Enhanced Habit Health Meter */}
                 <Card className="fun-card border-4 border-purple-400 bg-gradient-to-r from-purple-50 to-pink-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="font-fredoka text-2xl text-gray-800 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                          <Star className="w-5 h-5 text-white" />
-                        </div>
-                        Habit Health Meter
-                      </h2>
-                      {/* Smaller health indicator */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-r from-red-400 to-green-400 rounded-full border-2 border-white shadow-sm"></div>
-                        <span className="text-sm font-bold text-gray-700">
-                          {todaysCompletions.length}/{habits.length}
-                        </span>
+                  <CardContent className="p-3 md:p-6">
+                    {/* Compact strip on phones; web keeps the original larger meter */}
+                    <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
+                      <div className="w-7 h-7 md:w-10 md:h-10 shrink-0 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Star className="w-4 h-4 md:w-5 md:h-5 text-white" />
                       </div>
+                      <h2 className="font-fredoka text-base md:text-2xl text-gray-800 truncate">
+                        <span className="md:hidden">Habit Health</span>
+                        <span className="hidden md:inline">Habit Health Meter</span>
+                      </h2>
+                      <span className="text-sm font-bold text-gray-700 whitespace-nowrap ml-auto" data-testid="health-meter-count">
+                        {completedHabitsToday}/{todaysHabits.length}
+                      </span>
+                      <span className="text-base md:text-lg font-bold text-gray-800" data-testid="health-meter-percent">
+                        {healthPercent}%
+                      </span>
                     </div>
-
-                    <div className="bg-white/70 rounded-lg p-4 border-2 border-purple-200">
-                      <div className="text-sm text-gray-600 mb-2 font-medium">
+                    <div className="md:bg-white/70 md:rounded-lg md:p-4 md:border-2 md:border-purple-200">
+                      <div className="hidden md:block text-sm text-gray-600 mb-2 font-medium">
                         Health Score
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                      <div className="w-full bg-gray-200 rounded-full h-3 md:h-4 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 h-4 rounded-full transition-all duration-500 ease-out"
-                          style={{
-                            width:
-                              habits.length > 0
-                                ? `${(todaysCompletions.length / habits.length) * 100}%`
-                                : "0%",
-                          }}
+                          className="bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 h-3 md:h-4 rounded-full transition-all duration-500 ease-out"
+                          style={{ width: `${healthPercent}%` }}
                         ></div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-gray-800">
-                          {habits.length > 0
-                            ? Math.round(
-                                (todaysCompletions.length / habits.length) *
-                                  100,
-                              )
-                            : 0}
-                          %
-                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -336,22 +334,39 @@ export default function Home() {
 
                 {/* Enhanced Daily Missions Section */}
                 <Card className="fun-card border-4 border-coral bg-gradient-to-r from-coral/5 to-orange/5">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center">
-                        <Gamepad2 className="w-6 h-6 text-white" />
+                  <CardContent className="p-3 md:p-6">
+                    <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-6">
+                      <div className="w-8 h-8 md:w-12 md:h-12 bg-coral rounded-full flex items-center justify-center flex-shrink-0">
+                        <Gamepad2 className="w-4 h-4 md:w-6 md:h-6 text-white" />
                       </div>
-                      <h2 className="font-fredoka text-3xl text-gray-800">
-                        Today's Hero Missions
+                      <h2 className="font-fredoka text-lg md:text-3xl text-gray-800">
+                        <span className="md:hidden">Today's Missions</span>
+                        <span className="hidden md:inline">Today's Hero Missions</span>
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {habits.map((habit) => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+                      {todaysHabits.map((habit) => {
                         const status = getHabitStatus(habit.id);
                         const completion = todaysCompletions.find(
                           (c) => c.habitId === habit.id,
                         );
+                        // The parent's feedback from the most recent rejection
+                        const rejectionFeedback =
+                          status === "rejected"
+                            ? todaysCompletions
+                                .filter(
+                                  (c) =>
+                                    c.habitId === habit.id &&
+                                    c.status === "rejected" &&
+                                    c.parentMessage,
+                                )
+                                .sort(
+                                  (a, b) =>
+                                    new Date(b.completedAt || 0).getTime() -
+                                    new Date(a.completedAt || 0).getTime(),
+                                )[0]?.parentMessage
+                            : null;
                         const isCompleted = status === "approved";
                         const isPending = status === "pending";
                         const canComplete =
@@ -360,7 +375,7 @@ export default function Home() {
                         return (
                           <Card
                             key={habit.id}
-                            className={`relative overflow-hidden transition-all duration-300 hover:scale-105 border-3 ${
+                            className={`relative overflow-hidden transition-all duration-300 md:hover:scale-105 border-3 ${
                               isCompleted
                                 ? "border-green-400 bg-gradient-to-br from-green-50 to-emerald-50"
                                 : isPending
@@ -368,93 +383,65 @@ export default function Home() {
                                   : "border-gray-300 bg-gradient-to-br from-white to-gray-50 hover:border-coral"
                             }`}
                           >
-                            <CardContent className="p-6">
-                              {/* XP Badge - Now clearly visible */}
-                              <div className="absolute top-3 right-3">
-                                <div className="bg-gradient-to-r from-sunshine to-orange-400 text-gray-800 px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-white flex items-center gap-1">
-                                  <Zap className="w-3 h-3" />
-                                  {habit.xpReward} XP
-                                </div>
-                              </div>
-
-                              {/* Status Icon */}
-                              <div className="mb-3">
+                            <CardContent className="p-3 md:p-6">
+                              {/* Dense row on phones; web stacks into the original card shape */}
+                              <div className="flex items-center gap-2.5 md:flex-col md:items-start md:gap-3">
                                 {isCompleted ? (
-                                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                                     <CheckCircle className="w-5 h-5 text-white" />
                                   </div>
                                 ) : isPending ? (
-                                  <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
+                                  <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center flex-shrink-0">
                                     <Clock className="w-5 h-5 text-white" />
                                   </div>
                                 ) : (
-                                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                                     <Star className="w-5 h-5 text-gray-600" />
                                   </div>
                                 )}
-                              </div>
 
-                              {/* Habit Info */}
-                              <h3 className="font-fredoka text-xl text-gray-800 mb-2 pr-16">
-                                {habit.name}
-                              </h3>
-
-                              {habit.description && (
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                                  {habit.description}
-                                </p>
-                              )}
-
-                              {/* Time availability */}
-                              <div className="flex items-center gap-2 mb-4 text-xs">
-                                <Clock className="w-3 h-3 text-turquoise" />
-                                <span className="text-turquoise font-medium">
-                                  Available: 07:00 - 20:00
-                                </span>
-                              </div>
-
-                              {/* Status and Action */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  {isCompleted && (
-                                    <>
-                                      <CheckCircle className="w-4 h-4 text-green-600" />
-                                      <span className="text-green-600 font-bold text-sm">
-                                        Completed!
-                                      </span>
-                                    </>
-                                  )}
-                                  {isPending && (
-                                    <>
-                                      <Clock className="w-4 h-4 text-orange-600" />
-                                      <span className="text-orange-600 font-bold text-sm">
-                                        Pending
-                                      </span>
-                                    </>
-                                  )}
-                                  {canComplete && (
-                                    <>
-                                      <div className="w-4 h-4 bg-coral rounded-full animate-pulse"></div>
-                                      <span className="text-coral font-bold text-sm">
-                                        {status === "rejected"
-                                          ? "Try Again"
-                                          : "Ready"}
-                                      </span>
-                                    </>
-                                  )}
+                                <div className="min-w-0 flex-1 md:w-full">
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    <h3 className="font-fredoka text-base md:text-xl text-gray-800 truncate">
+                                      {habit.name}
+                                    </h3>
+                                    <span className="bg-gradient-to-r from-sunshine to-orange-400 text-gray-800 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold border border-white md:border-2 md:shadow-lg flex items-center gap-0.5 whitespace-nowrap">
+                                      <Zap className="w-3 h-3" />
+                                      {habit.xpReward} XP
+                                    </span>
+                                  </div>
+                                  <div className="text-xs md:text-sm text-gray-500 truncate md:whitespace-normal md:overflow-visible md:mt-1">
+                                    {habit.description ? `${habit.description} · ` : ""}
+                                    <span className="text-turquoise font-medium">
+                                      <span className="md:hidden">07:00–20:00</span>
+                                      <span className="hidden md:inline">Available: 07:00 - 20:00</span>
+                                    </span>
+                                    {isCompleted && (
+                                      <span className="text-green-600 font-bold"> · Completed!</span>
+                                    )}
+                                    {isPending && (
+                                      <span className="text-orange-600 font-bold"> · Waiting for parent</span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 {canComplete && (
                                   <Button
-                                    className="super-button px-4 py-2 text-sm font-bold"
+                                    className="super-button px-4 py-2 text-sm font-bold flex-shrink-0 md:self-end"
                                     onClick={() =>
                                       completeMissionMutation.mutate(habit.id)
                                     }
-                                    disabled={completeMissionMutation.isPending}
+                                    // Only THIS habit's button reflects its own
+                                    // in-flight completion
+                                    disabled={
+                                      completeMissionMutation.isPending &&
+                                      completeMissionMutation.variables === habit.id
+                                    }
                                     data-testid={`complete-habit-${habit.id}`}
                                   >
-                                    {completeMissionMutation.isPending
-                                      ? "Completing..."
+                                    {completeMissionMutation.isPending &&
+                                    completeMissionMutation.variables === habit.id
+                                      ? "..."
                                       : status === "rejected"
                                         ? "Try Again!"
                                         : "Complete!"}
@@ -464,25 +451,37 @@ export default function Home() {
                                 {isPending && (
                                   <Button
                                     disabled
-                                    className="bg-orange-100 text-orange-600 px-4 py-2 text-sm font-bold cursor-not-allowed"
+                                    size="sm"
+                                    className="bg-muted text-orange px-3 text-sm font-bold cursor-not-allowed flex-shrink-0 md:self-end"
                                   >
                                     Pending
                                   </Button>
                                 )}
                               </div>
+
+                              {/* Parent's feedback on a rejected attempt */}
+                              {rejectionFeedback && (
+                                <div
+                                  className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700"
+                                  data-testid={`rejection-feedback-${habit.id}`}
+                                >
+                                  <span className="font-bold">💬 From your parent: </span>
+                                  "{rejectionFeedback}"
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         );
                       })}
                     </div>
 
-                    {habits.length === 0 && (
-                      <div className="text-center py-12 bg-white/50 rounded-lg border-2 border-dashed border-gray-300">
-                        <Gamepad2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-gray-600 mb-2">
+                    {todaysHabits.length === 0 && (
+                      <div className="text-center py-8 md:py-12 bg-white/50 rounded-lg border-2 border-dashed border-gray-300">
+                        <Gamepad2 className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-3 md:mb-4" />
+                        <h3 className="text-lg md:text-xl font-bold text-gray-600 mb-1 md:mb-2">
                           No missions yet!
                         </h3>
-                        <p className="text-gray-500">
+                        <p className="text-gray-500 text-sm md:text-base">
                           Ask your parent to create some awesome habits for you!
                         </p>
                       </div>
@@ -499,11 +498,14 @@ export default function Home() {
                 </AlertDescription>
               </Alert>
             )}
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="customize" className="space-y-6">
             {featuresEnabled.gearShop ? (
-              <HeroCustomization child={currentChild} />
+              <ErrorBoundary fallback={<TabError />}>
+                <AvatarStudio child={currentChild as any} />
+              </ErrorBoundary>
             ) : (
               <Alert className="border-2 border-orange-300 bg-orange-50">
                 <Lock className="h-5 w-5 text-orange-600" />
@@ -517,12 +519,14 @@ export default function Home() {
 
           <TabsContent value="rewards" className="space-y-6">
             {featuresEnabled.rewards ? (
-              <RewardsSection
-                childId={currentChild.id}
-                userSubscriptionStatus={
-                  subscriptionInfo?.user?.subscriptionStatus || "free"
-                }
-              />
+              <ErrorBoundary fallback={<TabError />}>
+                <RewardsSection
+                  childId={currentChild.id}
+                  userSubscriptionStatus={
+                    subscriptionInfo?.user?.subscriptionStatus || "free"
+                  }
+                />
+              </ErrorBoundary>
             ) : (
               <Alert className="border-2 border-orange-300 bg-orange-50">
                 <Lock className="h-5 w-5 text-orange-600" />
@@ -534,8 +538,26 @@ export default function Home() {
             )}
           </TabsContent>
 
+          <TabsContent value="games" className="space-y-6">
+            {featuresEnabled.miniGames ? (
+              <ErrorBoundary fallback={<TabError />}>
+                <GameZone childId={currentChild.id} />
+              </ErrorBoundary>
+            ) : (
+              <Alert className="border-2 border-orange-300 bg-orange-50">
+                <Lock className="h-5 w-5 text-orange-600" />
+                <AlertDescription className="text-orange-800 font-medium text-base">
+                  Your parent has disabled mini-games. Contact your parent to
+                  enable this feature.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
+
           <TabsContent value="progress" className="space-y-6">
-            <WeeklyProgress childId={currentChild.id} />
+            <ErrorBoundary fallback={<TabError />}>
+              <WeeklyProgress childId={currentChild.id} />
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>

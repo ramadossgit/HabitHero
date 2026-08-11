@@ -11,11 +11,26 @@ if (!stripeEnabled) {
 
 const stripe = stripeEnabled ? new Stripe(process.env.STRIPE_SECRET_KEY!) : null;
 
+// Without a Stripe key, non-production environments simulate the flow so
+// the app stays fully testable locally; production fails loudly instead.
+const devSimulation = !stripeEnabled && process.env.NODE_ENV !== 'production';
+
+export class StripeNotConfiguredError extends Error {
+  constructor() {
+    super('Payments are not configured. Set STRIPE_SECRET_KEY to enable subscriptions.');
+    this.name = 'StripeNotConfiguredError';
+  }
+}
+
 export class SubscriptionService {
+  static isStripeEnabled() {
+    return stripeEnabled;
+  }
+
   // Helper to check if Stripe is enabled
   private static checkStripeEnabled() {
     if (!stripe || !stripeEnabled) {
-      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable to enable subscription features.');
+      throw new StripeNotConfiguredError();
     }
   }
 
@@ -39,6 +54,28 @@ export class SubscriptionService {
 
   // Create subscription
   static async createSubscription(userId: string, planId: string) {
+    const planDef = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+    if (!planDef) throw new Error('Plan not found');
+
+    // Local development without a Stripe key: activate directly (simulated)
+    if (devSimulation) {
+      const user = await storage.getUserById(userId);
+      if (!user) throw new Error('User not found');
+      await storage.updateUserSubscription(userId, {
+        subscriptionStatus: 'active',
+        subscriptionPlan: planId,
+        subscriptionEndDate: this.calculateEndDate(planDef),
+      });
+      console.log(`🧪 Dev mode: simulated subscription "${planId}" activated for ${user.email}`);
+      return {
+        devMode: true,
+        subscriptionId: `dev_${Date.now()}`,
+        clientSecret: null,
+        status: 'active',
+        paymentIntentId: null,
+      };
+    }
+
     this.checkStripeEnabled();
     try {
       const user = await storage.getUserById(userId);
@@ -73,26 +110,13 @@ export class SubscriptionService {
         }
       }
 
-      // Create a PaymentIntent directly instead of relying on subscription invoice
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.floor(plan.price * 100), // Convert to cents
-        currency: plan.currency,
-        customer: customer.id,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        setup_future_usage: 'off_session', // Allow saving payment method for future use
-        metadata: {
-          userId: userId,
-          planId: planId,
-          type: 'subscription_payment'
-        }
-      });
-
       // Create price if it doesn't exist (in production, create these manually in Stripe)
       const priceId = await this.getOrCreatePrice(plan);
 
-      // Create subscription requiring immediate payment - NO trial period
+      // Create subscription requiring immediate payment - NO trial period.
+      // The client confirms the subscription's OWN invoice PaymentIntent, so
+      // paying it activates the subscription (a detached PaymentIntent would
+      // charge the card while the subscription stayed incomplete and lapsed).
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: priceId }],
@@ -104,9 +128,19 @@ export class SubscriptionService {
         expand: ['latest_invoice.payment_intent'],
         metadata: {
           userId: userId,
-          planId: planId,
-          paymentIntentId: paymentIntent.id
+          planId: planId
         }
+      });
+
+      const latestInvoice = subscription.latest_invoice as Stripe.Invoice | null;
+      const paymentIntent = (latestInvoice as any)?.payment_intent as Stripe.PaymentIntent | null;
+      if (!paymentIntent?.client_secret) {
+        throw new Error('Stripe did not return a payment intent for the subscription invoice');
+      }
+
+      // Tag the invoice PaymentIntent so completeSubscription can identify it
+      await stripe.paymentIntents.update(paymentIntent.id, {
+        metadata: { userId, planId, type: 'subscription_payment' }
       });
 
       // Update user subscription info  
@@ -147,14 +181,14 @@ export class SubscriptionService {
     try {
       // Retrieve the PaymentIntent to get metadata
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      
+
       if (paymentIntent.status !== 'succeeded') {
         throw new Error('Payment not completed');
       }
 
       const userId = paymentIntent.metadata.userId;
       const planId = paymentIntent.metadata.planId;
-      
+
       if (!userId || !planId) {
         throw new Error('Missing payment metadata');
       }
@@ -165,16 +199,13 @@ export class SubscriptionService {
         throw new Error('No subscription found for user');
       }
 
-      // Update the subscription to remove trial and activate immediately
-      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
-        trial_end: 'now', // End trial immediately
-        proration_behavior: 'none', // Don't prorate since we already charged
-      });
+      // Paying the invoice PaymentIntent activates the subscription on
+      // Stripe's side; just verify and mirror the state in our database.
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
 
-      // Update subscription status in database
       const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
       const subscriptionEndDate = plan ? this.calculateEndDate(plan) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      
+
       await storage.updateUserSubscription(userId, {
         subscriptionStatus: 'active',
         subscriptionEndDate: subscriptionEndDate
@@ -268,6 +299,21 @@ export class SubscriptionService {
 
   // Cancel subscription
   static async cancelSubscription(userId: string) {
+    if (devSimulation) {
+      const user = await storage.getUserById(userId);
+      if (!user || user.subscriptionStatus !== 'active') {
+        throw new Error('No active subscription found');
+      }
+      // In dev simulation the "paid period" isn't real, so access ends now;
+      // the real Stripe path keeps access until the period the user paid for
+      await storage.updateUserSubscription(userId, {
+        subscriptionStatus: 'cancelled',
+        subscriptionEndDate: new Date(),
+      });
+      console.log(`🧪 Dev mode: simulated subscription cancelled for ${user.email}`);
+      return { id: user.stripeSubscriptionId ?? 'dev_subscription', status: 'canceled', devMode: true } as any;
+    }
+
     this.checkStripeEnabled();
     try {
       const user = await storage.getUserById(userId);
@@ -336,11 +382,11 @@ export class SubscriptionService {
   static hasFeatureAccess(user: any, feature: string): boolean {
     if (!user) return false;
     
-    // Trial users get limited access
+    // Trial users get limited access (schema field is trialEndsAt)
     if (user.subscriptionStatus === 'trial') {
       const now = new Date();
-      const trialEnd = new Date(user.trialEndDate);
-      if (now > trialEnd) return false;
+      const trialEnd = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+      if (!trialEnd || now > trialEnd) return false;
       
       // Limited trial features
       const trialFeatures = ['avatar_builder', 'balloon_pop', 'basic_habits'];
@@ -348,13 +394,21 @@ export class SubscriptionService {
     }
 
     // Active subscribers get full access
-    return user.subscriptionStatus === 'active';
+    if (user.subscriptionStatus === 'active') return true;
+
+    // Cancelled subscribers keep access only until the period they paid for
+    if (user.subscriptionStatus === 'cancelled') {
+      const end = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+      return !!end && new Date() < end;
+    }
+
+    return false;
   }
 
   // Get subscription status for user
   static getSubscriptionInfo(user: any) {
     const now = new Date();
-    const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
+    const trialEnd = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
     const subscriptionEnd = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
 
     return {

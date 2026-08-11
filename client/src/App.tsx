@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useChildAuth } from "@/hooks/useChildAuth";
 import { SyncProvider } from "@/hooks/use-sync";
-import { useEffect } from "react";
+import { Component, useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import Landing from "@/pages/landing";
 import ParentAuthPage from "@/pages/parent-auth-page";
@@ -20,8 +20,54 @@ import ProgressReportsPage from "@/pages/progress-reports";
 import AlertSettingsPage from "@/pages/alert-settings-page";
 import KidsLogin from "@/pages/kids-login";
 import NotFound from "@/pages/not-found";
+import DevGameTest from "@/pages/dev-game-test";
+import DevAvatarStudio from "@/pages/dev-avatar-studio";
+import DevAvatar3D from "@/pages/dev-avatar-3d";
 
-function AuthGuard({ 
+// A thrown render error (e.g. after an idle session expires and a component
+// hits unexpected data) must never blank the whole app. This catches it and
+// shows a friendly recovery screen on the app gradient.
+class AppErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() {
+    return { crashed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error("App crashed:", error);
+  }
+  render() {
+    if (this.state.crashed) {
+      return (
+        <div className="min-h-[100dvh] hero-gradient flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full">
+            <div className="text-5xl mb-3">😅</div>
+            <h1 className="font-fredoka text-2xl text-gray-800 mb-1">Oops, a little hiccup!</h1>
+            <p className="text-gray-600 mb-5">Let's get you back on track.</p>
+            <button
+              onClick={() => { window.location.href = "/"; }}
+              className="w-full super-button font-bold py-4 rounded-full"
+            >
+              Reload Habit Heroes
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Reset scroll to the top whenever the route changes so a new page never
+// opens already scrolled down.
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
+function AuthGuard({
   children, 
   requireAuth = false, 
   requireChild = false 
@@ -140,6 +186,11 @@ function Router() {
         )}
       </Route>
 
+      {/* Dev-only: isolated mini-game harness (no auth/API) for debugging gameplay */}
+      {import.meta.env.DEV && <Route path="/dev/game-test" component={DevGameTest} />}
+      {import.meta.env.DEV && <Route path="/dev/avatar-studio" component={DevAvatarStudio} />}
+      {import.meta.env.DEV && <Route path="/dev/avatar-3d" component={DevAvatar3D} />}
+
       {/* Catch-all route */}
       <Route component={NotFound} />
     </Switch>
@@ -152,7 +203,10 @@ function App() {
       <SyncProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AppErrorBoundary>
+            <ScrollToTop />
+            <Router />
+          </AppErrorBoundary>
         </TooltipProvider>
       </SyncProvider>
     </QueryClientProvider>

@@ -105,12 +105,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       // Silently register device without showing toast to user
     },
     onError: (error: any) => {
+      // Background device registration — never interrupt the user with a
+      // toast; it retries automatically on the next auth/online change.
       console.error('Device registration failed:', error);
-      toast({
-        title: "Sync Setup Failed",
-        description: "Failed to register this device for sync",
-        variant: "destructive",
-      });
     },
   });
 
@@ -176,14 +173,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       // Silently complete sync without showing toast to user
     },
     onError: (error: any) => {
+      // Background periodic sync — retries every 30s on its own, so a
+      // transient failure must not spam the user with a red toast. The
+      // status is still surfaced quietly via the SyncStatus indicator.
       console.error('Sync failed:', error);
       setSyncStatus('error');
       setSyncInProgress(false);
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync with other devices. Will retry later.",
-        variant: "destructive",
-      });
     },
   });
 

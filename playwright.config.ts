@@ -2,11 +2,17 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // All specs share one dev server whose on-demand compilation is the
+  // bottleneck — parallel workers starve each other into timeouts.
+  workers: 1,
   reporter: 'html',
+  // The Vite dev server transforms modules on first request (the mini-game
+  // engines are a large chunk), so first page loads can be slow.
+  timeout: 300_000,
+  expect: { timeout: 30_000 },
   use: {
     baseURL: 'http://localhost:5000',
     trace: 'on-first-retry',

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { canRecordAudio, recordingUnavailableReason } from "@/lib/audio-support";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,6 +143,14 @@ export default function AlertSettings({
   };
 
   const startRecording = async () => {
+    if (!canRecordAudio()) {
+      toast({
+        title: "Voice recording unavailable",
+        description: recordingUnavailableReason(),
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -448,7 +457,7 @@ function AlertSettingsContent({
                     <Button
                       onClick={isRecording ? stopRecording : startRecording}
                       className={`${isRecording 
-                        ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                        ? 'bg-destructive hover:bg-destructive/80 animate-pulse'
                         : 'bg-purple hover:bg-purple/80'
                       } text-white`}
                       data-testid={isRecording ? "button-stop-recording" : "button-start-recording"}

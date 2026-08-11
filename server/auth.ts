@@ -58,7 +58,10 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      // Secure cookies once served over HTTPS (production)
+      secure: process.env.NODE_ENV === "production",
+      // Mitigates CSRF while still allowing normal same-site navigation
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
@@ -263,6 +266,40 @@ export function isParentOrChildAuthenticated(req: any, res: any, next: any) {
     isChildUser: req.session.isChildUser
   });
   res.status(401).json({ message: "Not authenticated" });
+}
+
+/**
+ * Authorize access to a `:childId` route param.
+ *
+ * Prevents IDOR: an authenticated parent may only touch their OWN
+ * children, and a logged-in child may only touch their own record.
+ * Reads through `storage` lazily to avoid a circular import.
+ */
+export function authorizeChildAccess(req: any, res: any, next: any) {
+  const childId = req.params.childId || req.params.id;
+  if (!childId) {
+    return res.status(400).json({ message: "Missing child id" });
+  }
+
+  // A logged-in child may only act on themselves
+  if (req.session?.childId && req.session?.isChildUser) {
+    if (req.session.childId === childId) return next();
+    return res.status(403).json({ message: "Not allowed" });
+  }
+
+  // A parent may only act on children they own
+  if (req.isAuthenticated?.() && req.user?.id) {
+    storage
+      .getChild(childId)
+      .then((child) => {
+        if (child && child.parentId === req.user.id) return next();
+        return res.status(403).json({ message: "Not allowed" });
+      })
+      .catch(() => res.status(500).json({ message: "Authorization check failed" }));
+    return;
+  }
+
+  return res.status(401).json({ message: "Not authenticated" });
 }
 
 export { hashPassword, comparePasswords };

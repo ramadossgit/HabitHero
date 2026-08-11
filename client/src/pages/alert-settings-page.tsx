@@ -175,71 +175,50 @@ export default function AlertSettingsPage({ habitId }: AlertSettingsPageProps) {
     : "Set default alert preferences for all new habits";
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl h-[95vh] overflow-hidden flex flex-col">
-        {/* Header with coral-to-sunshine gradient matching controls popup */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-coral to-sunshine flex-shrink-0 min-h-[80px]">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={handleCancel} 
-              className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h2 className="font-fredoka text-lg sm:text-2xl text-gray-800 font-bold drop-shadow-lg">{pageTitle}</h2>
-              <p className="text-gray-700 text-xs sm:text-sm font-medium">{pageDescription}</p>
-            </div>
+    <div className="fixed inset-0 z-50 bg-white flex flex-col" data-testid="alert-settings-sheet">
+      {/* Gradient header — consistent with the app's detail screens */}
+      <div className="hero-gradient text-white px-3 pt-[calc(var(--safe-top)+0.5rem)] pb-4 rounded-b-3xl flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={handleCancel} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0" aria-label="Back" data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-fredoka text-lg truncate">{pageTitle}</h2>
+            <p className="text-white/85 text-xs truncate">{pageDescription}</p>
           </div>
-          <Button 
-            variant="ghost" 
-            onClick={handleCancel} 
-            className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30 flex-shrink-0" 
-            data-testid="button-close"
-          >
+          <button onClick={handleCancel} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0" aria-label="Close" data-testid="button-close">
             <X className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
+      </div>
 
-        {/* Main Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <AlertSettings
-            initialSettings={settings}
-            onSettingsChange={setSettings}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            isStandalone={false}
-            title={habitId ? "Habit Alert Settings" : "Default Alert Settings"}
-          />
-        </div>
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <AlertSettings
+          initialSettings={settings}
+          onSettingsChange={setSettings}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          isStandalone={false}
+          title={habitId ? "Habit Alert Settings" : "Default Alert Settings"}
+        />
+      </div>
 
-        {/* Footer with action buttons */}
-        <div className="flex-shrink-0 p-6 border-t bg-gray-50">
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              data-testid="button-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending}
-              className="super-button"
-              data-testid="button-save"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending 
-                ? "Saving..." 
-                : "Save Settings"
-              }
-            </Button>
-          </div>
-        </div>
-      </Card>
+      {/* Sticky footer */}
+      <div className="flex-shrink-0 px-5 pb-[calc(1rem+var(--safe-bottom))] pt-3 border-t border-gray-100 flex gap-2">
+        <Button variant="outline" onClick={handleCancel} className="rounded-full flex-1" data-testid="button-cancel">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending}
+          className="super-button rounded-full flex-1"
+          data-testid="button-save"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {updateHabitMutation.isPending || updateGlobalSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+        </Button>
+      </div>
     </div>
   );
 }

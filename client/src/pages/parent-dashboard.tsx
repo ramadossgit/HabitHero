@@ -11,18 +11,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Link } from "wouter";
-import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera, Mic, Play, Volume2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, Flame, Trophy, Star, Plus, UserRound, Crown, Zap, Heart, Settings, Gift, BarChart3, Shield, X, Check, Clock, Coins, Award, HelpCircle, Bell, Camera, Mic, Play, Volume2, CheckSquare, Users, Pencil, Trash2, KeyRound, ChevronRight, LogOut } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import HabitApproval from "../components/parent/habit-approval";
+import GamePurchaseApproval from "../components/parent/game-purchase-approval";
 import ParentControlsModal from "@/components/parent/ParentControlsModal";
 import OnboardingTutorial from "@/components/parent/OnboardingTutorial";
 import ParentProfileModal from "@/components/parent/ParentProfileModal";
-import ParentDashboardSidebar from "@/components/parent/ParentDashboardSidebar";
+import BottomNav from "@/components/parent/BottomNav";
+import KidsManager from "@/components/parent/KidsManager";
+import HabitsManager from "@/components/parent/HabitsManager";
+import RewardsManager from "@/components/parent/RewardsManager";
+import { SegmentedTabs, FilterPills } from "@/components/parent/SegmentedTabs";
 import { TrialBanner } from "@/components/subscription/trial-banner";
 import TrialStatusBanner from "@/components/subscription/trial-status-banner";
 import SubscriptionManagementCard from "@/components/subscription/subscription-management-card";
+import PremiumInterestNudge from "@/components/subscription/PremiumInterestNudge";
 import SubscriptionRequiredLayout from "@/components/subscription/subscription-required-layout";
 import { requiresSubscription, getSubscriptionStatus } from "@/lib/subscriptionUtils";
+import { getAvatarImage } from "@/lib/avatars";
+import { HABIT_BADGES, TIME_OF_DAY_OPTIONS, WEEKDAY_OPTIONS, describeSchedule } from "@shared/habit-schedule";
+import { canRecordAudio, recordingUnavailableReason, playRingtonePreviewTone } from "@/lib/audio-support";
 
 import type { Child, User, InsertChild, Habit, MasterHabit, Reward } from "@shared/schema";
 
@@ -32,14 +42,24 @@ export default function ParentDashboard() {
   
   console.log("ParentDashboard - Auth State:", { isAuthenticated, isLoading, user });
   const [heroName, setHeroName] = useState("");
+  const [heroAge, setHeroAge] = useState("");
   const [avatarType, setAvatarType] = useState("robot");
   const [showParentProfile, setShowParentProfile] = useState(false);
+  // Child cards start collapsed; tapping one reveals its details
+  const [expandedChildId, setExpandedChildId] = useState<string | null>(null);
   const [showParentControls, setShowParentControls] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [showHabitAssignment, setShowHabitAssignment] = useState(false);
+  const [habitsTab, setHabitsTab] = useState<'manage' | 'approvals'>('manage');
+  const [rewardsTab, setRewardsTab] = useState<'manage' | 'approvals'>('manage');
   const [activeSection, setActiveSection] = useState<'overview' | 'habits' | 'children' | 'rewards' | 'progress' | 'settings'>('overview');
-  
+
+  // Switching sections should always open at the top, never mid-scroll
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeSection]);
+
   // Alert dialog states
   const [removeHabitDialog, setRemoveHabitDialog] = useState<{ open: boolean; habitId?: string; childName?: string }>({ open: false });
   const [deleteHabitDialog, setDeleteHabitDialog] = useState<{ open: boolean; habitId?: string; habitName?: string }>({ open: false });
@@ -52,6 +72,41 @@ export default function ParentDashboard() {
   });
 
   const child = children?.[0];
+
+  // Habits awaiting review — drives the badge on the bottom nav
+  const { data: allPendingHabits } = useQuery<any[]>({
+    queryKey: ["/api/pending-habits/all"],
+    enabled: isAuthenticated,
+    staleTime: 15_000,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+  });
+  const pendingApprovalCount = Array.isArray(allPendingHabits) ? allPendingHabits.length : 0;
+
+  // Overview: the child whose profile panel is open, plus their activity
+  const selectedOverviewChild = children?.find((c) => c.id === expandedChildId);
+  const { data: selectedChildCompletions = [] } = useQuery<any[]>({
+    queryKey: ["/api/children", expandedChildId, "completions"],
+    enabled: !!expandedChildId,
+  });
+  const todayStr = new Date().toISOString().split("T")[0];
+  const selectedChildTodayCount = new Set(
+    selectedChildCompletions
+      .filter((c) => c.date === todayStr && c.status !== "rejected")
+      .map((c) => c.habitId),
+  ).size;
+  const selectedChildStreak = (() => {
+    const approvedByDate = new Set(
+      selectedChildCompletions.filter((c) => c.status === "approved").map((c) => c.date),
+    );
+    let streak = 0;
+    const cursor = new Date();
+    while (approvedByDate.has(cursor.toISOString().split("T")[0])) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  })();
 
   // Fetch real data for calculations - Always run these hooks
   const { data: weeklyProgress } = useQuery({
@@ -70,12 +125,13 @@ export default function ParentDashboard() {
   });
 
   const createHeroMutation = useMutation({
-    mutationFn: async (heroData: { name: string; avatarType: string; avatarUrl?: string }) => {
+    mutationFn: async (heroData: { name: string; avatarType: string; avatarUrl?: string; age?: number }) => {
       console.log("Creating hero with data:", heroData);
       const response = await apiRequest("POST", "/api/children", {
         name: heroData.name,
         avatarType: heroData.avatarType,
         avatarUrl: heroData.avatarUrl,
+        age: heroData.age,
         level: 1,
         xp: 0,
         totalXp: 0,
@@ -328,16 +384,20 @@ export default function ParentDashboard() {
       return;
     }
     
-    const heroData: any = { 
-      name: heroName.trim(), 
-      avatarType 
+    const heroData: any = {
+      name: heroName.trim(),
+      avatarType
     };
-    
+
+    if (heroAge) {
+      heroData.age = parseInt(heroAge, 10);
+    }
+
     // Add image URL if preview exists (simulating upload)
     if (imagePreview) {
       heroData.avatarUrl = imagePreview;
     }
-    
+
     createHeroMutation.mutate(heroData);
   };
 
@@ -358,16 +418,7 @@ export default function ParentDashboard() {
     { id: "animal", name: "🦁 Animal Hero", icon: Heart, description: "Wild and brave" },
   ];
 
-  const getAvatarImage = (type: string) => {
-    // Generate cartoon-style SVG avatars instead of human photos
-    const avatarSvgs = {
-      robot: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#4ECDC4" rx="20"/><rect x="40" y="60" width="120" height="80" fill="#2C3E50" rx="10"/><circle cx="70" cy="90" r="8" fill="#E74C3C"/><circle cx="130" cy="90" r="8" fill="#E74C3C"/><rect x="85" y="110" width="30" height="15" fill="#F39C12" rx="5"/><rect x="60" y="150" width="80" height="30" fill="#34495E" rx="5"/></svg>`)}`,
-      princess: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FFB6C1" rx="20"/><circle cx="100" cy="90" r="40" fill="#FDD5BA"/><circle cx="85" cy="80" r="3" fill="#333"/><circle cx="115" cy="80" r="3" fill="#333"/><path d="M90 95 Q100 105 110 95" stroke="#E91E63" stroke-width="2" fill="none"/><polygon points="70,50 100,30 130,50 120,70 80,70" fill="#FFD700"/><circle cx="100" cy="45" r="5" fill="#FF69B4"/></svg>`)}`,
-      ninja: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2C3E50" rx="20"/><circle cx="100" cy="100" r="50" fill="#34495E"/><rect x="60" y="70" width="80" height="30" fill="#1A252F"/><circle cx="85" cy="85" r="4" fill="#E74C3C"/><circle cx="115" cy="85" r="4" fill="#E74C3C"/><rect x="75" y="120" width="50" height="20" fill="#E67E22" rx="10"/></svg>`)}`,
-      animal: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="#F39C12" rx="20"/><circle cx="100" cy="110" r="45" fill="#E67E22"/><circle cx="75" cy="85" r="15" fill="#D35400"/><circle cx="125" cy="85" r="15" fill="#D35400"/><circle cx="85" cy="95" r="3" fill="#000"/><circle cx="115" cy="95" r="3" fill="#000"/><ellipse cx="100" cy="110" rx="8" ry="6" fill="#000"/><path d="M100 116 Q90 125 80 120 M100 116 Q110 125 120 120" stroke="#000" stroke-width="2" fill="none"/></svg>`)}`
-    };
-    return avatarSvgs[type as keyof typeof avatarSvgs] || avatarSvgs.robot;
-  };
+  // Uses the generated cartoon avatar art (see @/lib/avatars)
 
   // This will be handled by the App.tsx routing logic
 
@@ -413,23 +464,23 @@ export default function ParentDashboard() {
           <div className="max-w-6xl mx-auto">
             {/* Family Code Display */}
             <div className="flex justify-center mb-6">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
                 <div className="text-center">
                   <div className="text-white/80 text-sm font-medium">Family Code</div>
-                  <div className="text-white font-bold text-2xl tracking-wider font-mono">{(user as User)?.familyCode}</div>
+                  <div className="text-white font-bold text-xl tracking-wider font-mono">{(user as User)?.familyCode}</div>
                   <div className="text-white/70 text-xs">Share this code with family members</div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-fredoka text-4xl hero-title">Parent Dashboard</h1>
-                <p className="text-white/90 text-lg">✨ Welcome to Habit Heroes! ✨</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="font-fredoka text-3xl sm:text-4xl hero-title">Parent Dashboard</h1>
+                <p className="text-white/90 text-base sm:text-lg">✨ Welcome to Habit Heroes! ✨</p>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 {hasCompletedOnboarding && (
-                  <Button 
+                  <Button
                     onClick={restartOnboarding}
                     className="super-button font-bold"
                   >
@@ -441,11 +492,11 @@ export default function ParentDashboard() {
                 </div>
                 <Link href="/">
                   <Button className="super-button font-bold">
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Back to Home
+                    <ArrowLeft className="w-5 h-5 sm:mr-2" />
+                    <span className="hidden sm:inline">Back to Home</span>
                   </Button>
                 </Link>
-                <div className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 shrink-0 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center text-white font-bold text-lg">
                   {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
                 </div>
               </div>
@@ -496,8 +547,27 @@ export default function ParentDashboard() {
                   />
                 </div>
 
+                {/* Age Input */}
+                <div className="space-y-3">
+                  <label className="font-nunito font-bold text-gray-800 text-lg">🎂 Child's Age (3-12)</label>
+                  <Input
+                    type="number"
+                    min={3}
+                    max={12}
+                    inputMode="numeric"
+                    placeholder="How old is your child?"
+                    value={heroAge}
+                    onChange={(e) => setHeroAge(e.target.value)}
+                    className="w-full text-center text-xl py-4 border-4 border-sky font-bold rounded-xl"
+                    data-testid="input-first-hero-age"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Age picks which mini-games appear in their Game Zone.
+                  </p>
+                </div>
+
                 {/* Avatar Type Selection */}
-                <div className="space-y-4">
+                <div className="space-y-4 md:space-y-8">
                   <label className="font-nunito font-bold text-gray-800 text-lg">🎭 Choose Hero Type</label>
                   <div className="grid grid-cols-2 gap-4">
                     {avatarTypes.map((type) => (
@@ -674,224 +744,335 @@ export default function ParentDashboard() {
   const badgesEarned = calculateBadgesEarned();
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar Navigation */}
-      <ParentDashboardSidebar 
+    <div className="min-h-[100dvh] hero-gradient">
+      {/* Main Dashboard Content */}
+      <div>
+        <div className="hero-gradient">
+      {/* Primary navigation lives in the thumb zone at the bottom */}
+      <BottomNav
         activeSection={activeSection}
         onSectionChange={setActiveSection}
-        user={user as User}
+        approvalCount={pendingApprovalCount}
       />
-      
-      {/* Main Dashboard Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-h-screen hero-gradient">
-      <header className="text-white p-4 sm:p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Family Code Display */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/20">
-              <div className="text-center">
-                <div className="text-white/80 text-sm font-medium">Family Code</div>
-                <div className="text-white font-bold text-2xl tracking-wider font-mono">{(user as User)?.familyCode}</div>
-                <div className="text-white/70 text-xs">Share this code with family members</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-4">
-            {/* Left side - Title and description */}
-            <div className="flex-1">
-              <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">Parent Dashboard</h1>
-              <p className="text-white/90 text-sm sm:text-lg">🎯 Managing {children?.length === 1 ? `${children[0]?.name}'s` : 'Family'} Hero Journey</p>
-            </div>
-            
-            {/* Right side - Profile and XP display */}
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <div className="text-xs text-white/80">Total Family XP</div>
-                <div className="font-bold text-xl text-sunshine">{(children?.reduce((total: number, c: any) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
-              </div>
-              {/* Profile Avatar - Always show user initials */}
-              {user && (
-                <div className="relative">
-                  <div 
-                    className="w-12 h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold text-lg"
-                    onClick={() => setShowParentProfile(!showParentProfile)}
-                  >
-                    {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
-                    <Settings className="w-2 h-2 text-white" />
-                  </div>
-                </div>
+      <header className="text-white px-4 pt-3 pb-2 sm:px-6">
+        <div className="max-w-6xl mx-auto space-y-2">
+          {/* Title row: everything important on one line */}
+          <div className="flex items-center justify-between gap-3">
+            {activeSection !== 'overview' && (
+              <button
+                type="button"
+                onClick={() => setActiveSection('overview')}
+                aria-label="Back to Dashboard"
+                data-testid="header-back-to-dashboard"
+                className="flex-shrink-0 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center text-white hover:bg-white/25 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className="min-w-0">
+              <h1 className="font-fredoka text-2xl sm:text-4xl hero-title">
+                {activeSection === 'overview' ? 'Parent Dashboard'
+                  : activeSection === 'children' ? 'Kids'
+                  : activeSection === 'habits' ? 'Habits'
+                  : activeSection === 'rewards' ? 'Rewards'
+                  : activeSection === 'progress' ? 'Progress'
+                  : 'Settings'}
+              </h1>
+              {activeSection === 'overview' && (
+                <p className="text-white/90 text-xs sm:text-base truncate">🎯 Managing {children?.length === 1 ? `${children[0]?.name}'s` : 'Family'} Hero Journey</p>
               )}
             </div>
-          </div>
-          
-          {/* Navigation Bar */}
-          <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-2xl p-3">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
-                onClick={restartOnboarding}
-              >
-                <HelpCircle className="w-4 h-4" />
-                Tutorial
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
-                onClick={() => setShowParentControls(true)}
-              >
-                <Shield className="w-4 h-4" />
-                Controls
-              </Button>
-              <Link href="/alert-settings">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2"
-                  data-testid="button-global-alert-settings"
+            {/* Profile Avatar - Always show user initials */}
+            {user && (
+              <div className="relative flex-shrink-0">
+                <div
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-4 border-white avatar-glow bg-coral flex items-center justify-center cursor-pointer hover:scale-105 transition-transform text-white font-bold text-lg"
+                  onClick={() => setShowParentProfile(!showParentProfile)}
                 >
-                  <Bell className="w-4 h-4" />
-                  Alerts
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Link href="/">
-                <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl flex items-center gap-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden sm:inline">Back to Home</span>
-                </Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/20 font-bold text-sm px-3 py-2 rounded-xl"
-                onClick={() => window.location.href = "/api/logout"}
+                  {((user as User)?.firstName?.[0] || (user as User)?.email?.[0] || 'P').toUpperCase()}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-mint rounded-full border-2 border-white flex items-center justify-center">
+                  <Settings className="w-2 h-2 text-white" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stats chips + utility bar: overview only. Focused section
+              screens keep a minimal header so the content fits without
+              scrolling (mobile-first). */}
+          {activeSection === 'overview' && (<>
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <button
+              type="button"
+              title="Tap to copy — share this code with family members"
+              onClick={() => {
+                navigator.clipboard?.writeText((user as User)?.familyCode || "");
+                toast({ title: "Family code copied!", description: "Share it with family members to join." });
+              }}
+              className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 font-medium flex items-center gap-1.5"
+              data-testid="chip-family-code"
+            >
+              👨‍👩‍👧 Code: <span className="font-mono font-bold tracking-wider">{(user as User)?.familyCode}</span> 📋
+            </button>
+            <span className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 font-medium">
+              ⭐ Family XP: <span className="font-bold text-sunshine">{(children?.reduce((total: number, c: any) => total + (c.totalXp || 0), 0) || 0).toLocaleString()}</span>
+            </span>
+          </div>
+
+          {/* Utility bar lives up here, right below the family chips */}
+          <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap bg-white/10 backdrop-blur-sm rounded-2xl p-1.5">
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm h-8 px-2 sm:px-3 rounded-xl flex items-center gap-1.5 flex-shrink-0"
+              onClick={restartOnboarding}
+            >
+              <HelpCircle className="w-4 h-4" />
+              Tutorial
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm h-8 px-2 sm:px-3 rounded-xl flex items-center gap-1.5 flex-shrink-0"
+              onClick={() => setShowParentControls(true)}
+            >
+              <Shield className="w-4 h-4" />
+              Controls
+            </Button>
+            <Link href="/alert-settings">
+              <Button
+                variant="ghost"
+                className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm h-8 px-2 sm:px-3 rounded-xl flex items-center gap-1.5 flex-shrink-0"
+                data-testid="button-global-alert-settings"
               >
-                Sign Out
+                <Bell className="w-4 h-4" />
+                Alerts
               </Button>
-            </div>
+            </Link>
+            <Button
+              variant="ghost"
+              className="text-white hover:bg-white/20 font-bold text-xs sm:text-sm h-8 px-2 sm:px-3 rounded-xl ml-auto flex-shrink-0"
+              onClick={() => window.location.href = "/api/logout"}
+            >
+              Sign Out
+            </Button>
           </div>
-          
-          {/* Mobile XP Display */}
-          <div className="sm:hidden mt-3 text-center">
-            <div className="text-xs text-white/80">Total Family XP</div>
-            <div className="font-bold text-lg text-sunshine">{(children?.reduce((total, c) => total + (c.totalXp || 0), 0) || 0).toLocaleString()} XP ⭐</div>
-          </div>
+          </>)}
+
         </div>
       </header>
       
-      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 pb-[calc(5rem+var(--safe-bottom))]">
         {/* Trial Status Banner */}
         <TrialStatusBanner />
 
-        {/* Hero Profile Cards */}
-        <div className="mb-8 space-y-4">
-          {children?.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0)).map((childData, index) => {
-            const isTopScorer = index === 0 && children.length > 1; // Top scorer only if multiple children
-            return (
-              <Card key={childData.id} className={`fun-card p-4 sm:p-6 border-4 ${isTopScorer ? 'border-sunshine bg-gradient-to-r from-sunshine/10 to-mint/10' : 'border-sky'}`}>
-                <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                  <div className="relative flex-shrink-0">
-                    <img 
-                      src={childData.avatarUrl || getAvatarImage(childData.avatarType)} 
-                      alt={`${childData.name}'s Hero`} 
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-sunshine avatar-glow object-cover"
-                    />
-                    {isTopScorer && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 sm:w-8 sm:h-8 bg-sunshine rounded-full flex items-center justify-center border-2 border-white">
-                        <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                      <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800">{childData.name}</h3>
-                      {isTopScorer && <span className="text-sunshine text-sm font-bold">🏆 Top Scorer</span>}
-                    </div>
-                    <p className="text-gray-600 text-sm">Level {childData.level} {childData.avatarType.charAt(0).toUpperCase() + childData.avatarType.slice(1)} Hero</p>
-                    
-                    {/* Login Credentials Display */}
-                    <div className="mt-3 p-3 bg-turquoise/10 border border-turquoise/20 rounded-lg">
-                      <div className="text-xs text-turquoise font-semibold mb-2">🔑 Login Info for {childData.name}</div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <div className="text-xs text-gray-500">Username</div>
-                          <div className="font-mono font-bold text-turquoise">{childData.username || 'Not set'}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-gray-500">PIN</div>
-                          <div className="font-mono font-bold text-turquoise text-lg tracking-wider">{childData.pin || 'Not set'}</div>
-                        </div>
-                      </div>
-                      {(!childData.username || !childData.pin) && (
-                        <Button
-                          size="sm"
-                          className="mt-2 bg-turquoise hover:bg-turquoise/80 text-white text-xs"
-                          onClick={() => generateLoginCredentials(childData.id, childData.name)}
-                        >
-                          Generate Login
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
-                      <span className="px-2 py-1 bg-sunshine/20 text-sunshine-dark rounded-full text-xs font-bold">
-                        {childData.totalXp.toLocaleString()} XP
-                      </span>
-                      <span className="px-2 py-1 bg-coral/20 text-coral-dark rounded-full text-xs font-bold">
-                        {childData.rewardPoints} Points
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+        {/* Kids asked to unlock Premium → one-tap upgrade */}
+        <div className="mb-4">
+          <PremiumInterestNudge />
         </div>
 
-        {/* Overview Section - Quick Stats */}
+        {/* Overview hero: horizontal child cards; tap one to see their profile */}
+        {activeSection === 'overview' && (
+          <div className="mb-6">
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {children?.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0)).map((childData, index) => {
+                const isTopScorer = index === 0 && children.length > 1;
+                const isSelected = expandedChildId === childData.id;
+                return (
+                  <button
+                    key={childData.id}
+                    type="button"
+                    onClick={() => setExpandedChildId(isSelected ? null : childData.id)}
+                    aria-expanded={isSelected}
+                    data-testid={`child-card-toggle-${childData.id}`}
+                    className={`flex-shrink-0 w-36 bg-white rounded-2xl p-3 text-center shadow-md border-4 transition-transform ${
+                      isSelected ? 'border-coral scale-[1.03]' : 'border-transparent hover:border-sky'
+                    }`}
+                  >
+                    <div className="relative inline-block">
+                      <img
+                        src={childData.avatarUrl || getAvatarImage(childData.avatarType)}
+                        alt={`${childData.name}'s Hero`}
+                        className="w-16 h-16 rounded-full border-4 border-sunshine avatar-glow object-cover mx-auto"
+                      />
+                      {isTopScorer && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-sunshine rounded-full flex items-center justify-center border-2 border-white">
+                          <Crown className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="font-fredoka text-sm text-gray-800 mt-2 truncate">{childData.name}</div>
+                    <div className="text-[11px] text-gray-500 truncate">Level {childData.level} {childData.avatarType.charAt(0).toUpperCase() + childData.avatarType.slice(1)} Hero</div>
+                    <div className="text-xs font-bold text-gray-700 mt-1">{childData.totalXp.toLocaleString()} XP</div>
+                  </button>
+                );
+              })}
+              {/* Add Child */}
+              <button
+                type="button"
+                onClick={() => { setActiveSection('children'); setShowAddHero(true); }}
+                className="flex-shrink-0 w-36 rounded-2xl p-3 text-center border-4 border-dashed border-white/50 bg-white/10 hover:bg-white/20 transition-colors"
+                data-testid="overview-add-child"
+              >
+                <div className="w-16 h-16 rounded-full bg-white mx-auto flex items-center justify-center">
+                  <Plus className="w-8 h-8 text-sky" />
+                </div>
+                <div className="font-fredoka text-sm text-white mt-2">Add Child</div>
+              </button>
+            </div>
+
+            {selectedOverviewChild ? (
+              /* Tapped a kid → their profile panel */
+              <Card className="fun-card p-4 sm:p-6 border-4 border-sky mt-2" data-testid={`child-card-details-${selectedOverviewChild.id}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={selectedOverviewChild.avatarUrl || getAvatarImage(selectedOverviewChild.avatarType)}
+                      alt={selectedOverviewChild.name}
+                      className="w-14 h-14 rounded-full border-4 border-sunshine avatar-glow object-cover"
+                    />
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-fredoka text-xl text-gray-800">{selectedOverviewChild.name}</h3>
+                        {children && children.length > 1 && children.slice().sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))[0]?.id === selectedOverviewChild.id && (
+                          <span className="text-sunshine text-xs font-bold">🏆 Top Scorer</span>
+                        )}
+                      </div>
+                      <p className="text-gray-600 text-sm">Level {selectedOverviewChild.level} {selectedOverviewChild.avatarType.charAt(0).toUpperCase() + selectedOverviewChild.avatarType.slice(1)} Hero</p>
+                    </div>
+                  </div>
+                  <button type="button" className="text-gray-400 hover:text-gray-600" onClick={() => setExpandedChildId(null)} aria-label="Close profile">✕</button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <div className="bg-sunshine/10 rounded-xl p-3">
+                    <div className="text-xl font-black text-gray-800">⭐ {selectedOverviewChild.totalXp.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 font-semibold">Total XP</div>
+                  </div>
+                  <div className="bg-coral/10 rounded-xl p-3">
+                    <div className="text-xl font-black text-gray-800">🪙 {selectedOverviewChild.rewardPoints}</div>
+                    <div className="text-xs text-gray-500 font-semibold">Available Points</div>
+                  </div>
+                  <div className="bg-mint/10 rounded-xl p-3">
+                    <div className="text-xl font-black text-gray-800">✅ {selectedChildTodayCount}</div>
+                    <div className="text-xs text-gray-500 font-semibold">Habits today</div>
+                  </div>
+                  <div className="bg-orange-100 rounded-xl p-3">
+                    <div className="text-xl font-black text-gray-800">🔥 {selectedChildStreak} days</div>
+                    <div className="text-xs text-gray-500 font-semibold">Current Streak</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 px-3 py-2 bg-turquoise/10 border border-turquoise/20 rounded-lg flex flex-wrap items-center gap-x-6 gap-y-1">
+                  <span className="text-xs text-turquoise font-semibold">🔑 Login</span>
+                  <span className="text-sm"><span className="text-xs text-gray-500 mr-1">Username</span><span className="font-mono font-bold text-turquoise">{selectedOverviewChild.username || 'Not set'}</span></span>
+                  <span className="text-sm"><span className="text-xs text-gray-500 mr-1">PIN</span><span className="font-mono font-bold text-turquoise tracking-wider">{selectedOverviewChild.pin || 'Not set'}</span></span>
+                  {(!selectedOverviewChild.username || !selectedOverviewChild.pin) && (
+                    <Button size="sm" className="ml-auto bg-turquoise hover:bg-turquoise/80 text-white text-xs h-7"
+                      onClick={() => generateLoginCredentials(selectedOverviewChild.id, selectedOverviewChild.name)}>
+                      Generate Login
+                    </Button>
+                  )}
+                </div>
+
+                <Button
+                  className="w-full mt-4 bg-sky hover:bg-sky/80 text-white font-bold rounded-full"
+                  onClick={() => setActiveSection('children')}
+                  data-testid="view-full-profile"
+                >
+                  View Full Profile
+                </Button>
+              </Card>
+            ) : null /* Section shortcuts removed — every section lives on the bottom nav */}
+          </div>
+        )}
+
+        {/* Overview Section - Quick Stats.
+            Phones get a compact one-glance strip; md+ keeps the original web layout. */}
         {activeSection === 'overview' && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
+            {/* Mobile: compact 6-tile strip */}
+            <div className="grid grid-cols-3 gap-2 mb-6 bounce-in md:hidden">
+              <Card className="fun-card p-2.5 text-center border-2 border-mint">
+                <div className="flex items-center justify-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-mint flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{completionRate}%</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Completion</div>
+              </Card>
+              <Card className="fun-card p-2.5 text-center border-2 border-orange-500">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Flame className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{currentStreak}</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Streak</div>
+              </Card>
+              <Card className="fun-card p-2.5 text-center border-2 border-sunshine">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Trophy className="w-4 h-4 text-sunshine flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{badgesEarned}</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Badges</div>
+              </Card>
+              <Card className="fun-card p-2.5 text-center border-2 border-coral">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Star className="w-4 h-4 text-coral flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{child?.level || 1}</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Level</div>
+              </Card>
+              <Card className="fun-card p-2.5 text-center border-2 border-mint">
+                <div className="flex items-center justify-center gap-1.5">
+                  <UserRound className="w-4 h-4 text-mint flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{children?.length || 0}</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Heroes</div>
+              </Card>
+              <Card className="fun-card p-2.5 text-center border-2 border-coral">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Check className="w-4 h-4 text-coral flex-shrink-0" />
+                  <span className="font-bold text-lg text-gray-800">{(habits as any[])?.filter(h => h.isActive).length || 0}</span>
+                </div>
+                <div className="text-gray-600 font-semibold text-[11px]">Habits</div>
+              </Card>
+            </div>
+
+            {/* Web (md+): original large stat cards */}
+            <div className="hidden md:grid grid-cols-4 gap-6 mb-8">
               <div className="bounce-in" style={{ animationDelay: '0.1s' }}>
-                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-mint">
-                  <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 text-mint mx-auto mb-2 sm:mb-3" />
-                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{completionRate}%</div>
-                  <div className="text-gray-600 font-bold text-xs sm:text-base">Completion Rate</div>
+                <Card className="fun-card p-6 text-center border-4 border-mint">
+                  <TrendingUp className="w-12 h-12 text-mint mx-auto mb-3" />
+                  <div className="font-bold text-3xl text-gray-800">{completionRate}%</div>
+                  <div className="text-gray-600 font-bold text-base">Completion Rate</div>
                 </Card>
               </div>
               <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-orange-500">
-                  <Flame className="w-8 h-8 sm:w-12 sm:h-12 text-orange-500 mx-auto mb-2 sm:mb-3" />
-                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{currentStreak}</div>
-                  <div className="text-gray-600 font-bold text-xs sm:text-base">Current Streak</div>
+                <Card className="fun-card p-6 text-center border-4 border-orange-500">
+                  <Flame className="w-12 h-12 text-orange-500 mx-auto mb-3" />
+                  <div className="font-bold text-3xl text-gray-800">{currentStreak}</div>
+                  <div className="text-gray-600 font-bold text-base">Current Streak</div>
                 </Card>
               </div>
               <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-sunshine">
-                  <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-sunshine mx-auto mb-2 sm:mb-3" />
-                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{badgesEarned}</div>
-                  <div className="text-gray-600 font-bold text-xs sm:text-base">Badges Earned</div>
+                <Card className="fun-card p-6 text-center border-4 border-sunshine">
+                  <Trophy className="w-12 h-12 text-sunshine mx-auto mb-3" />
+                  <div className="font-bold text-3xl text-gray-800">{badgesEarned}</div>
+                  <div className="text-gray-600 font-bold text-base">Badges Earned</div>
                 </Card>
               </div>
               <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-                <Card className="fun-card p-3 sm:p-6 text-center border-4 border-coral">
-                  <Star className="w-8 h-8 sm:w-12 sm:h-12 text-coral mx-auto mb-2 sm:mb-3" />
-                  <div className="font-bold text-2xl sm:text-3xl text-gray-800">{child?.level || 1}</div>
-                  <div className="text-gray-600 font-bold text-xs sm:text-base">Current Level</div>
+                <Card className="fun-card p-6 text-center border-4 border-coral">
+                  <Star className="w-12 h-12 text-coral mx-auto mb-3" />
+                  <div className="font-bold text-3xl text-gray-800">{child?.level || 1}</div>
+                  <div className="text-gray-600 font-bold text-base">Current Level</div>
                 </Card>
               </div>
             </div>
 
-            {/* Summary of all sections for overview */}
-            <div className="space-y-6">
+            {/* Web (md+): original Quick Overview summary card */}
+            <div className="hidden md:block space-y-6 mb-6">
               <Card className="p-6 border-2 border-mint">
                 <h3 className="font-fredoka text-xl text-gray-800 mb-4">Quick Overview</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 p-3 bg-mint/10 rounded-lg">
                     <UserRound className="w-8 h-8 text-mint" />
                     <div>
@@ -909,118 +1090,137 @@ export default function ParentDashboard() {
                 </div>
               </Card>
             </div>
+
+            {/* Pending approvals hub — habits, reward claims, and game
+                purchases surface right on the dashboard so parents can act
+                without navigating */}
+            <div className="grid gap-4 lg:grid-cols-2 items-start">
+              <Card className="fun-card p-4 md:p-6 border-4 border-mint">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckSquare className="w-5 h-5 text-mint flex-shrink-0" />
+                  <h3 className="font-fredoka text-lg md:text-xl text-gray-800 hero-title">✅ Pending Approvals</h3>
+                  {pendingApprovalCount > 0 && (
+                    <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-0.5 rounded-full ml-auto whitespace-nowrap">
+                      {pendingApprovalCount} pending
+                    </span>
+                  )}
+                </div>
+                {pendingApprovalCount > 0 ? (
+                  <div className="flex items-center justify-between gap-3 p-3 bg-mint/10 rounded-xl border border-mint/30">
+                    <p className="text-sm text-gray-700 font-medium">
+                      {pendingApprovalCount} habit{pendingApprovalCount === 1 ? '' : 's'} waiting for your review
+                    </p>
+                    <Button
+                      size="sm"
+                      className="bg-mint hover:bg-mint/80 text-white font-bold rounded-full px-4 flex-shrink-0"
+                      onClick={() => { setActiveSection('habits'); setHabitsTab('approvals'); }}
+                      data-testid="overview-review-habits"
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Review
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">All caught up — no habits waiting.</p>
+                )}
+
+                {/* Reward claims from every child, approvable inline */}
+                <OverviewRewardClaims children={children || []} />
+              </Card>
+
+              <GamePurchaseApproval />
+            </div>
           </>
         )}
 
         {/* Habits Section */}
         {activeSection === 'habits' && (
-          <div className="space-y-8">
-            {/* Habit Management Section */}
-            <div className="bounce-in" style={{ animationDelay: '0.2s' }}>
-              <HabitManagementSection 
-              childId={child?.id || ''} 
-              showAddHabit={showAddHabit} 
-              setShowAddHabit={setShowAddHabit}
-              showHabitAssignment={showHabitAssignment}
-              setShowHabitAssignment={setShowHabitAssignment}
-              children={children || []}
-              user={user as User}
-              autoAssignAllMutation={autoAssignAllMutation}
-              setDeleteHabitDialog={setDeleteHabitDialog}
-              deleteHabitMutation={deleteHabitMutation}
-            />
-          </div>
-
-          {/* Habit Approval Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.25s' }}>
-            <HabitApproval children={children} />
-          </div>
-          </div>
+          <HabitsManager
+            children={children || []}
+            user={user as User}
+            pendingApprovalCount={pendingApprovalCount}
+          />
         )}
 
         {/* Children Section */}
         {activeSection === 'children' && (
-          <div className="space-y-8">
-            {/* Kids Management Section */}
-            <div className="bounce-in" style={{ animationDelay: '0.3s' }}>
-              <KidsManagementSection 
-              children={children} 
-              createHeroMutation={createHeroMutation}
-              deleteChildMutation={deleteChildMutation}
-              getAvatarImage={getAvatarImage}
-              showAddHero={showAddHero}
-              setShowAddHero={setShowAddHero}
-              newHeroName={newHeroName}
-              setNewHeroName={setNewHeroName}
-              newAvatarType={newAvatarType}
-              setNewAvatarType={setNewAvatarType}
-              avatarTypes={avatarTypes}
-              imagePreview={imagePreview}
-              handleImageUpload={handleImageUpload}
-              setDeleteChildDialog={setDeleteChildDialog}
-            />
-          </div>
-          </div>
+          <KidsManager onNavigate={(s) => setActiveSection(s)} />
         )}
 
         {/* Rewards Section */}
         {activeSection === 'rewards' && (
-          <div className="space-y-8">
-            {/* Reward Settings Section */}
-            <div className="bounce-in" style={{ animationDelay: '0.35s' }}>
-              <RewardSettingsSection 
-              childId={child?.id || ''} 
-              showAddReward={showAddReward} 
-              setShowAddReward={setShowAddReward}
-              children={children || []}
-              setDeleteRewardDialog={setDeleteRewardDialog}
-              deleteRewardMutation={deleteRewardMutation}
-            />
-          </div>
+          <div className="space-y-4 bounce-in">
+            {/* One purpose per screen: Manage rewards OR review approvals */}
+            <div className="flex gap-1 bg-gray-100 rounded-full p-1 text-sm">
+              <button
+                onClick={() => setRewardsTab('manage')}
+                className={`flex-1 rounded-full py-2 font-bold transition-colors ${rewardsTab === 'manage' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-500'}`}
+                data-testid="rewards-tab-manage"
+              >
+                🎁 Rewards
+              </button>
+              <button
+                onClick={() => setRewardsTab('approvals')}
+                className={`flex-1 rounded-full py-2 font-bold transition-colors ${rewardsTab === 'approvals' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-500'}`}
+                data-testid="rewards-tab-approvals"
+              >
+                ✅ Approvals
+              </button>
+            </div>
 
-          {/* Reward Approval Section */}
-          <div className="bounce-in" style={{ animationDelay: '0.4s' }}>
-            <RewardApprovalSection childId={child?.id || ''} />
+            {rewardsTab === 'manage' && (
+              <RewardsManager children={children || []} />
+            )}
+
+            {rewardsTab === 'approvals' && (
+              <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 md:items-start">
+                <RewardApprovalSection childId={child?.id || ''} />
+                <GamePurchaseApproval />
+              </div>
+            )}
           </div>
-        </div>
         )}
 
         {/* Progress Section */}
         {activeSection === 'progress' && (
-          <div className="space-y-8">
+          <div className="space-y-4 md:space-y-8">
             {/* Progress Reports Section */}
             <div className="bounce-in" style={{ animationDelay: '0.45s' }}>
-              <Card className="fun-card p-4 sm:p-8 border-4 border-coral">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center">
-                  <BarChart3 className="w-6 h-6 sm:w-8 sm:h-8 text-coral mr-2 sm:mr-3" />
-                  <div>
-                    <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📊 Progress Reports</h3>
-                    <p className="text-gray-600 text-sm sm:text-base">View detailed analytics and insights</p>
-                  </div>
+              <Card className="fun-card p-4 md:p-8 border-4 border-coral">
+              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-6">
+                <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-coral flex-shrink-0" />
+                <div>
+                  <h3 className="font-fredoka text-lg md:text-2xl text-gray-800 hero-title">
+                    <span className="md:hidden">📊 Progress</span>
+                    <span className="hidden md:inline">📊 Progress Reports</span>
+                  </h3>
+                  <p className="hidden md:block text-gray-600 text-base">View detailed analytics and insights</p>
                 </div>
-                <Link href="/progress-reports">
-                  <Button className="bg-coral hover:bg-coral/80 text-white">
+                <Link href="/progress-reports" className="ml-auto">
+                  <Button size="sm" className="bg-coral hover:bg-coral/80 text-white whitespace-nowrap md:h-10 md:px-4">
                     View Reports
                   </Button>
                 </Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-mint/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{completionRate}%</div>
-                  <div className="text-sm text-gray-600">Completion Rate</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                <div className="text-center p-2.5 md:p-4 bg-mint/10 rounded-lg">
+                  <div className="text-xl md:text-2xl font-bold text-gray-800">{completionRate}%</div>
+                  <div className="text-xs md:text-sm text-gray-600">
+                    <span className="md:hidden">Completion</span>
+                    <span className="hidden md:inline">Completion Rate</span>
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-orange-500/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{currentStreak}</div>
-                  <div className="text-sm text-gray-600">Day Streak</div>
+                <div className="text-center p-2.5 md:p-4 bg-orange-500/10 rounded-lg">
+                  <div className="text-xl md:text-2xl font-bold text-gray-800">{currentStreak}</div>
+                  <div className="text-xs md:text-sm text-gray-600">Day Streak</div>
                 </div>
-                <div className="text-center p-4 bg-sunshine/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{(habits as any[])?.filter(h => h.isActive).length || 0}</div>
-                  <div className="text-sm text-gray-600">Active Habits</div>
+                <div className="text-center p-2.5 md:p-4 bg-sunshine/10 rounded-lg">
+                  <div className="text-xl md:text-2xl font-bold text-gray-800">{(habits as any[])?.filter(h => h.isActive).length || 0}</div>
+                  <div className="text-xs md:text-sm text-gray-600">Active Habits</div>
                 </div>
-                <div className="text-center p-4 bg-coral/10 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-800">{child?.level || 1}</div>
-                  <div className="text-sm text-gray-600">Level</div>
+                <div className="text-center p-2.5 md:p-4 bg-coral/10 rounded-lg">
+                  <div className="text-xl md:text-2xl font-bold text-gray-800">{child?.level || 1}</div>
+                  <div className="text-xs md:text-sm text-gray-600">Level</div>
                 </div>
               </div>
             </Card>
@@ -1030,35 +1230,23 @@ export default function ParentDashboard() {
 
         {/* Settings Section */}
         {activeSection === 'settings' && (
-          <div className="space-y-8">
-            {/* Subscription Management Section */}
-            <div className="bounce-in" style={{ animationDelay: '0.5s' }}>
-              <SubscriptionManagementCard />
-            </div>
+          <div className="space-y-4 bounce-in">
+            {/* Subscription card stays at the top */}
+            <SubscriptionManagementCard />
 
-            {/* Parental Controls Section */}
-            <div className="bounce-in" style={{ animationDelay: '0.55s' }}>
-              <Card 
-              className="fun-card p-4 sm:p-8 border-4 border-red-500 cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => setShowParentControls(true)}
-              data-testid="card-parental-controls"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title flex items-center">
-                    <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mr-2 sm:mr-3" />
-                    🛡️ Parent Controls
-                  </h3>
-                  <p className="text-gray-600 text-sm sm:text-base">Per-child screen time, bedtime, app features & emergency controls</p>
-                </div>
-                <div className="text-red-500">
-                  <Settings className="w-8 h-8" />
-                </div>
-              </div>
-            </Card>
+            {/* Everything else as a clean action-row list (mobile-first) */}
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+              <SettingsRow icon={Shield} tint="text-red-500 bg-red-50" label="Parent Controls" hint="Screen time, bedtime, features" onClick={() => setShowParentControls(true)} testid="settings-row-controls" />
+              <Link href="/alert-settings">
+                <SettingsRow icon={Bell} tint="text-sky bg-sky/10" label="Alerts & Reminders" hint="Notification preferences" onClick={() => {}} testid="settings-row-alerts" />
+              </Link>
+              <SettingsRow icon={HelpCircle} tint="text-mint bg-mint/10" label="Tutorial" hint="Replay the walkthrough" onClick={restartOnboarding} testid="settings-row-tutorial" />
+              <SettingsRow icon={UserRound} tint="text-purple bg-purple/10" label="My Profile" hint="Name, email & family code" onClick={() => setShowParentProfile(true)} testid="settings-row-profile" />
+              <SettingsRow icon={LogOut} tint="text-destructive bg-destructive/10" label="Sign Out" danger onClick={() => (window.location.href = "/api/logout")} testid="settings-row-signout" />
+            </div>
           </div>
-        </div>
         )}
+
       </main>
 
       {/* Parent Controls Modal */}
@@ -1081,17 +1269,6 @@ export default function ParentDashboard() {
         onComplete={handleOnboardingComplete}
       />
       
-      {/* Habit Assignment Modal */}
-      {showHabitAssignment && (
-        <HabitAssignmentModal 
-          isOpen={showHabitAssignment}
-          onClose={() => setShowHabitAssignment(false)}
-          children={children || []}
-          onRemoveHabit={(habitId: string, childName: string) => setRemoveHabitDialog({ open: true, habitId, childName })}
-          removeHabitMutation={removeHabitMutation}
-        />
-      )}
-
       {/* Alert Dialogs */}
       {/* Remove Habit Dialog */}
       <AlertDialog open={removeHabitDialog.open} onOpenChange={(open) => setRemoveHabitDialog({ ...removeHabitDialog, open })}>
@@ -1112,7 +1289,7 @@ export default function ParentDashboard() {
                 }
                 setRemoveHabitDialog({ open: false });
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-destructive hover:bg-destructive/80"
             >
               Remove
             </AlertDialogAction>
@@ -1139,7 +1316,7 @@ export default function ParentDashboard() {
                 }
                 setDeleteHabitDialog({ open: false });
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-destructive hover:bg-destructive/80"
             >
               Delete
             </AlertDialogAction>
@@ -1166,7 +1343,7 @@ export default function ParentDashboard() {
                 }
                 setDeleteChildDialog({ open: false });
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-destructive hover:bg-destructive/80"
             >
               Delete
             </AlertDialogAction>
@@ -1193,7 +1370,7 @@ export default function ParentDashboard() {
                 }
                 setDeleteRewardDialog({ open: false });
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-destructive hover:bg-destructive/80"
             >
               Delete
             </AlertDialogAction>
@@ -1206,2036 +1383,8 @@ export default function ParentDashboard() {
   );
 }
 
-// New Habit Assignment Modal Component - Shows all habits with Active/Inactive status
-function HabitAssignmentModal({ 
-  isOpen, 
-  onClose, 
-  children,
-  onRemoveHabit,
-  removeHabitMutation
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  children: Child[];
-  onRemoveHabit: (habitId: string, childName: string) => void;
-  removeHabitMutation: any;
-}) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Get all master habits for parent
-  const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
-    queryKey: ["/api/habits/master"],
-    enabled: isOpen
-  });
-
-  // Get current child habit assignments
-  const { data: allHabits } = useQuery<(Habit & { childName?: string })[]>({
-    queryKey: ["/api/habits/all"],
-    enabled: isOpen
-  });
-
-  // Toggle habit active/inactive status
-  const toggleHabitStatusMutation = useMutation({
-    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
-      await apiRequest("PATCH", `/api/habits/${habitId}`, { isActive });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Status Updated!",
-        description: "Habit status has been changed successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update habit status.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Assign habit to child
-  const assignHabitMutation = useMutation({
-    mutationFn: async ({ childId, habitData }: { childId: string; habitData: any }) => {
-      const response = await apiRequest("POST", `/api/children/${childId}/habits`, habitData);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to assign habit to child");
-      }
-      return response.json();
-    },
-    onSuccess: (_, { childId }) => {
-      toast({
-        title: "Habit Assigned!",
-        description: "Habit has been assigned to child successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
-      // Invalidate specific child habits
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
-    },
-    onError: (error) => {
-      console.error("Habit assignment error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to assign habit to child.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Group current habit assignments by master habit ID
-  const habitAssignmentsByMaster = React.useMemo(() => {
-    if (!allHabits || !children) return {};
-    
-    const groups: Record<string, (Habit & { childName?: string })[]> = {};
-    allHabits.forEach(habit => {
-      const masterHabitId = habit.masterHabitId;
-      if (masterHabitId) { // Only include habits that have a masterHabitId
-        if (!groups[masterHabitId]) {
-          groups[masterHabitId] = [];
-        }
-        // Add child name to habit for display
-        const child = children.find(c => c.id === habit.childId);
-        groups[masterHabitId].push({
-          ...habit,
-          childName: child?.name
-        });
-      }
-    });
-    
-    console.log('habitAssignmentsByMaster updated:', groups);
-    return groups;
-  }, [allHabits, children]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="font-fredoka text-2xl text-gray-800">🎯 Habit Assignment Center</h3>
-              <p className="text-gray-600">Manage which habits are active for each child</p>
-            </div>
-            <Button variant="ghost" onClick={onClose}>
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turquoise mx-auto"></div>
-              <p className="text-gray-600 mt-4">Loading habits...</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Children Header */}
-              <div className="grid grid-cols-1 gap-4">
-                <div className="bg-gradient-to-r from-turquoise/10 to-sky/10 p-4 rounded-lg">
-                  <h4 className="font-bold text-gray-800 mb-3">👥 Your Children ({children.length})</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {children.map((child) => (
-                      <div key={child.id} className="flex items-center space-x-2 bg-white/50 p-2 rounded">
-                        <div className="w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center font-bold text-sm">
-                          {child.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{child.name}</div>
-                          <div className="text-xs text-gray-500">Level {child.level}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Habits Assignment Grid */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-gray-800">📋 Habit Assignment Overview</h4>
-                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                  <p><strong>Active habits</strong> appear in children's daily habit list</p>
-                  <p><strong>Inactive habits</strong> are hidden from children and won't sync to their devices</p>
-                </div>
-
-                {!masterHabits || masterHabits.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <p className="text-gray-600">No master habits created yet</p>
-                    <p className="text-sm text-gray-500 mt-1">Create habits in the Habit Management section first</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {masterHabits.map((masterHabit) => {
-                      const habitAssignments = habitAssignmentsByMaster[masterHabit.id] || [];
-                      
-                      return (
-                        <Card key={masterHabit.id} className="p-6 border-2 border-gray-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-2xl">{masterHabit.icon}</span>
-                              <div>
-                                <h5 className="font-bold text-gray-800">{masterHabit.name}</h5>
-                                <p className="text-sm text-gray-600">{masterHabit.description || 'No description'}</p>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {masterHabit.xpReward} XP • {masterHabit.frequency} • {masterHabit.color}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Child Assignment Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {children.map((child) => {
-                              const childHabit = habitAssignments.find(h => h.childId === child.id);
-                              const hasHabit = !!childHabit;
-                              const isActive = childHabit?.isActive ?? false;
-
-
-
-                              return (
-                                <div key={child.id} className={`p-4 rounded-lg border-2 min-h-[100px] ${
-                                  hasHabit 
-                                    ? isActive 
-                                      ? 'border-green-300 bg-green-50' 
-                                      : 'border-yellow-300 bg-yellow-50'
-                                    : 'border-gray-200 bg-gray-50'
-                                }`}>
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-6 h-6 rounded-full bg-coral text-white flex items-center justify-center font-bold text-xs">
-                                        {child.name.charAt(0).toUpperCase()}
-                                      </div>
-                                      <span className="font-medium text-sm">{child.name}</span>
-                                    </div>
-                                    
-                                    {hasHabit ? (
-                                      <div className="flex flex-col space-y-2 mt-2">
-                                        <div className="flex items-center justify-between">
-                                          <span className={`text-xs font-medium px-2 py-1 rounded ${
-                                            isActive ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
-                                          }`}>
-                                            {isActive ? 'Active' : 'Inactive'}
-                                          </span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                          <Button
-                                            size="sm"
-                                            onClick={() => {
-                                              toggleHabitStatusMutation.mutate({
-                                                habitId: childHabit!.id,
-                                                isActive: !isActive
-                                              });
-                                            }}
-                                            disabled={toggleHabitStatusMutation.isPending}
-                                            className={`flex-1 text-xs px-3 py-2 min-h-[32px] ${
-                                              isActive 
-                                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                                                : 'bg-green-500 hover:bg-green-600 text-white'
-                                            }`}
-                                            data-testid={`button-toggle-habit-${child.id}`}
-                                          >
-                                            {toggleHabitStatusMutation.isPending 
-                                              ? 'Updating...' 
-                                              : isActive 
-                                                ? '⏸️ Deactivate' 
-                                                : '▶️ Activate'
-                                            }
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            onClick={() => {
-                                              onRemoveHabit(childHabit!.id, child.name);
-                                            }}
-                                            disabled={removeHabitMutation.isPending}
-                                            className="text-xs px-3 py-2 min-h-[32px] min-w-[70px]"
-                                            data-testid={`button-remove-habit-${child.id}`}
-                                          >
-                                            {removeHabitMutation.isPending ? 'Removing...' : '🗑️ Remove'}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="mt-2">
-                                        <Button
-                                          size="sm"
-                                          onClick={() => {
-                                            console.log('Assigning habit:', {
-                                              childId: child.id,
-                                              childName: child.name,
-                                              masterHabitId: masterHabit.id,
-                                              masterHabitName: masterHabit.name,
-                                              masterHabitIsActive: masterHabit.isActive
-                                            });
-                                            assignHabitMutation.mutate({
-                                              childId: child.id,
-                                              habitData: {
-                                                masterHabitId: masterHabit.id,
-                                                name: masterHabit.name,
-                                                description: masterHabit.description,
-                                                icon: masterHabit.icon,
-                                                color: masterHabit.color,
-                                                frequency: masterHabit.frequency,
-                                                xpReward: masterHabit.xpReward,
-                                                isActive: true
-                                              }
-                                            });
-                                          }}
-                                          disabled={assignHabitMutation.isPending}
-                                          className="w-full text-xs px-4 py-2 min-h-[32px] bg-blue-500 hover:bg-blue-600 text-white"
-                                          data-testid={`button-assign-habit-${child.id}`}
-                                        >
-                                          {assignHabitMutation.isPending 
-                                            ? 'Assigning...' 
-                                            : '✅ Assign Habit'
-                                          }
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Summary Stats */}
-              <div className="border-t pt-4 mt-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div className="p-3 bg-turquoise/10 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">{masterHabits?.length || 0}</div>
-                    <div className="text-sm text-gray-600">Total Habits</div>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">
-                      {allHabits?.filter((h: any) => h.isActive).length || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Active Assignments</div>
-                  </div>
-                  <div className="p-3 bg-yellow-100 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">
-                      {allHabits?.filter((h: any) => !h.isActive).length || 0}
-                    </div>
-                    <div className="text-sm text-gray-600">Inactive Assignments</div>
-                  </div>
-                  <div className="p-3 bg-coral/10 rounded-lg">
-                    <div className="text-xl font-bold text-gray-800">{children.length}</div>
-                    <div className="text-sm text-gray-600">Children</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-// Habit Management Section Component
-function HabitManagementSection({ childId, showAddHabit, setShowAddHabit, showHabitAssignment, setShowHabitAssignment, children, user, autoAssignAllMutation, setDeleteHabitDialog, deleteHabitMutation }: { 
-  childId: string; 
-  showAddHabit: boolean; 
-  setShowAddHabit: (show: boolean) => void;
-  showHabitAssignment: boolean; 
-  setShowHabitAssignment: (show: boolean) => void;
-  children: Child[];
-  user?: User;
-  autoAssignAllMutation: any;
-  setDeleteHabitDialog: (dialog: { open: boolean; habitId?: string; habitName?: string }) => void;
-  deleteHabitMutation: any;
-}) {
-  const { toast } = useToast();
-  const [habitName, setHabitName] = useState("");
-  const [habitDescription, setHabitDescription] = useState("");
-  const [habitIcon, setHabitIcon] = useState("⚡");
-  const [habitXP, setHabitXP] = useState("50");
-  const [habitColor, setHabitColor] = useState("turquoise");
-  
-  // Premium voice reminder states
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceRecordingBlob, setVoiceRecordingBlob] = useState<Blob | null>(null);
-  const [voiceRecordingName, setVoiceRecordingName] = useState("");
-  const [reminderDuration, setReminderDuration] = useState(30);
-  const [customRingtone, setCustomRingtone] = useState("gentle-chime");
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [recordingTimer, setRecordingTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  const [editingHabit, setEditingHabit] = useState<string | null>(null);
-  const [editHabitName, setEditHabitName] = useState("");
-  const [editHabitDescription, setEditHabitDescription] = useState("");
-  const [editHabitIcon, setEditHabitIcon] = useState("⚡");
-  const [editHabitXP, setEditHabitXP] = useState("50");
-  const [editHabitColor, setEditHabitColor] = useState("turquoise");
-  
-  // Premium voice reminder states for editing
-  const [editVoiceRecordingBlob, setEditVoiceRecordingBlob] = useState<Blob | null>(null);
-  const [editVoiceRecordingName, setEditVoiceRecordingName] = useState("");
-  const [editReminderDuration, setEditReminderDuration] = useState(30);
-  const [editCustomRingtone, setEditCustomRingtone] = useState("gentle-chime");
-  const [editIsRecording, setEditIsRecording] = useState(false);
-  const [editMediaRecorder, setEditMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [editRecordingDuration, setEditRecordingDuration] = useState(0);
-  const [editRecordingTimer, setEditRecordingTimer] = useState<NodeJS.Timeout | null>(null);
-
-  // Check if user has premium features
-  const isPremium = user?.subscriptionStatus === 'active';
-  const isTrial = user?.subscriptionStatus === 'trial';
-  const hasVoiceFeatures = isPremium || isTrial;
-
-  // Ringtone options based on subscription
-  const getRingtoneOptions = () => {
-    const freeRingtones = [
-      { value: "gentle-chime", label: "🎵 Gentle Chime", preview: "gentle-chime.mp3", premium: false },
-      { value: "happy-bells", label: "🔔 Happy Bells", preview: "happy-bells.mp3", premium: false },
-      { value: "nature-sounds", label: "🌿 Nature Sounds", preview: "nature-sounds.mp3", premium: false },
-      { value: "soft-piano", label: "🎹 Soft Piano", preview: "soft-piano.mp3", premium: false },
-      { value: "cheerful-tune", label: "🎶 Cheerful Tune", preview: "cheerful-tune.mp3", premium: false }
-    ];
-
-    const premiumRingtones = [
-      { value: "ocean-waves", label: "🌊 Ocean Waves", premium: true, preview: "ocean-waves.mp3" },
-      { value: "bird-song", label: "🐦 Bird Song", premium: true, preview: "bird-song.mp3" },
-      { value: "wind-chimes", label: "🎐 Wind Chimes", premium: true, preview: "wind-chimes.mp3" },
-      { value: "magical-sparkle", label: "✨ Magical Sparkle", premium: true, preview: "magical-sparkle.mp3" },
-      { value: "forest-whisper", label: "🌲 Forest Whisper", premium: true, preview: "forest-whisper.mp3" },
-      { value: "gentle-rain", label: "🌧️ Gentle Rain", premium: true, preview: "gentle-rain.mp3" },
-      { value: "crystal-bells", label: "💎 Crystal Bells", premium: true, preview: "crystal-bells.mp3" },
-      { value: "morning-breeze", label: "🌅 Morning Breeze", premium: true, preview: "morning-breeze.mp3" },
-      { value: "zen-meditation", label: "🧘 Zen Meditation", premium: true, preview: "zen-meditation.mp3" },
-      { value: "fairy-dust", label: "🧚 Fairy Dust", premium: true, preview: "fairy-dust.mp3" },
-      { value: "bamboo-fountain", label: "🎋 Bamboo Fountain", premium: true, preview: "bamboo-fountain.mp3" },
-      { value: "starlight-melody", label: "⭐ Starlight Melody", premium: true, preview: "starlight-melody.mp3" },
-      { value: "butterfly-dance", label: "🦋 Butterfly Dance", premium: true, preview: "butterfly-dance.mp3" },
-      { value: "moonlight-serenade", label: "🌙 Moonlight Serenade", premium: true, preview: "moonlight-serenade.mp3" },
-      { value: "dream-whistle", label: "💫 Dream Whistle", premium: true, preview: "dream-whistle.mp3" }
-    ];
-
-    return isPremium ? [...freeRingtones, ...premiumRingtones] : freeRingtones;
-  };
-
-  const ringtoneOptions = getRingtoneOptions();
-
-  // Play ringtone preview
-  const playRingtonePreview = (ringtoneValue: string) => {
-    const ringtone = ringtoneOptions.find(r => r.value === ringtoneValue);
-    if (ringtone?.preview) {
-      // In a real app, you would play the actual audio file
-      // For now, we'll just show a toast
-      toast({
-        title: "Playing Preview",
-        description: `🎵 ${ringtone.label}`,
-      });
-    }
-  };
-
-  // Get master habits for this parent
-  const { data: masterHabits, isLoading } = useQuery<MasterHabit[]>({
-    queryKey: ["/api/habits/master"],
-  });
-
-  // Also get child-specific habits for this specific child (for display)
-  const { data: childHabits } = useQuery<Habit[]>({
-    queryKey: [`/api/children/${childId}/habits`],
-  });
-
-  const createMasterHabitMutation = useMutation({
-    mutationFn: async (habitData: any) => {
-      const response = await apiRequest("POST", `/api/habits/master`, habitData);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to create master habit");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Master Habit Created!",
-        description: "Master habit created! Click 'Auto-Assign All Habits' to assign to all children.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync to Kids Adventure
-      setHabitName("");
-      setHabitDescription("");
-      setHabitIcon("⚡");
-      setHabitXP("50");
-      setHabitColor("turquoise");
-      // Clear Premium voice reminder states
-      setVoiceRecordingBlob(null);
-      setVoiceRecordingName("");
-      setReminderDuration(30);
-      setCustomRingtone("gentle-chime");
-      setShowAddHabit(false);
-    },
-    onError: (error) => {
-      console.error("Master habit creation error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create master habit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMasterHabitMutation = useMutation({
-    mutationFn: async (data: { masterHabitId: string; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/master-habits/${data.masterHabitId}`, data.updates);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to update master habit");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Master Habit Updated!",
-        description: "Master habit has been updated successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Sync to Kids Adventure
-      setEditingHabit(null);
-      // Clear Premium voice reminder edit states
-      setEditVoiceRecordingBlob(null);
-      setEditVoiceRecordingName("");
-      setEditReminderDuration(30);
-      setEditCustomRingtone("gentle-chime");
-    },
-    onError: (error) => {
-      console.error("Master habit update error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update master habit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-
-
-  const editHabitMutation = useMutation({
-    mutationFn: async (data: { habitId: string; updates: any }) => {
-      await apiRequest("PATCH", `/api/habits/${data.habitId}`, data.updates);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Updated! 🎯",
-        description: "Habit has been updated successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
-      setEditingHabit(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update habit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-
-  // For child habit status updates (assignment-level)
-  const toggleHabitStatusMutation = useMutation({
-    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
-      await apiRequest("PATCH", `/api/habits/${habitId}`, { isActive });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Habit Status Updated!",
-        description: "Habit status has been changed successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/habits`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh master habits
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update habit status.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // For master habit status updates (template-level)
-  const toggleMasterHabitStatusMutation = useMutation({
-    mutationFn: async ({ habitId, isActive }: { habitId: string; isActive: boolean }) => {
-      const response = await apiRequest("PATCH", `/api/master-habits/${habitId}`, { isActive });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to update master habit status");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/master"] }); // Refresh master habits
-      queryClient.invalidateQueries({ queryKey: ["/api/habits/all"] }); // Refresh child assignments
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] }); // Refresh child data for sync
-    },
-    onError: (error) => {
-      console.error("Master habit status update error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update master habit status.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Reset form functions
-  const resetNewHabitForm = () => {
-    setHabitName("");
-    setHabitDescription("");
-    setHabitIcon("⚡");
-    setHabitXP("50");
-    setHabitColor("turquoise");
-    setVoiceRecordingBlob(null);
-    setVoiceRecordingName("");
-    setReminderDuration(30);
-    setCustomRingtone("gentle-chime");
-    setRecordingDuration(0);
-    if (recordingTimer) clearInterval(recordingTimer);
-    setShowAddHabit(false);
-  };
-
-  const resetEditForm = () => {
-    setEditingHabit(null);
-    setEditVoiceRecordingBlob(null);
-    setEditVoiceRecordingName("");
-    setEditReminderDuration(30);
-    setEditCustomRingtone("gentle-chime");
-    setEditRecordingDuration(0);
-    if (editRecordingTimer) clearInterval(editRecordingTimer);
-  };
-
-  // Enhanced voice recording functions
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      });
-      
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setVoiceRecordingBlob(blob);
-        setVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
-        stream.getTracks().forEach(track => track.stop());
-        if (recordingTimer) clearInterval(recordingTimer);
-        setRecordingDuration(0);
-      };
-
-      setMediaRecorder(recorder);
-      recorder.start();
-      setIsRecording(true);
-      
-      // Start timer
-      const timer = setInterval(() => {
-        setRecordingDuration(prev => {
-          const newDuration = prev + 1;
-          // Auto-stop at 60 seconds
-          if (newDuration >= 60) {
-            stopRecording();
-            return 60;
-          }
-          return newDuration;
-        });
-      }, 1000);
-      setRecordingTimer(timer);
-
-    } catch (error) {
-      toast({
-        title: "Recording Error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      if (recordingTimer) {
-        clearInterval(recordingTimer);
-        setRecordingTimer(null);
-      }
-    }
-  };
-
-  const playRecording = () => {
-    if (voiceRecordingBlob) {
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
-      const audio = new Audio(URL.createObjectURL(voiceRecordingBlob));
-      setAudioElement(audio);
-      audio.play().catch(error => {
-        toast({
-          title: "Playback Error",
-          description: "Could not play recording",
-          variant: "destructive",
-        });
-      });
-    }
-  };
-
-  const deleteRecording = () => {
-    setVoiceRecordingBlob(null);
-    setVoiceRecordingName("");
-    setRecordingDuration(0);
-    if (audioElement) {
-      audioElement.pause();
-      setAudioElement(null);
-    }
-  };
-
-  // Enhanced edit voice recording functions
-  const startEditRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      });
-      
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setEditVoiceRecordingBlob(blob);
-        setEditVoiceRecordingName(`Voice reminder ${new Date().toLocaleTimeString()}`);
-        stream.getTracks().forEach(track => track.stop());
-        if (editRecordingTimer) clearInterval(editRecordingTimer);
-        setEditRecordingDuration(0);
-      };
-
-      setEditMediaRecorder(recorder);
-      recorder.start();
-      setEditIsRecording(true);
-      
-      // Start timer
-      const timer = setInterval(() => {
-        setEditRecordingDuration(prev => {
-          const newDuration = prev + 1;
-          if (newDuration >= 60) {
-            stopEditRecording();
-            return 60;
-          }
-          return newDuration;
-        });
-      }, 1000);
-      setEditRecordingTimer(timer);
-
-    } catch (error) {
-      toast({
-        title: "Recording Error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopEditRecording = () => {
-    if (editMediaRecorder && editIsRecording) {
-      editMediaRecorder.stop();
-      setEditIsRecording(false);
-      if (editRecordingTimer) {
-        clearInterval(editRecordingTimer);
-        setEditRecordingTimer(null);
-      }
-    }
-  };
-
-  const playEditRecording = () => {
-    if (editVoiceRecordingBlob) {
-      const audio = new Audio(URL.createObjectURL(editVoiceRecordingBlob));
-      audio.play().catch(error => {
-        toast({
-          title: "Playback Error",
-          description: "Could not play recording",
-          variant: "destructive",
-        });
-      });
-    }
-  };
-
-  const deleteEditRecording = () => {
-    setEditVoiceRecordingBlob(null);
-    setEditVoiceRecordingName("");
-    setEditRecordingDuration(0);
-  };
-
-  // Format recording duration
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleAddHabit = async () => {
-    if (!habitName.trim()) {
-      toast({
-        title: "Name required",
-        description: "Please enter a name for the habit!",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let voiceRecordingUrl = "";
-    
-    // Upload voice recording if exists and user has voice features
-    if (voiceRecordingBlob && hasVoiceFeatures) {
-      try {
-        const uploadResponse = await apiRequest("POST", "/api/objects/upload");
-        const { uploadURL } = await uploadResponse.json();
-
-        const uploadResult = await fetch(uploadURL, {
-          method: 'PUT',
-          body: voiceRecordingBlob,
-          headers: {
-            'Content-Type': 'audio/webm'
-          }
-        });
-
-        if (uploadResult.ok) {
-          voiceRecordingUrl = uploadURL.split('?')[0];
-        }
-      } catch (error) {
-        console.error("Voice upload failed:", error);
-      }
-    }
-
-    createMasterHabitMutation.mutate({
-      name: habitName.trim(),
-      description: habitDescription.trim(),
-      icon: habitIcon,
-      xpReward: parseInt(habitXP),
-      color: habitColor,
-      frequency: "daily",
-      voiceRecording: voiceRecordingUrl,
-      voiceRecordingName,
-      reminderDuration: hasVoiceFeatures ? reminderDuration : 30,
-      customRingtone: hasVoiceFeatures ? customRingtone : "gentle-chime",
-      voiceReminderEnabled: hasVoiceFeatures && !!voiceRecordingBlob,
-    });
-  };
-
-  return (
-    <Card className="fun-card p-4 sm:p-8 border-4 border-turquoise">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div className="flex items-center">
-          <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-turquoise mr-2 sm:mr-3" />
-          <div>
-            <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">📋 Habit Management</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Manage daily habits and control active/inactive status</p>
-          </div>
-        </div>
-        {masterHabits && masterHabits.length > 0 && (
-          <div className="flex items-center space-x-4 text-sm">
-            <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="font-medium text-green-800">
-                {masterHabits.length} Master Habits
-              </span>
-            </div>
-            <div className="flex items-center space-x-1 bg-blue-100 px-3 py-1 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="font-medium text-blue-800">
-                {childHabits?.filter(h => h.isActive).length || 0} Assigned
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Status Explanation with Auto-Assign Button */}
-      {masterHabits && masterHabits.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-blue-800">🎯 Master Habit System</h4>
-            <Button
-              onClick={() => autoAssignAllMutation.mutate()}
-              disabled={autoAssignAllMutation.isPending}
-              className="bg-coral hover:bg-coral/80 text-white px-4 py-2 text-sm"
-            >
-              {autoAssignAllMutation.isPending ? "Assigning..." : "🚀 Auto-Assign All Habits"}
-            </Button>
-          </div>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p>• <span className="font-medium">Master habits</span> are templates you can assign to any child</p>
-            <p>• Use the <span className="font-medium">Assignment Center</span> to assign master habits to specific children</p>
-            <p>• Each child can have different habits active/inactive independently</p>
-          </div>
-        </div>
-      )}
-      
-      {isLoading ? (
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-turquoise border-t-transparent"></div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {masterHabits?.map((habit) => (
-            <div key={habit.id} className="p-6 bg-turquoise/10 rounded-lg border-2 border-turquoise/30 shadow-sm">
-              {editingHabit === habit.id ? (
-                <div className="space-y-4">
-                  <Input
-                    value={editHabitName}
-                    onChange={(e) => setEditHabitName(e.target.value)}
-                    placeholder="Habit name"
-                    className="border-2 border-turquoise"
-                  />
-                  <Textarea
-                    value={editHabitDescription}
-                    onChange={(e) => setEditHabitDescription(e.target.value)}
-                    placeholder="Description (optional)"
-                    className="border-2 border-turquoise"
-                  />
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-bold text-gray-700">Icon</label>
-                      <Select value={editHabitIcon} onValueChange={setEditHabitIcon}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="⚡">⚡ Energy</SelectItem>
-                          <SelectItem value="🏃">🏃 Exercise</SelectItem>
-                          <SelectItem value="📚">📚 Study</SelectItem>
-                          <SelectItem value="🧘">🧘 Mindfulness</SelectItem>
-                          <SelectItem value="💧">💧 Water</SelectItem>
-                          <SelectItem value="🥗">🥗 Healthy Food</SelectItem>
-                          <SelectItem value="💤">💤 Sleep</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-gray-700">XP Reward</label>
-                      <Select value={editHabitXP} onValueChange={setEditHabitXP}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="25">25 XP</SelectItem>
-                          <SelectItem value="50">50 XP</SelectItem>
-                          <SelectItem value="75">75 XP</SelectItem>
-                          <SelectItem value="100">100 XP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-bold text-gray-700">Color</label>
-                      <Select value={editHabitColor} onValueChange={setEditHabitColor}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="turquoise">🔵 Turquoise</SelectItem>
-                          <SelectItem value="coral">🔴 Coral</SelectItem>
-                          <SelectItem value="sunshine">🟡 Sunshine</SelectItem>
-                          <SelectItem value="mint">🟢 Mint</SelectItem>
-                          <SelectItem value="purple">🟣 Purple</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Premium Voice Reminder Features for Editing */}
-                  {hasVoiceFeatures && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
-                      <h4 className="font-bold text-gold mb-3 flex items-center">
-                        ⭐ Premium Voice Reminder Features
-                        {isTrial && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">TRIAL</span>}
-                      </h4>
-                      
-                      {/* Enhanced Edit Voice Recording */}
-                      <div className="mb-4">
-                        <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={editIsRecording ? "destructive" : "default"}
-                            onClick={editIsRecording ? stopEditRecording : startEditRecording}
-                            className="flex items-center space-x-2"
-                            data-testid="button-edit-voice-record"
-                          >
-                            {editIsRecording ? (
-                              <>
-                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                                <span>Stop Recording {formatDuration(editRecordingDuration)}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Mic className="w-4 h-4" />
-                                <span>Record Message</span>
-                              </>
-                            )}
-                          </Button>
-                          {(editVoiceRecordingBlob || habit.voiceRecording) && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={playEditRecording}
-                              className="flex items-center space-x-2"
-                              data-testid="button-edit-voice-play"
-                            >
-                              <Play className="w-4 h-4" />
-                              <span>Play</span>
-                            </Button>
-                          )}
-                          {editVoiceRecordingBlob && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={deleteEditRecording}
-                              className="flex items-center space-x-2 text-red-600 border-red-300 hover:bg-red-50"
-                              data-testid="button-edit-voice-delete"
-                            >
-                              <X className="w-4 h-4" />
-                              <span>Delete</span>
-                            </Button>
-                          )}
-                        </div>
-                        {editIsRecording && (
-                          <div className="text-sm text-orange-600 mb-2 flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                            <span>Recording... {formatDuration(editRecordingDuration)} / 1:00 (auto-stops at 60s)</span>
-                          </div>
-                        )}
-                        {editVoiceRecordingName && (
-                          <p className="text-sm text-green-600">✓ New voice message: {editVoiceRecordingName}</p>
-                        )}
-                        {habit.voiceRecording && !editVoiceRecordingName && (
-                          <p className="text-sm text-blue-600">✓ Current: {habit.voiceRecordingName || 'Voice reminder'}</p>
-                        )}
-                      </div>
-
-                      {/* Edit Reminder Duration */}
-                      <div className="mb-4">
-                        <label className="text-sm font-bold text-gray-700">Reminder Duration (minutes)</label>
-                        <Select value={editReminderDuration.toString()} onValueChange={(value) => setEditReminderDuration(parseInt(value))}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="15">15 minutes</SelectItem>
-                            <SelectItem value="30">30 minutes</SelectItem>
-                            <SelectItem value="45">45 minutes</SelectItem>
-                            <SelectItem value="60">1 hour</SelectItem>
-                            <SelectItem value="90">1.5 hours</SelectItem>
-                            <SelectItem value="120">2 hours</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-gray-500 mt-1">How long the reminder plays before auto-stopping</p>
-                      </div>
-
-                      {/* Enhanced Edit Custom Ringtones */}
-                      <div className="mb-4">
-                        <label className="text-sm font-bold text-gray-700">Custom Ringtone</label>
-                        <Select value={editCustomRingtone} onValueChange={setEditCustomRingtone}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ringtoneOptions?.map((ringtone) => (
-                              <SelectItem 
-                                key={ringtone.value} 
-                                value={ringtone.value}
-                                className={ringtone.premium && !isPremium ? "opacity-50" : ""}
-                                disabled={ringtone.premium && !isPremium}
-                              >
-                                {`${ringtone.label}${ringtone.premium && !isPremium ? " ⭐ Premium" : ""}`}
-                              </SelectItem>
-                            )) || []}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => playRingtonePreview(editCustomRingtone)}
-                            className="text-xs px-2 py-1"
-                          >
-                            🔊 Preview
-                          </Button>
-                          <p className="text-xs text-gray-500">
-                            Sound that plays when voice reminder starts
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Edit System Ringtones */}
-                      <div className="mb-4">
-                        <label className="text-sm font-bold text-gray-700">System Ringtone</label>
-                        <Select value={editCustomRingtone} onValueChange={setEditCustomRingtone}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="gentle-chime">🎵 Gentle Chime</SelectItem>
-                            <SelectItem value="happy-bells">🔔 Happy Bells</SelectItem>
-                            <SelectItem value="nature-sounds">🌿 Nature Sounds</SelectItem>
-                            <SelectItem value="soft-piano">🎹 Soft Piano</SelectItem>
-                            <SelectItem value="cheerful-tune">🎶 Cheerful Tune</SelectItem>
-                            <SelectItem value="ocean-waves">🌊 Ocean Waves</SelectItem>
-                            <SelectItem value="bird-song">🐦 Bird Song</SelectItem>
-                            <SelectItem value="wind-chimes">🎐 Wind Chimes</SelectItem>
-                            <SelectItem value="magical-sparkle">✨ Magical Sparkle</SelectItem>
-                            <SelectItem value="forest-whisper">🌲 Forest Whisper</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={async () => {
-                        let editVoiceRecordingUrl = "";
-                        
-                        // Upload new voice recording if exists and user has voice features
-                        if (editVoiceRecordingBlob && hasVoiceFeatures) {
-                          try {
-                            const uploadResponse = await apiRequest("POST", "/api/objects/upload");
-                            const { uploadURL } = await uploadResponse.json();
-
-                            const uploadResult = await fetch(uploadURL, {
-                              method: 'PUT',
-                              body: editVoiceRecordingBlob,
-                              headers: { 'Content-Type': 'audio/webm' }
-                            });
-
-                            if (uploadResult.ok) {
-                              editVoiceRecordingUrl = uploadURL.split('?')[0];
-                            }
-                          } catch (error) {
-                            console.error("Voice upload failed:", error);
-                          }
-                        }
-                        
-                        updateMasterHabitMutation.mutate({
-                          masterHabitId: habit.id,
-                          updates: {
-                            name: editHabitName,
-                            description: editHabitDescription,
-                            icon: editHabitIcon,
-                            xpReward: parseInt(editHabitXP),
-                            color: editHabitColor,
-                            voiceRecording: editVoiceRecordingUrl || habit.voiceRecording,
-                            voiceRecordingName: editVoiceRecordingName || habit.voiceRecordingName,
-                            reminderDuration: hasVoiceFeatures ? editReminderDuration : habit.reminderDuration,
-                            customRingtone: hasVoiceFeatures ? editCustomRingtone : habit.customRingtone,
-                            voiceReminderEnabled: hasVoiceFeatures && (!!editVoiceRecordingBlob || !!habit.voiceRecording),
-                          }
-                        });
-                      }}
-                      disabled={updateMasterHabitMutation.isPending}
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      {updateMasterHabitMutation.isPending ? "Saving..." : "💾 Save Changes"}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingHabit(null);
-                        // Clear edit states
-                        setEditVoiceRecordingBlob(null);
-                        setEditVoiceRecordingName("");
-                        setEditReminderDuration(30);
-                        setEditCustomRingtone("gentle-chime");
-                      }}
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className="text-3xl">{habit.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <div className="font-bold text-gray-800 text-lg">{habit.name}</div>
-                        <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                          habit.isActive 
-                            ? 'bg-green-200 text-green-800' 
-                            : 'bg-yellow-200 text-yellow-800'
-                        }`}>
-                          {habit.isActive ? '✅ Active' : '⏸️ Inactive'}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-1">{habit.description}</div>
-                      <div className="text-xs text-gray-500">
-                        {habit.isActive 
-                          ? "✓ Appears in child's daily habit list and syncs to their device" 
-                          : "⚠️ Hidden from child - won't sync to their device"
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-4">
-                    <div className="text-left lg:text-right lg:min-w-[80px]">
-                      <div className="text-sm font-bold text-turquoise">{habit.xpReward} XP</div>
-                      <div className="text-xs text-gray-500">Reward</div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                      <Button
-                        onClick={() => {
-                          toggleMasterHabitStatusMutation.mutate({
-                            habitId: habit.id,
-                            isActive: !habit.isActive
-                          });
-                        }}
-                        disabled={toggleMasterHabitStatusMutation.isPending}
-                        size="sm"
-                        className={`flex-1 sm:flex-initial px-3 py-2 text-sm font-medium min-w-[140px] whitespace-nowrap ${
-                          habit.isActive 
-                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                            : 'bg-green-500 hover:bg-green-600 text-white'
-                        }`}
-                        data-testid={`button-toggle-master-habit-${habit.id}`}
-                      >
-                        {toggleMasterHabitStatusMutation.isPending 
-                          ? "Updating..." 
-                          : habit.isActive 
-                            ? "⏸️ Make Inactive" 
-                            : "▶️ Make Active"
-                        }
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setEditingHabit(habit.id);
-                          setEditHabitName(habit.name);
-                          setEditHabitDescription(habit.description || "");
-                          setEditHabitIcon(habit.icon);
-                          setEditHabitXP(habit.xpReward.toString());
-                          setEditHabitColor(habit.color || "turquoise");
-                          // Load existing Premium voice reminder settings
-                          setEditReminderDuration(habit.reminderDuration || 30);
-                          setEditCustomRingtone(habit.customRingtone || "gentle-chime");
-                          setEditVoiceRecordingName(habit.voiceRecordingName || "");
-                        }}
-                        size="sm"
-                        className="flex-1 sm:flex-initial bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 text-sm min-w-[80px]"
-                        data-testid={`button-edit-master-habit-${habit.id}`}
-                      >
-                        ✏️ Edit
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setDeleteHabitDialog({ open: true, habitId: habit.id, habitName: habit.name });
-                        }}
-                        disabled={deleteHabitMutation.isPending}
-                        size="sm"
-                        className="flex-1 sm:flex-initial bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-sm min-w-[80px]"
-                        data-testid={`button-delete-master-habit-${habit.id}`}
-                      >
-                        {deleteHabitMutation.isPending ? "Deleting..." : "🗑️ Delete"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {!showAddHabit ? (
-            <div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                <Button 
-                  onClick={() => setShowAddHabit(true)}
-                  className="bg-turquoise hover:bg-turquoise/80 text-white font-bold"
-                >
-                  + Add New Habit
-                </Button>
-                <Button 
-                  onClick={() => setShowHabitAssignment(true)}
-                  className="bg-sky hover:bg-sky/80 text-white font-bold"
-                  disabled={!children || children.length === 0}
-                >
-                  🔄 Manage Assignments
-                </Button>
-              </div>
-              
-              {children && children.length < 2 && (
-                <div className="text-sm text-gray-500 mb-4 p-3 bg-blue-50 rounded-lg">
-                  💡 Add more children to use the individual habit assignment feature
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4 p-6 bg-turquoise/10 rounded-lg border-2 border-turquoise/30">
-              <h4 className="font-bold text-gray-800 text-lg">Create New Habit</h4>
-              
-              <div className="space-y-3">
-                <Input
-                  placeholder="Habit name (e.g., Brush Teeth)"
-                  value={habitName}
-                  onChange={(e) => setHabitName(e.target.value)}
-                />
-                <Textarea
-                  placeholder="Description (optional)"
-                  value={habitDescription}
-                  onChange={(e) => setHabitDescription(e.target.value)}
-                  rows={2}
-                />
-                
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Icon</label>
-                    <Select value={habitIcon} onValueChange={setHabitIcon}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="⚡">⚡ Energy</SelectItem>
-                        <SelectItem value="🦷">🦷 Teeth</SelectItem>
-                        <SelectItem value="📚">📚 Reading</SelectItem>
-                        <SelectItem value="🏃">🏃 Exercise</SelectItem>
-                        <SelectItem value="🥗">🥗 Healthy Food</SelectItem>
-                        <SelectItem value="💤">💤 Sleep</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">XP Reward</label>
-                    <Select value={habitXP} onValueChange={setHabitXP}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25 XP</SelectItem>
-                        <SelectItem value="50">50 XP</SelectItem>
-                        <SelectItem value="75">75 XP</SelectItem>
-                        <SelectItem value="100">100 XP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Color</label>
-                    <Select value={habitColor} onValueChange={setHabitColor}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="turquoise">🔵 Turquoise</SelectItem>
-                        <SelectItem value="coral">🔴 Coral</SelectItem>
-                        <SelectItem value="sunshine">🟡 Sunshine</SelectItem>
-                        <SelectItem value="mint">🟢 Mint</SelectItem>
-                        <SelectItem value="purple">🟣 Purple</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Premium Voice Reminder Features */}
-              {hasVoiceFeatures && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-gold/10 to-yellow-100 rounded-lg border-2 border-gold/30">
-                  <h4 className="font-bold text-gold mb-3 flex items-center">
-                    ⭐ Premium Voice Reminder Features
-                    {isTrial && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">TRIAL</span>}
-                  </h4>
-                  
-                  {/* Enhanced Voice Recording */}
-                  <div className="mb-4">
-                    <label className="text-sm font-bold text-gray-700 mb-2 block">Custom Voice Message</label>
-                    <div className="flex items-center space-x-3 mb-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={isRecording ? "destructive" : "default"}
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className="flex items-center space-x-2"
-                        data-testid="button-voice-record"
-                      >
-                        {isRecording ? (
-                          <>
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                            <span>Stop Recording {formatDuration(recordingDuration)}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="w-4 h-4" />
-                            <span>Record Message</span>
-                          </>
-                        )}
-                      </Button>
-                      {voiceRecordingBlob && (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={playRecording}
-                            className="flex items-center space-x-2"
-                            data-testid="button-voice-play"
-                          >
-                            <Play className="w-4 h-4" />
-                            <span>Play</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={deleteRecording}
-                            className="flex items-center space-x-2 text-red-600 border-red-300 hover:bg-red-50"
-                            data-testid="button-voice-delete"
-                          >
-                            <X className="w-4 h-4" />
-                            <span>Delete</span>
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    {isRecording && (
-                      <div className="text-sm text-orange-600 mb-2 flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span>Recording... {formatDuration(recordingDuration)} / 1:00 (auto-stops at 60s)</span>
-                      </div>
-                    )}
-                    {voiceRecordingName && (
-                      <p className="text-sm text-green-600">✓ Voice message recorded: {voiceRecordingName}</p>
-                    )}
-                  </div>
-
-                  {/* Reminder Duration */}
-                  <div className="mb-4">
-                    <label className="text-sm font-bold text-gray-700">Reminder Duration (minutes)</label>
-                    <Select value={reminderDuration.toString()} onValueChange={(value) => setReminderDuration(parseInt(value))}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">15 minutes</SelectItem>
-                        <SelectItem value="30">30 minutes</SelectItem>
-                        <SelectItem value="45">45 minutes</SelectItem>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="90">1.5 hours</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500 mt-1">How long the reminder plays before auto-stopping</p>
-                  </div>
-
-                  {/* Enhanced Custom Ringtones */}
-                  <div className="mb-4">
-                    <label className="text-sm font-bold text-gray-700">Custom Ringtone</label>
-                    <Select value={customRingtone} onValueChange={setCustomRingtone}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ringtoneOptions?.map((ringtone) => (
-                          <SelectItem 
-                            key={ringtone.value} 
-                            value={ringtone.value}
-                            className={ringtone.premium && !isPremium ? "opacity-50" : ""}
-                            disabled={ringtone.premium && !isPremium}
-                          >
-                            {`${ringtone.label}${ringtone.premium && !isPremium ? " ⭐ Premium" : ""}`}
-                          </SelectItem>
-                        )) || []}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => playRingtonePreview(customRingtone)}
-                        className="text-xs px-2 py-1"
-                      >
-                        🔊 Preview
-                      </Button>
-                      <p className="text-xs text-gray-500">
-                        Sound that plays when voice reminder starts
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4 text-xs text-gray-600 mt-4">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-gold rounded-full mr-2"></div>
-                      <span>Premium Feature - Enhanced Voice Reminders</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={handleAddHabit}
-                  disabled={createMasterHabitMutation.isPending}
-                  className="flex-1 bg-turquoise hover:bg-turquoise/80 text-white"
-                >
-                  {createMasterHabitMutation.isPending ? "Creating..." : "🎯 Create Master Habit"}
-                </Button>
-                <Button 
-                  onClick={() => setShowAddHabit(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-// Kids Management Section Component
-function KidsManagementSection({ 
-  children, 
-  createHeroMutation,
-  deleteChildMutation,
-  getAvatarImage,
-  showAddHero,
-  setShowAddHero,
-  newHeroName,
-  setNewHeroName,
-  newAvatarType,
-  setNewAvatarType,
-  avatarTypes,
-  imagePreview,
-  handleImageUpload,
-  setDeleteChildDialog
-}: { 
-  children: Child[]; 
-  createHeroMutation: any;
-  deleteChildMutation: any;
-  getAvatarImage: (type: string) => string;
-  showAddHero: boolean;
-  setShowAddHero: (show: boolean) => void;
-  newHeroName: string;
-  setNewHeroName: (name: string) => void;
-  newAvatarType: string;
-  setNewAvatarType: (type: string) => void;
-  avatarTypes: any[];
-  imagePreview: string;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  setDeleteChildDialog: (dialog: { open: boolean; childId?: string; childName?: string }) => void;
-}) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [editingChild, setEditingChild] = useState<string | null>(null);
-  const [editingCredentials, setEditingCredentials] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
-  const [pin, setPin] = useState("");
-  const [editChildName, setEditChildName] = useState("");
-  const [editChildAvatarType, setEditChildAvatarType] = useState("");
-  const [editImagePreview, setEditImagePreview] = useState("");
-
-  const updateCredentialsMutation = useMutation({
-    mutationFn: async (data: { childId: string; username: string; pin: string }) => {
-      await apiRequest("PATCH", `/api/children/${data.childId}`, {
-        username: data.username,
-        pin: data.pin
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Login Credentials Updated! 🔐",
-        description: "Child can now log in with their username and PIN!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
-      setEditingCredentials(null);
-      setUsername("");
-      setPin("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update credentials. Username might already be taken.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateChildMutation = useMutation({
-    mutationFn: async (data: { childId: string; name: string; avatarType: string; avatarUrl?: string }) => {
-      await apiRequest("PATCH", `/api/children/${data.childId}`, {
-        name: data.name,
-        avatarType: data.avatarType,
-        avatarUrl: data.avatarUrl
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Hero Updated! ✨",
-        description: "Hero profile has been updated successfully!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/children"] });
-      setEditingChild(null);
-      setEditChildName("");
-      setEditChildAvatarType("");
-      setEditImagePreview("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update hero profile. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleEditImageUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setEditImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleUpdateCredentials = (childId: string) => {
-    if (!username.trim()) {
-      toast({
-        title: "Username required",
-        description: "Please enter a username for the child!",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!pin.trim() || pin.length !== 4) {
-      toast({
-        title: "PIN required",
-        description: "Please enter a 4-digit PIN!",
-        variant: "destructive",
-      });
-      return;
-    }
-    updateCredentialsMutation.mutate({ childId, username: username.trim(), pin: pin.trim() });
-  };
-
-  const handleAddHero = () => {
-    if (!newHeroName.trim()) {
-      toast({
-        title: "Name required",
-        description: "Please enter a name for the hero!",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const heroData: any = { 
-      name: newHeroName.trim(), 
-      avatarType: newAvatarType 
-    };
-    
-    if (imagePreview) {
-      heroData.avatarUrl = imagePreview;
-    }
-    
-    createHeroMutation.mutate(heroData);
-    setNewHeroName("");
-    setNewAvatarType("robot");
-    setShowAddHero(false);
-  };
-
-  return (
-    <Card className="fun-card p-4 sm:p-8 border-4 border-purple-500">
-      <div className="flex items-center mb-4 sm:mb-6">
-        <UserRound className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500 mr-2 sm:mr-3" />
-        <div>
-          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">👨‍👩‍👧‍👦 Kids Management</h3>
-          <p className="text-gray-600 text-sm sm:text-base">Manage all your children's hero accounts</p>
-        </div>
-      </div>
-      
-      <div className="space-y-3 sm:space-y-4 mb-6">
-        {children.map((child) => (
-          <div key={child.id} className="p-3 sm:p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="relative flex-shrink-0">
-                  <img 
-                    src={child.avatarUrl || getAvatarImage(child.avatarType)} 
-                    alt={child.name} 
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-purple-300 object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold text-gray-800 text-sm sm:text-base truncate">{child.name}</div>
-                  <div className="text-xs sm:text-sm text-gray-600">
-                    Level {child.level} • {child.avatarType.charAt(0).toUpperCase() + child.avatarType.slice(1)} Hero
-                  </div>
-                  <div className="text-xs mt-1">
-                    {child.username ? (
-                      <span className="text-green-600 font-medium">✅ Login: {child.username}</span>
-                    ) : (
-                      <span className="text-orange-600 font-medium">⚠️ No login set up</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                <div className="text-left sm:text-right">
-                  <div className="text-sm font-bold text-purple-600">{child.totalXp.toLocaleString()} XP</div>
-                  <div className="text-xs text-gray-500">Total Earned</div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => {
-                      setEditingChild(editingChild === child.id ? null : child.id);
-                      setEditChildName(child.name);
-                      setEditChildAvatarType(child.avatarType);
-                      setEditImagePreview("");
-                    }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 text-xs"
-                  >
-                    ✏️ Edit
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setEditingCredentials(editingCredentials === child.id ? null : child.id);
-                      setUsername(child.username || "");
-                      setPin("");
-                    }}
-                    className={`${child.username ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'} text-white px-2 sm:px-3 py-1 text-xs`}
-                  >
-                    {child.username ? '🔐 Edit Login' : '🔐 Setup Login'}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setDeleteChildDialog({ open: true, childId: child.id, childName: child.name });
-                    }}
-                    disabled={deleteChildMutation.isPending}
-                    className="bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-1 text-xs"
-                    data-testid={`button-delete-child-${child.id}`}
-                  >
-                    {deleteChildMutation.isPending ? "..." : "🗑️"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Edit Child Profile */}
-            {editingChild === child.id && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                <h4 className="font-bold text-gray-800 mb-3">✏️ Edit Hero Profile</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Hero Name <span className="text-red-500">*</span></label>
-                    <Input
-                      type="text"
-                      placeholder="Enter hero name..."
-                      value={editChildName}
-                      onChange={(e) => setEditChildName(e.target.value)}
-                      className="border-2 border-blue-300"
-                    />
-                  </div>
-                  
-                  {/* Avatar Type Selection */}
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Hero Type</label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {avatarTypes.map((type) => (
-                        <div
-                          key={type.id}
-                          onClick={() => setEditChildAvatarType(type.id)}
-                          className={`p-2 rounded-lg cursor-pointer border-2 text-center ${
-                            editChildAvatarType === type.id
-                              ? 'border-blue-500 bg-blue-100'
-                              : 'border-gray-200 hover:border-blue-300'
-                          }`}
-                        >
-                          <div className="text-xl mb-1">{type.name.split(' ')[0]}</div>
-                          <div className="text-xs text-gray-600">{type.name.split(' ').slice(1).join(' ')}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Image Upload */}
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Custom Avatar (Optional)</label>
-                    <div className="flex items-center space-x-3 mt-2">
-                      {editImagePreview ? (
-                        <img src={editImagePreview} alt="Preview" className="w-12 h-12 rounded-full border-2 border-blue-300 object-cover" />
-                      ) : (
-                        <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
-                          <span className="text-gray-400 text-xs">📷</span>
-                        </div>
-                      )}
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => e.target.files?.[0] && handleEditImageUpload(e.target.files[0])}
-                          className="hidden"
-                          id={`edit-avatar-${child.id}`}
-                        />
-                        <label
-                          htmlFor={`edit-avatar-${child.id}`}
-                          className="inline-block px-3 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors text-sm font-bold"
-                        >
-                          📷 Upload
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={() => {
-                        updateChildMutation.mutate({
-                          childId: child.id,
-                          name: editChildName.trim(),
-                          avatarType: editChildAvatarType,
-                          avatarUrl: editImagePreview || undefined
-                        });
-                      }}
-                      disabled={updateChildMutation.isPending || !editChildName.trim()}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
-                    >
-                      {updateChildMutation.isPending ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>✨ Save Changes</>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingChild(null);
-                        setEditChildName("");
-                        setEditChildAvatarType("");
-                        setEditImagePreview("");
-                      }}
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Login Credentials Setup */}
-            {editingCredentials === child.id && (
-              <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
-                <h4 className="font-bold text-gray-800 mb-3">🔐 Setup Child Login</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  Create a username and 4-digit PIN so {child.name} can log in independently!
-                </p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">Username</label>
-                    <Input
-                      type="text"
-                      placeholder="Choose a fun username..."
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="border-2 border-green-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-gray-700">4-Digit PIN</label>
-                    <Input
-                      type="password"
-                      placeholder="Enter 4-digit PIN (e.g. 1234)"
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value.slice(0, 4))}
-                      maxLength={4}
-                      className="border-2 border-green-300"
-                    />
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={() => handleUpdateCredentials(child.id)}
-                      disabled={updateCredentialsMutation.isPending}
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      {updateCredentialsMutation.isPending ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                          Saving...
-                        </>
-                      ) : (
-                        <>🔐 Save Login</>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingCredentials(null);
-                        setUsername("");
-                        setPin("");
-                      }}
-                      variant="outline"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                  {child.username && (
-                    <div className="text-sm text-green-600 bg-green-100 p-2 rounded">
-                      ✅ {child.name} can log in with username: <strong>{child.username}</strong>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {!showAddHero ? (
-        <Button 
-          onClick={() => setShowAddHero(true)}
-          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Another Hero
-        </Button>
-      ) : (
-        <div className="space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-          <h4 className="font-bold text-gray-800">Create New Hero</h4>
-          
-          <div className="space-y-3">
-            <Input
-              type="text"
-              placeholder="Enter hero name..."
-              value={newHeroName}
-              onChange={(e) => setNewHeroName(e.target.value)}
-              className="border-2 border-blue-300"
-            />
-            
-            {/* Image Upload Section */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700">Custom Avatar Image (Optional)</label>
-              <div className="flex items-center space-x-3">
-                {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
-                    alt="Preview" 
-                    className="w-12 h-12 rounded-full border-2 border-blue-300 object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
-                    <span className="text-gray-400 text-xs">📷</span>
-                  </div>
-                )}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(e);
-                    }}
-                    className="hidden"
-                    id="avatar-upload-new"
-                  />
-                  <label
-                    htmlFor="avatar-upload-new"
-                    className="inline-block px-3 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors text-sm font-bold"
-                  >
-                    📷 Upload
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {avatarTypes.map((type) => (
-                <div
-                  key={type.id}
-                  onClick={() => setNewAvatarType(type.id)}
-                  className={`p-2 rounded-lg cursor-pointer border-2 text-center ${
-                    newAvatarType === type.id
-                      ? 'border-blue-500 bg-blue-100'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{type.name.split(' ')[0]}</div>
-                  <div className="text-xs text-gray-600">{type.name.split(' ').slice(1).join(' ')}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex space-x-2">
-            <Button 
-              onClick={handleAddHero}
-              disabled={createHeroMutation.isPending}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              {createHeroMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>✨ Save Changes</>
-              )}
-            </Button>
-            <Button 
-              onClick={() => setShowAddHero(false)}
-              variant="outline"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
 // Reward Settings Section Component
-function RewardSettingsSection({ 
+function RewardSettingsSection({
   childId, 
   showAddReward, 
   setShowAddReward, 
@@ -3345,12 +1494,15 @@ function RewardSettingsSection({
   };
 
   return (
-    <Card className="fun-card p-4 sm:p-8 border-4 border-orange-500">
-      <div className="flex items-center mb-4 sm:mb-6">
-        <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 mr-2 sm:mr-3" />
+    <Card className="fun-card p-4 md:p-8 border-4 border-orange-500">
+      <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-6">
+        <Gift className="w-5 h-5 md:w-8 md:h-8 text-orange-500 flex-shrink-0" />
         <div>
-          <h3 className="font-fredoka text-xl sm:text-2xl text-gray-800 hero-title">🎁 Reward Settings</h3>
-          <p className="text-gray-600 text-sm sm:text-base">Set up rewards for completing habits</p>
+          <h3 className="font-fredoka text-lg md:text-2xl text-gray-800 hero-title">
+            <span className="md:hidden">🎁 Rewards</span>
+            <span className="hidden md:inline">🎁 Reward Settings</span>
+          </h3>
+          <p className="hidden md:block text-gray-600 text-base">Set up rewards for completing habits</p>
         </div>
       </div>
       
@@ -3359,23 +1511,29 @@ function RewardSettingsSection({
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent"></div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2 md:space-y-4">
           {rewards?.map((reward) => (
-            <div key={reward.id} className="space-y-4">
-              <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">🎁</div>
-                    <div className="flex-1">
-                      <div className="font-bold text-gray-800">{reward.name}</div>
-                      <div className="text-sm text-gray-600">{reward.description}</div>
+            <div key={reward.id} className="space-y-2 md:space-y-4">
+              <div className="p-3 md:p-4 bg-orange-50 rounded-lg border-2 border-orange-200">
+                <div className="flex items-center gap-2.5 md:gap-3">
+                  {/* Slim row on phones; web keeps the XP cost block */}
+                  <div className="text-2xl flex-shrink-0">🎁</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="font-bold text-gray-800 truncate">{reward.name}</span>
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 whitespace-nowrap md:hidden">
+                        🪙 {reward.cost} XP
+                      </span>
                     </div>
+                    {reward.description && (
+                      <div className="text-xs md:text-sm text-gray-600 truncate md:whitespace-normal">{reward.description}</div>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="text-right mr-4">
-                      <div className="text-sm font-bold text-orange-600">{reward.cost} XP</div>
-                      <div className="text-xs text-gray-500">Cost</div>
-                    </div>
+                  <div className="hidden md:block text-right mr-2">
+                    <div className="text-sm font-bold text-orange-600">{reward.cost} XP</div>
+                    <div className="text-xs text-gray-500">Cost</div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <Button
                       onClick={() => {
                         setEditingReward(editingReward === reward.id ? null : reward.id);
@@ -3385,19 +1543,23 @@ function RewardSettingsSection({
                         setEditRewardIcon("🎁");
                         setEditSelectedKids([reward.childId]);
                       }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs"
+                      size="sm"
+                      className="h-10 w-10 p-0 rounded-full bg-sky hover:bg-sky/80 text-white shadow-md"
+                      aria-label={`Edit ${reward.name}`}
                     >
-                      ✏️
+                      <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
                       onClick={() => {
                         setDeleteRewardDialog({ open: true, rewardId: reward.id, rewardName: reward.name });
                       }}
                       disabled={deleteRewardMutation.isPending}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-xs"
+                      size="sm"
+                      className="h-10 w-10 p-0 rounded-full bg-destructive hover:bg-destructive/80 text-white shadow-md"
+                      aria-label={`Delete ${reward.name}`}
                       data-testid={`button-delete-reward-${reward.id}`}
                     >
-                      {deleteRewardMutation.isPending ? "..." : "🗑️"}
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -3766,6 +1928,40 @@ function RewardApprovalSection({ childId }: { childId: string }) {
     queryKey: [`/api/children/${childId}/reward-transactions`],
   });
 
+  // Rewards the child has CLAIMED and is waiting on (e.g. "Ice cream")
+  const { data: rewardClaims } = useQuery({
+    queryKey: [`/api/children/${childId}/reward-claims`],
+    enabled: !!childId,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
+
+  const { data: childRewards } = useQuery({
+    queryKey: [`/api/children/${childId}/rewards`],
+    enabled: !!childId,
+  });
+
+  const approveClaimMutation = useMutation({
+    mutationFn: async (claimId: string) => {
+      await apiRequest("POST", `/api/reward-claims/${claimId}/approve`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward approved! 🎁",
+        description: "Now give your child their reward — they'll confirm with 'Got it!'",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${childId}/reward-claims`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve the reward claim.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const approveRewardMutation = useMutation({
     mutationFn: async ({ transactionId, approvedBy }: { transactionId: string; approvedBy: string }) => {
       await apiRequest("POST", `/api/reward-transactions/${transactionId}/approve`, { approvedBy });
@@ -3818,6 +2014,11 @@ function RewardApprovalSection({ childId }: { childId: string }) {
 
   const pendingRewardsArray = Array.isArray(pendingRewards) ? pendingRewards : [];
   const transactionsArray = Array.isArray(rewardTransactions) ? rewardTransactions.slice(0, 5) : [];
+  const claimsArray = Array.isArray(rewardClaims) ? rewardClaims : [];
+  const rewardsArray = Array.isArray(childRewards) ? childRewards : [];
+  const pendingClaims = claimsArray.filter((c: any) => c.status === "pending");
+  const rewardNameFor = (rewardId: string) =>
+    rewardsArray.find((r: any) => r.id === rewardId)?.name || "a reward";
   
   const handleApprove = (transactionId: string) => {
     if (!(user as User)?.id) {
@@ -3851,21 +2052,58 @@ function RewardApprovalSection({ childId }: { childId: string }) {
   }
 
   return (
-    <Card className="fun-card p-6 border-4 border-purple-500">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Gift className="w-6 h-6 text-purple-500" />
-          <div>
-            <h3 className="font-fredoka text-xl text-gray-800 hero-title">🎁 Reward Management</h3>
-            <p className="text-gray-600">Approve earned rewards and give bonus points</p>
-          </div>
+    <Card className="fun-card p-4 md:p-6 border-4 border-purple-500">
+      <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+        <Gift className="w-5 h-5 md:w-6 md:h-6 text-purple-500 flex-shrink-0" />
+        <div>
+          <h3 className="font-fredoka text-lg md:text-xl text-gray-800 hero-title">
+            <span className="md:hidden">🎁 Approvals & Bonus</span>
+            <span className="hidden md:inline">🎁 Reward Management</span>
+          </h3>
+          <p className="hidden md:block text-gray-600">Approve earned rewards and give bonus points</p>
         </div>
-        {pendingRewardsArray.length > 0 && (
-          <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full">
-            {pendingRewardsArray.length} pending
+        {(pendingRewardsArray.length + pendingClaims.length) > 0 && (
+          <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-0.5 md:py-1 rounded-full ml-auto whitespace-nowrap">
+            {pendingRewardsArray.length + pendingClaims.length} pending
           </span>
         )}
       </div>
+
+      {/* Claimed rewards waiting for a parent's OK */}
+      {pendingClaims.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-nunito font-bold text-gray-700 mb-3 flex items-center">
+            <Gift className="w-4 h-4 mr-2 text-purple-500" />
+            Reward Claims
+          </h4>
+          <div className="space-y-3">
+            {pendingClaims.map((claim: any) => (
+              <div
+                key={claim.id}
+                className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex flex-wrap items-center justify-between gap-2"
+                data-testid={`reward-claim-${claim.id}`}
+              >
+                <div>
+                  <p className="font-nunito font-semibold text-gray-800">
+                    🎁 Wants to redeem: <span className="text-purple-700">{rewardNameFor(claim.rewardId)}</span>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Claimed {claim.claimedAt ? new Date(claim.claimedAt).toLocaleString() : ""}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => approveClaimMutation.mutate(claim.id)}
+                  disabled={approveClaimMutation.isPending}
+                  className="bg-mint hover:bg-mint/80 text-white rounded-full font-bold"
+                  data-testid={`approve-claim-${claim.id}`}
+                >
+                  ✓ Approve
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pending Approvals */}
       {pendingRewardsArray.length > 0 && (
@@ -3897,7 +2135,7 @@ function RewardApprovalSection({ childId }: { childId: string }) {
                 <Button
                   onClick={() => handleApprove(transaction.id)}
                   disabled={approveRewardMutation.isPending}
-                  className="bg-green-500 hover:bg-green-600 text-white"
+                  className="bg-mint hover:bg-mint/80 text-white"
                   size="sm"
                 >
                   <Check className="w-4 h-4 mr-1" />
@@ -3920,28 +2158,28 @@ function RewardApprovalSection({ childId }: { childId: string }) {
             onClick={() => handleGiveBonus(10, "Good behavior bonus")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="group h-16 flex flex-col border-green-200 hover:border-green-400 hover:bg-green-50"
+            className="group h-16 flex flex-col border-mint hover:bg-mint hover:text-white [&:hover_span]:text-white"
           >
-            <span className="font-bold text-green-600 group-hover:text-blue-600">+10</span>
-            <span className="text-xs text-gray-600 group-hover:text-blue-600">Good Behavior</span>
+            <span className="font-bold text-mint">+10</span>
+            <span className="text-xs text-gray-600">Good Behavior</span>
           </Button>
           <Button
             onClick={() => handleGiveBonus(25, "Extra effort bonus")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="group h-16 flex flex-col border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+            className="group h-16 flex flex-col border-sky hover:bg-sky hover:text-white [&:hover_span]:text-white"
           >
-            <span className="font-bold text-blue-600 group-hover:text-blue-600">+25</span>
-            <span className="text-xs text-gray-600 group-hover:text-blue-600">Extra Effort</span>
+            <span className="font-bold text-sky">+25</span>
+            <span className="text-xs text-gray-600">Extra Effort</span>
           </Button>
           <Button
             onClick={() => handleGiveBonus(50, "Outstanding achievement")}
             disabled={createBonusRewardMutation.isPending}
             variant="outline"
-            className="group h-16 flex flex-col border-purple-200 hover:border-purple-400 hover:bg-purple-50"
+            className="group h-16 flex flex-col border-purple hover:bg-purple hover:text-white [&:hover_span]:text-white"
           >
-            <span className="font-bold text-purple-600 group-hover:text-blue-600">+50</span>
-            <span className="text-xs text-gray-600 group-hover:text-blue-600">Outstanding!</span>
+            <span className="font-bold text-purple">+50</span>
+            <span className="text-xs text-gray-600">Outstanding!</span>
           </Button>
         </div>
       </div>
@@ -3988,5 +2226,110 @@ function RewardApprovalSection({ childId }: { childId: string }) {
         </div>
       )}
     </Card>
+  );
+}
+
+// Overview: reward claims from every child with one-tap approval, so the
+// parent never has to leave the dashboard for routine sign-offs
+function OverviewRewardClaims({ children }: { children: Child[] }) {
+  if (!children.length) return null;
+  return (
+    <div className="space-y-2 mt-3">
+      {children.map((child) => (
+        <OverviewChildClaims key={child.id} child={child} />
+      ))}
+    </div>
+  );
+}
+
+function OverviewChildClaims({ child }: { child: Child }) {
+  const { toast } = useToast();
+
+  const { data: rewardClaims } = useQuery({
+    queryKey: [`/api/children/${child.id}/reward-claims`],
+    enabled: !!child.id,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
+
+  const { data: childRewards } = useQuery({
+    queryKey: [`/api/children/${child.id}/rewards`],
+    enabled: !!child.id,
+  });
+
+  const approveClaimMutation = useMutation({
+    mutationFn: async (claimId: string) => {
+      await apiRequest("POST", `/api/reward-claims/${claimId}/approve`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Reward approved! 🎁",
+        description: `Now give ${child.name} their reward — they'll confirm with 'Got it!'`,
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${child.id}/reward-claims`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve the reward claim.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const claims = (Array.isArray(rewardClaims) ? rewardClaims : []).filter((c: any) => c.status === "pending");
+  const rewards = Array.isArray(childRewards) ? childRewards : [];
+  const rewardNameFor = (rewardId: string) =>
+    rewards.find((r: any) => r.id === rewardId)?.name || "a reward";
+
+  if (claims.length === 0) return null;
+
+  return (
+    <>
+      {claims.map((claim: any) => (
+        <div
+          key={claim.id}
+          className="bg-purple/5 border-2 border-purple/20 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2"
+          data-testid={`overview-reward-claim-${claim.id}`}
+        >
+          <div className="min-w-0">
+            <p className="font-nunito font-semibold text-gray-800 text-sm">
+              🎁 <span className="font-bold">{child.name}</span> wants: <span className="text-purple">{rewardNameFor(claim.rewardId)}</span>
+            </p>
+            <p className="text-xs text-gray-500">
+              Claimed {claim.claimedAt ? new Date(claim.claimedAt).toLocaleString() : ""}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => approveClaimMutation.mutate(claim.id)}
+            disabled={approveClaimMutation.isPending}
+            className="bg-mint hover:bg-mint/80 text-white font-bold rounded-full px-4 flex-shrink-0"
+            data-testid={`overview-approve-claim-${claim.id}`}
+          >
+            <Check className="w-4 h-4 mr-1" />
+            Approve
+          </Button>
+        </div>
+      ))}
+    </>
+  );
+}
+// Settings action-row (mobile-first list item)
+function SettingsRow({ icon: Icon, tint, label, hint, danger, onClick, testid }: {
+  icon: typeof Shield; tint: string; label: string; hint?: string; danger?: boolean; onClick: () => void; testid?: string;
+}) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors" data-testid={testid}>
+      <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${tint}`}>
+        <Icon className="w-5 h-5" />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className={`block font-bold ${danger ? "text-destructive" : "text-gray-800"}`}>{label}</span>
+        {hint && <span className="block text-xs text-gray-500 truncate">{hint}</span>}
+      </span>
+      <ChevronRight className={`w-5 h-5 ${danger ? "text-destructive/40" : "text-gray-300"}`} />
+    </button>
   );
 }

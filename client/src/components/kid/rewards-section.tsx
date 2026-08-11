@@ -5,13 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { 
-  Gift, 
-  Play, 
-  Lock, 
-  Calculator, 
-  Puzzle, 
-  Brain,
+import {
+  Gift,
   IceCream,
   Cookie,
   Clock
@@ -27,47 +22,19 @@ export default function RewardsSection({ childId, userSubscriptionStatus }: Rewa
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const defaultMiniGames = [
-    {
-      id: "word-puzzle",
-      name: "Word Puzzle Adventure",
-      description: "Solve puzzles and learn new words!",
-      icon: "puzzle",
-      unlockRequirement: 2,
-      isActive: true,
-    },
-    {
-      id: "math-hero",
-      name: "Math Hero Challenge",
-      description: "Practice math skills with fun challenges!",
-      icon: "calculator",
-      unlockRequirement: 2,
-      isActive: true,
-    },
-    {
-      id: "memory-master",
-      name: "Memory Master",
-      description: "Test your memory with colorful patterns!",
-      icon: "brain",
-      unlockRequirement: 3,
-      isActive: true,
-    },
-  ];
-
   const { data: rewards } = useQuery({
     queryKey: ["/api/children", childId, "rewards"],
   });
 
-  const { data: miniGames } = useQuery({
-    queryKey: ["/api/mini-games"],
-  });
-
   const { data: rewardClaims } = useQuery({
     queryKey: ["/api/children", childId, "reward-claims"],
+    // Parent approvals must show up without a reload
+    staleTime: 15_000,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
   });
 
   const rewardsArray = Array.isArray(rewards) ? rewards : [];
-  const miniGamesArray = Array.isArray(miniGames) ? miniGames : defaultMiniGames;
   const claimsArray = Array.isArray(rewardClaims) ? rewardClaims : [];
   
   const isPremium = userSubscriptionStatus === 'active';
@@ -129,83 +96,20 @@ export default function RewardsSection({ childId, userSubscriptionStatus }: Rewa
         🎁 Your Rewards
       </h3>
 
-      {/* Available Mini-Games - Only for Premium users */}
-      {isPremium && (
-        <div className="mb-6">
-          <h4 className="font-nunito font-bold mb-3">Play Mini-Games</h4>
-          <div className="space-y-3">
-            {miniGamesArray.map((game, index) => {
-              const isUnlocked = index < 2; // First 2 games unlocked
-              const IconComponent = game.icon === "puzzle" ? Puzzle : game.icon === "calculator" ? Calculator : Brain;
-              const gradientColors = [
-                "from-mint to-turquoise",
-                "from-sky to-blue-500",
-                "from-purple-400 to-purple-600"
-              ];
-
-              if (isUnlocked) {
-                return (
-                  <Button 
-                    key={game.id}
-                    className={`w-full p-4 bg-gradient-to-r ${gradientColors[index]} text-white rounded-xl hover:opacity-80 transition-all transform hover:scale-105`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center">
-                        <IconComponent className="w-6 h-6 mr-3" />
-                        <span className="font-bold">{game.name}</span>
-                      </div>
-                      <Play className="w-5 h-5" />
-                    </div>
-                  </Button>
-                );
-              } else {
-                return (
-                  <div key={game.id} className="w-full p-4 bg-gray-100 text-gray-400 rounded-xl border-2 border-dashed border-gray-300">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Lock className="w-6 h-6 mr-3" />
-                        <span className="font-bold">{game.name} (Complete 3 more habits to unlock)</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Premium Upgrade Message for Free Trial users */}
-      {!isPremium && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-coral to-orange-500 text-white rounded-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Lock className="w-6 h-6 mr-3" />
-              <div>
-                <div className="font-bold">Mini-Games Available with Premium</div>
-                <div className="text-sm opacity-90">Upgrade to unlock educational games!</div>
-              </div>
-            </div>
-            <Button 
-              size="sm"
-              className="bg-white text-coral hover:bg-gray-100"
-              onClick={() => {
-                toast({
-                  title: "Ask your parent!",
-                  description: "Your parent needs to upgrade to Premium to unlock mini-games.",
-                });
-              }}
-              data-testid="button-upgrade-premium"
-            >
-              Upgrade
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Real-World Rewards */}
+      {/* Rewards — every one of these is designed by the child's parent */}
       <div>
-        <h4 className="font-nunito font-bold mb-3">Real-World Rewards</h4>
+        <h4 className="font-nunito font-bold mb-3">My Rewards</h4>
+
+        {rewardsArray.length === 0 && (
+          <div className="text-center py-8 bg-white/50 rounded-lg border-2 border-dashed border-gray-300" data-testid="rewards-empty-state">
+            <Gift className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <p className="font-bold text-gray-600">No rewards yet!</p>
+            <p className="text-sm text-gray-500">
+              Ask your parent to set up rewards you can earn. 🌟
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2">
           {rewardsArray.filter(reward => {
             // Filter out rewards that have been used (don't show them anymore)
@@ -252,7 +156,7 @@ export default function RewardsSection({ childId, userSubscriptionStatus }: Rewa
                 ) : claimStatus === 'approved' ? (
                   <Button
                     size="sm"
-                    className="bg-green-500 text-white hover:bg-green-600"
+                    className="bg-mint text-white hover:bg-mint/80"
                     onClick={() => markRewardAsUsedMutation.mutate(rewardClaim?.id || '')}
                     disabled={markRewardAsUsedMutation.isPending}
                   >

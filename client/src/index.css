@@ -166,10 +166,44 @@ iframe[title*="error"] {
     @apply border-border;
   }
 
+  html {
+    /* Match the app gradient so mobile overscroll / URL-bar resize never
+       exposes a blank white area below the page */
+    background: var(--hero-gradient);
+    overscroll-behavior-y: none;
+
+    /* Safe-area insets. In real Safari env() works; inside the native
+       WebView it reports 0 for remote pages, so App.tsx injects the true
+       device values into --safe-* and those win. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-color: var(--light-bg);
+    background-color: transparent;
     font-family: 'Nunito', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
+    /* Keep content clear of the notch and home indicator while the
+       gradient itself still paints the full screen */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  /* Sticky bars stick below the notch, not under it */
+  .sticky.top-0 {
+    top: var(--safe-top);
+  }
+
+  /* Full-height pages should track the *dynamic* mobile viewport so the
+     gradient always reaches the bottom edge on phones */
+  @supports (min-height: 100dvh) {
+    .hero-gradient.min-h-screen {
+      min-height: 100dvh;
+    }
   }
 }
 
@@ -177,6 +211,15 @@ iframe[title*="error"] {
 @layer utilities {
   .font-fredoka {
     font-family: var(--font-fredoka);
+  }
+
+  /* Hide the scrollbar on horizontal chip/rail scrollers (mobile) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   .emoji {
@@ -432,6 +475,53 @@ iframe[title*="error"] {
     45.5% {
       transform: rotate(2deg);
     }
+  }
+
+  /* Interactive avatar — idle "breathing" bob so the hero feels alive */
+  .avatar-idle {
+    animation: avatarIdle 4s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+
+  @keyframes avatarIdle {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-6px) scale(1.012); }
+  }
+
+  /* One-shot happy squash-and-stretch jump when a kid taps the avatar */
+  .avatar-react {
+    animation: avatarReact 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom center;
+  }
+
+  @keyframes avatarReact {
+    0% { transform: translateY(0) scale(1, 1); }
+    22% { transform: translateY(-2px) scale(1.12, 0.9); }
+    45% { transform: translateY(-24px) scale(0.92, 1.12); }
+    72% { transform: translateY(0) scale(1.08, 0.94); }
+    100% { transform: translateY(0) scale(1, 1); }
+  }
+
+  /* Pop-in for the avatar's speech bubble */
+  .avatar-bubble {
+    animation: avatarBubble 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom center;
+  }
+
+  @keyframes avatarBubble {
+    0% { transform: scale(0.3) translateY(6px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  /* Sparkle/heart bursts that fly up and fade when the avatar is tapped */
+  .avatar-spark {
+    animation: avatarSpark 0.9s ease-out forwards;
+  }
+
+  @keyframes avatarSpark {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-46px) scale(1.2); opacity: 0; }
   }
 
   /* Rainbow text for special elements */

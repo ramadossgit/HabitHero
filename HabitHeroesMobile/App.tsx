@@ -1,202 +1,237 @@
-import React from 'react';
+// Habit Heroes mobile app.
+//
+// The mobile app renders the SAME web application (same landing page,
+// login, signup, dashboard, Game Zone) inside a native WebView shell, so
+// the theme and features always match the website exactly — nothing is
+// duplicated or re-skinned for mobile.
+//
+// The server URL comes from app.json → expo.extra.serverUrl. For a real
+// phone on your network, change it to your machine's LAN address, e.g.
+// "http://192.168.1.20:5000" (Android emulators can use
+// "http://10.0.2.2:5000" to reach the host machine).
+
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  BackHandler,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import Constants from 'expo-constants';
+import { WebView } from 'react-native-webview';
+// react-native's own SafeAreaView is deprecated and iOS-only; this one
+// also honours Android cutouts and provides the insets hook below
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const FALLBACK_URL = 'http://localhost:5000';
+
+export function getServerUrl(): string {
+  const configured = (Constants.expoConfig?.extra as any)?.serverUrl;
+  const base = typeof configured === 'string' && configured.length > 0 ? configured : FALLBACK_URL;
+  // Android emulators cannot reach the host via localhost
+  if (Platform.OS === 'android' && /^https?:\/\/localhost(:|\/|$)/.test(base)) {
+    return base.replace('localhost', '10.0.2.2');
+  }
+  return base;
+}
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <View style={styles.gradient}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Hero Header */}
-          <View style={styles.headerSection}>
-            <Text style={styles.title}>🦸‍♂️ HABIT HEROES 🦸‍♀️</Text>
-            <Text style={styles.subtitle}>Transform daily habits into EPIC adventures!</Text>
-          </View>
+    <SafeAreaProvider>
+      <AppShell />
+    </SafeAreaProvider>
+  );
+}
 
-          {/* Features Grid */}
-          <View style={styles.featuresContainer}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>🎮</Text>
-              <Text style={styles.featureTitle}>Gamified Habits</Text>
-              <Text style={styles.featureDescription}>Turn boring chores into exciting quests!</Text>
-            </View>
+function AppShell() {
+  const webViewRef = useRef<WebView>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const serverUrl = getServerUrl();
+  const insets = useSafeAreaInsets();
 
-            <View style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>🏆</Text>
-              <Text style={styles.featureTitle}>XP & Rewards</Text>
-              <Text style={styles.featureDescription}>Level up and unlock amazing rewards!</Text>
-            </View>
+  // WKWebView reports env(safe-area-inset-*) as 0 for remote pages, so the
+  // page would render under the notch/status bar. Hand the real device
+  // insets to the web app as CSS variables instead.
+  const safeAreaScript = `
+    (function () {
+      var r = document.documentElement;
+      r.style.setProperty('--safe-top', '${Math.round(insets.top)}px');
+      r.style.setProperty('--safe-bottom', '${Math.round(insets.bottom)}px');
+      r.style.setProperty('--safe-left', '${Math.round(insets.left)}px');
+      r.style.setProperty('--safe-right', '${Math.round(insets.right)}px');
+      r.classList.add('native-shell');
+    })();
+    true;
+  `;
 
-            <View style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>👨‍👩‍👧‍👦</Text>
-              <Text style={styles.featureTitle}>Parent Dashboard</Text>
-              <Text style={styles.featureDescription}>Track progress and manage rewards!</Text>
-            </View>
+  // Android hardware back navigates the web app instead of closing it
+  useEffect(() => {
+    const onBack = () => {
+      if (canGoBack) {
+        webViewRef.current?.goBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [canGoBack]);
 
-            <View style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>🎯</Text>
-              <Text style={styles.featureTitle}>Daily Missions</Text>
-              <Text style={styles.featureDescription}>Complete habits to save the day!</Text>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton}>
-              <Text style={styles.buttonText}>🎮 Start Your Hero Journey! ⚡</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>👨‍👩‍👧‍👦 Parent Login</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Coming Soon Features */}
-          <View style={styles.comingSoonSection}>
-            <Text style={styles.comingSoonTitle}>🚀 Coming Soon to Mobile!</Text>
-            <View style={styles.comingSoonList}>
-              <Text style={styles.comingSoonItem}>📱 Push notifications for habit reminders</Text>
-              <Text style={styles.comingSoonItem}>📸 Camera integration for custom avatars</Text>
-              <Text style={styles.comingSoonItem}>🔒 Biometric login (Face ID/Fingerprint)</Text>
-              <Text style={styles.comingSoonItem}>🌍 Offline habit tracking with sync</Text>
-              <Text style={styles.comingSoonItem}>📳 Haptic feedback for achievements</Text>
-            </View>
-          </View>
-        </ScrollView>
+  // react-native-webview is native-only — on web it renders a "not supported"
+  // placeholder. An iframe shows the same page, which is all the shell does.
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        {React.createElement('iframe', {
+          src: serverUrl,
+          title: 'Habit Heroes',
+          style: { width: '100%', height: '100%', border: 'none' },
+        })}
       </View>
-      <StatusBar style="light" />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorScreen}>
+          <Text style={styles.errorEmoji}>🦸</Text>
+          <Text style={styles.errorTitle}>Can't reach Habit Heroes</Text>
+          <Text style={styles.errorDetail}>
+            {serverUrl}
+            {'\n'}
+            {loadError}
+          </Text>
+          <Text style={styles.errorHint}>
+            Make sure the Habit Heroes server is running and that
+            app.json → extra.serverUrl points to it (use your computer's
+            LAN IP when testing on a phone).
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setLoadError(null);
+              setReloadKey((k) => k + 1);
+            }}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    // Full-bleed: the web app paints edge-to-edge (its gradient covers the
+    // notch/home-indicator areas) and pads its own content using the
+    // --safe-* CSS variables injected below, so no native-colored bars show
+    // and nothing hides under the status bar.
+    <View style={styles.container}>
+      <WebView
+        key={reloadKey}
+        ref={webViewRef}
+        source={{ uri: serverUrl }}
+        style={styles.webview}
+        javaScriptEnabled
+        domStorageEnabled
+        sharedCookiesEnabled
+        thirdPartyCookiesEnabled
+        allowsBackForwardNavigationGestures
+        pullToRefreshEnabled
+        contentInsetAdjustmentBehavior="never"
+        injectedJavaScriptBeforeContentLoaded={safeAreaScript}
+        injectedJavaScript={safeAreaScript}
+        onLoadEnd={() => webViewRef.current?.injectJavaScript(safeAreaScript)}
+        onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+        onError={(e) => setLoadError(e.nativeEvent.description || 'Connection failed')}
+        onHttpError={(e) => {
+          if (e.nativeEvent.statusCode >= 500) {
+            setLoadError(`Server error (${e.nativeEvent.statusCode})`);
+          }
+        }}
+        startInLoadingState
+        renderLoading={() => (
+          <View style={styles.loadingScreen}>
+            <Text style={styles.loadingEmoji}>🦸</Text>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text style={styles.loadingText}>Loading Habit Heroes...</Text>
+          </View>
+        )}
+      />
+      <StatusBar style="light" translucent />
     </View>
   );
 }
 
+// Shell chrome matches the web app's coral hero theme
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FF6B6B',
   },
-  gradient: {
+  webview: {
+    flex: 1,
+  },
+  loadingScreen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  loadingEmoji: {
+    fontSize: 56,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  errorScreen: {
     flex: 1,
     backgroundColor: '#FF6B6B',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+  errorEmoji: {
+    fontSize: 56,
   },
-  subtitle: {
-    fontSize: 18,
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  featuresContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 40,
-  },
-  featureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    padding: 20,
-    width: '48%',
-    marginBottom: 15,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  featureEmoji: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+  errorTitle: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
     textAlign: 'center',
   },
-  featureDescription: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  buttonContainer: {
-    marginBottom: 40,
-  },
-  primaryButton: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 25,
-    paddingVertical: 18,
-    paddingHorizontal: 30,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  errorDetail: {
+    color: '#FFE3E3',
+    fontSize: 13,
     textAlign: 'center',
   },
-  secondaryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: 'white',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-  },
-  secondaryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  comingSoonSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 20,
-  },
-  comingSoonTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  comingSoonList: {
-    alignItems: 'flex-start',
-  },
-  comingSoonItem: {
+  errorHint: {
+    color: '#FFFFFF',
     fontSize: 14,
-    color: 'white',
-    marginBottom: 8,
-    paddingLeft: 10,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+  retryButton: {
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+  },
+  retryText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    fontWeight: '800',
   },
 });

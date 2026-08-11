@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "auto_approval_settings" jsonb;

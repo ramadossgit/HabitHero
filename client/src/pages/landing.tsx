@@ -1,155 +1,126 @@
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { 
-  Star, 
-  Trophy, 
-  Heart, 
-  Gamepad2, 
-  Users, 
-  Shield,
+import { getAvatarImage } from "@/lib/avatars";
+import {
+  Star, Trophy, Heart, Gamepad2, Shield, Sparkles, ChevronRight, Check,
 } from "lucide-react";
 
+// Mobile-first landing tuned to fit a phone WITHOUT scrolling: a compact
+// mascot hero, feature chips, two high-contrast entry cards and Start Free
+// Trial — all reachable at a glance on the app's own gradient/palette.
 export default function Landing() {
   const [, setLocation] = useLocation();
 
+  const features = [
+    { icon: Star, label: "Avatars", tint: "bg-coral" },
+    { icon: Trophy, label: "XP & Rewards", tint: "bg-sunshine" },
+    { icon: Heart, label: "Missions", tint: "bg-sky" },
+    { icon: Gamepad2, label: "Mini-Games", tint: "bg-mint" },
+    { icon: Shield, label: "Safe", tint: "bg-purple" },
+  ];
+
   return (
-    <div className="min-h-screen hero-gradient relative overflow-hidden flex flex-col">
-      {/* Background circles REMOVED */}
+    <div className="relative h-[100dvh] hero-gradient overflow-hidden">
+      {/* Soft depth blobs (theme colours) */}
+      <div className="pointer-events-none absolute -top-16 -left-16 w-56 h-56 rounded-full bg-sunshine/30 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/3 -right-20 w-64 h-64 rounded-full bg-coral/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 w-64 h-64 rounded-full bg-mint/30 blur-3xl" />
 
-      <div className="container mx-auto px-4 py-6 relative z-10 flex-1 flex flex-col justify-center">
-        {/* Header with amazing title - More compact */}
-        <div className="text-center mb-8">
-          <div className="bounce-in">
-            <h1 className="font-fredoka text-3xl sm:text-5xl md:text-7xl mb-4 hero-title">
-              Habit Heroes
-            </h1>
-            <div className="inline-block p-2 sm:p-3 magic-gradient rounded-full mb-4 sm:mb-6">
-              <p className="text-base sm:text-lg md:text-xl text-white font-bold px-2 sm:px-3">
-                🚀 Transform habits into epic adventures! 🌟
-              </p>
-            </div>
+      <div className="relative z-10 mx-auto w-full max-w-md h-full px-5 pt-[calc(var(--safe-top)+0.75rem)] pb-[calc(var(--safe-bottom)+1rem)] flex flex-col">
+        {/* Brand */}
+        <div className="flex items-center justify-center gap-2 flex-shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-fredoka text-lg text-white tracking-wide">Habit Heroes</span>
+        </div>
+
+        {/* Hero: compact mascot cluster + headline */}
+        <div className="text-center flex-shrink-0 mt-2">
+          <div className="relative h-24 flex items-end justify-center gap-1">
+            <img src={getAvatarImage("ninja")} alt="Ninja hero" className="w-14 h-14 rounded-full border-[3px] border-white/70 shadow-lg object-cover mb-2 float" />
+            <img src={getAvatarImage("robot")} alt="Robot hero" className="w-20 h-20 rounded-full border-4 border-white shadow-2xl object-cover float" style={{ animationDelay: "0.6s" }} />
+            <img src={getAvatarImage("princess")} alt="Princess hero" className="w-14 h-14 rounded-full border-[3px] border-white/70 shadow-lg object-cover mb-2 float" style={{ animationDelay: "1.2s" }} />
+          </div>
+          <h1 className="font-fredoka text-4xl leading-none text-white drop-shadow-lg mt-1">Habit Heroes</h1>
+          <p className="mt-1.5 text-white/90 font-nunito font-semibold text-base px-2">
+            Turn habits into <span className="text-sunshine font-bold">epic adventures</span> 🚀
+          </p>
+          <div className="inline-flex items-center gap-1.5 mt-2.5 bg-white/15 backdrop-blur-sm border border-white/25 rounded-full px-3.5 py-1">
+            <Check className="w-4 h-4 text-mint" />
+            <span className="text-white text-[13px] font-bold">Free 7-day trial · No card needed</span>
           </div>
         </div>
 
-        {/* Key Features - Compact Icons */}
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8 max-w-4xl mx-auto">
-          <div className="text-center bounce-in">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-coral rounded-full flex items-center justify-center mb-2 mx-auto float">
-              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">Hero Avatars</p>
-          </div>
-
-          <div className="text-center bounce-in" style={{ animationDelay: '0.1s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-turquoise rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '0.5s' }}>
-              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">XP & Rewards</p>
-          </div>
-
-          <div className="text-center bounce-in" style={{ animationDelay: '0.2s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-sky rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '1s' }}>
-              <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">Daily Missions</p>
-          </div>
-
-          <div className="text-center bounce-in" style={{ animationDelay: '0.3s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-mint rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '1.5s' }}>
-              <Gamepad2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">Mini-Games</p>
-          </div>
-
-          <div className="text-center bounce-in" style={{ animationDelay: '0.4s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '2s' }}>
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">Parent Control</p>
-          </div>
-
-          <div className="text-center bounce-in" style={{ animationDelay: '0.5s' }}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple rounded-full flex items-center justify-center mb-2 mx-auto float" style={{ animationDelay: '2.5s' }}>
-              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <p className="text-white font-bold text-xs sm:text-sm">Safe & Secure</p>
+        {/* Feature chips */}
+        <div className="mt-3 -mx-5 px-5 overflow-x-auto no-scrollbar flex-shrink-0">
+          <div className="flex gap-2 w-max mx-auto">
+            {features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div key={f.label} className="flex flex-col items-center gap-1 bg-white/12 backdrop-blur-sm border border-white/15 rounded-2xl px-3 py-2">
+                  <div className={`w-9 h-9 ${f.tint} rounded-xl flex items-center justify-center shadow-md`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-white text-[10px] font-bold whitespace-nowrap">{f.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Main Action Buttons */}
-        <div className="text-center mb-6">
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-2xl mx-auto">
-              <Button 
-                className="super-button text-lg sm:text-xl px-6 sm:px-8 py-4 sm:py-5 wiggle text-white font-bold flex-1 sm:flex-none"
-                style={{ color: 'white' }}
-                onClick={() => setLocation("/kids-login")}
-                data-testid="kids-play-button"
-              >
-                🎮 Kids Play Here! ⚡
-              </Button>
-              <Button 
-                className="super-button text-lg sm:text-xl px-6 sm:px-8 py-4 sm:py-5 wiggle text-white font-bold flex-1 sm:flex-none"
-                style={{ color: 'white' }}
-                onClick={() => setLocation("/parent/auth?mode=login")}
-                data-testid="parents-manage-button"
-              >
-                👨‍👩‍👧‍👦 Parents Manage Here! 
-              </Button>
+        {/* Entry points — pushed to the lower half, always visible */}
+        <div className="mt-auto space-y-2.5 flex-shrink-0">
+          <button
+            onClick={() => setLocation("/kids-login")}
+            data-testid="kids-play-button"
+            className="w-full flex items-center gap-3 bg-white rounded-3xl p-2.5 shadow-2xl active:scale-[0.98] transition-transform text-left"
+          >
+            <img src={getAvatarImage("animal")} alt="Kid hero" className="w-12 h-12 rounded-2xl object-cover flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="font-fredoka text-lg text-gray-800">🎮 Kids Play Here</div>
+              <div className="text-xs text-gray-500 font-semibold">Log in & start your adventure</div>
             </div>
-            <div className="text-white text-base sm:text-lg">
-              <span>New family? </span>
-              <Button 
-                className="super-button font-bold ml-2 text-base sm:text-lg px-4 py-2"
-                onClick={() => setLocation("/parent/auth?mode=register")}
-                data-testid="sign-up-button"
-              >
-                🚀 Start Free Trial
-              </Button>
+            <div className="w-9 h-9 rounded-full hero-gradient flex items-center justify-center flex-shrink-0">
+              <ChevronRight className="w-5 h-5 text-white" />
             </div>
-          </div>
+          </button>
+
+          {/* High-contrast solid Parents card (was low-visibility glass) */}
+          <button
+            onClick={() => setLocation("/parent/auth?mode=login")}
+            data-testid="parents-manage-button"
+            className="w-full flex items-center gap-3 bg-sky rounded-3xl p-2.5 shadow-2xl active:scale-[0.98] transition-transform text-left"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-white/25 flex items-center justify-center flex-shrink-0 text-2xl">👨‍👩‍👧‍👦</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-fredoka text-lg text-white">Parents Manage</div>
+              <div className="text-xs text-white/90 font-semibold">Set habits, rewards & controls</div>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">
+              <ChevronRight className="w-5 h-5 text-white" />
+            </div>
+          </button>
+
+          <Button
+            onClick={() => setLocation("/parent/auth?mode=register")}
+            data-testid="sign-up-button"
+            className="w-full super-button font-bold text-base py-5 rounded-full"
+          >
+            🚀 Start Free Trial
+          </Button>
         </div>
 
-        {/* Quick Value Proposition */}
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="fun-card bg-white/90 backdrop-blur-sm p-4 sm:p-6 bounce-in" style={{ animationDelay: '0.6s' }}>
-            <h2 className="font-fredoka text-xl sm:text-2xl md:text-3xl rainbow-text mb-3">
-              🎉 Join 10,000+ Families Making Habits Fun! 🎉
-            </h2>
-            <p className="text-gray-700 text-sm sm:text-base font-semibold mb-4">
-              Transform boring chores into epic quests! 🦸‍♀️ Create heroes, earn XP, unlock rewards, and level up together! 
-              <br className="hidden sm:block" />
-              <span className="inline-block mt-1">
-                <strong className="text-coral">Free 7-day trial</strong> • No credit card required • Cancel anytime
-              </span>
-            </p>
-            <div className="flex justify-center space-x-2 text-2xl sm:text-3xl">
-              <span className="float">🤖</span>
-              <span className="float" style={{ animationDelay: '0.5s' }}>👸</span>
-              <span className="float" style={{ animationDelay: '1s' }}>🥷</span>
-              <span className="float" style={{ animationDelay: '1.5s' }}>🦄</span>
-              <span className="float" style={{ animationDelay: '2s' }}>🐉</span>
+        {/* Social proof */}
+        <div className="pt-3 text-center flex-shrink-0">
+          <div className="flex items-center justify-center gap-2 text-white/90 text-xs font-semibold">
+            <div className="flex -space-x-2">
+              {["robot", "princess", "ninja", "animal"].map((t) => (
+                <img key={t} src={getAvatarImage(t)} alt="" className="w-6 h-6 rounded-full border-2 border-white object-cover" />
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="mt-6 text-center">
-          <div className="flex justify-center items-center space-x-4 text-white/80 text-sm">
-            <div className="flex items-center">
-              <Shield className="w-4 h-4 mr-1" />
-              <span>COPPA Compliant</span>
-            </div>
-            <div className="hidden sm:block">•</div>
-            <div className="flex items-center">
-              <Star className="w-4 h-4 mr-1" />
-              <span>4.9/5 Rating</span>
-            </div>
-            <div className="hidden sm:block">•</div>
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              <span>10K+ Families</span>
-            </div>
+            <span>Loved by 10,000+ families</span>
+            <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-sunshine text-sunshine" />4.9</span>
           </div>
         </div>
       </div>

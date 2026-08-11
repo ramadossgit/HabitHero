@@ -2,6 +2,14 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+// react-native-web's Animated internals call `global.cancelAnimationFrame`
+// when a running animation is stopped (e.g. exiting a mini-game mid-play).
+// Browsers have no `global`, so without this shim that path throws and
+// unmounts the entire app.
+if (typeof (globalThis as any).global === "undefined") {
+  (globalThis as any).global = globalThis;
+}
+
 // Suppress runtime error modal by intercepting errors globally
 const originalError = console.error;
 console.error = (...args) => {
@@ -91,3 +99,14 @@ observer.observe(document.documentElement, {
 });
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Register the service worker so the app is installable to the home screen
+// and opens instantly. Only in production builds — the Vite dev server
+// serves modules the SW shouldn't cache.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      console.warn("Service worker registration failed:", err);
+    });
+  });
+}

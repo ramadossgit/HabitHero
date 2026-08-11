@@ -118,37 +118,27 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
   const selectedChild = children.find(c => c.id === selectedChildId);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-6xl h-[95vh] overflow-hidden flex flex-col">
-        {/* Header with fixed visibility */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-coral to-sunshine flex-shrink-0 min-h-[80px]">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={onClose} 
-              className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h2 className="font-fredoka text-lg sm:text-2xl hero-title text-gray-800 font-bold">Parent Controls</h2>
-              <p className="text-gray-700 text-xs sm:text-sm font-medium">Manage settings for each child</p>
-            </div>
+    <div className="fixed inset-0 z-50 bg-white flex flex-col" data-testid="parent-controls-sheet">
+      {/* Gradient header — consistent with the app's detail screens */}
+      <div className="hero-gradient text-white px-3 pt-[calc(var(--safe-top)+0.5rem)] pb-4 rounded-b-3xl flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0" aria-label="Back" data-testid="button-back">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-fredoka text-lg truncate">🛡️ Parent Controls</h2>
+            <p className="text-white/85 text-xs truncate">Manage settings for each child</p>
           </div>
-          <Button 
-            variant="ghost" 
-            onClick={onClose} 
-            className="text-gray-800 hover:bg-white/20 p-2 rounded-full bg-white/20 border border-white/30 flex-shrink-0" 
-            data-testid="button-close"
-          >
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0" aria-label="Close" data-testid="button-close">
             <X className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
+      </div>
 
-        <div className="flex h-full flex-1 min-h-0">
-          {/* Child Selector Sidebar - Optimized height */}
-          <div className="w-72 border-r bg-gradient-to-b from-gray-50 to-white flex flex-col">
+        {/* Stacks vertically on phones; two columns only on large screens */}
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+          {/* Child Selector - full width on phones, sidebar on desktop */}
+          <div className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r bg-gradient-to-b from-gray-50 to-white flex flex-col flex-shrink-0">
             <div className="p-4 flex-1 min-h-0">
               <h3 className="font-fredoka text-xl text-gray-800 mb-4 hero-title">Select Child</h3>
               <div className="space-y-2 mb-6">
@@ -211,8 +201,8 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
             </div>
           </div>
 
-          {/* Main Controls Panel - Optimized layout */}
-          <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Main Controls Panel - scrolls with the card on phones */}
+          <div className="flex-1 lg:overflow-hidden flex flex-col">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-lg">Loading controls...</div>
@@ -286,7 +276,6 @@ export default function ParentControlsModal({ isOpen, onClose, children }: Paren
             )}
           </div>
         </div>
-      </Card>
     </div>
   );
 }

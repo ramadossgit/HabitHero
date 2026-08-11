@@ -18,6 +18,7 @@ import {
   Shield
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { SUBSCRIPTION_PLANS } from "@shared/subscription-plans";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
@@ -36,7 +37,15 @@ export default function SubscriptionPage() {
       return response.json();
     },
     onSuccess: (data: any) => {
-      if (data.clientSecret) {
+      if (data.devMode) {
+        // Local development without Stripe: subscription activated directly
+        toast({
+          title: "Premium Activated (dev mode) 🧪",
+          description: "Stripe is not configured, so the subscription was simulated locally.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      } else if (data.clientSecret) {
         // Redirect to payment page with the client secret
         toast({
           title: "Redirecting to Payment",
@@ -45,7 +54,7 @@ export default function SubscriptionPage() {
         setLocation(`/premium-checkout?client_secret=${data.clientSecret}&subscription_id=${data.subscriptionId}`);
       } else {
         toast({
-          title: "Error", 
+          title: "Error",
           description: "Failed to initialize payment. Please try again.",
           variant: "destructive",
         });
@@ -91,57 +100,54 @@ export default function SubscriptionPage() {
   const now = new Date();
   const daysRemaining = trialEndDate ? Math.max(0, Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
-  const plans = [
-    {
-      id: 'monthly',
-      name: 'Premium Monthly',
-      price: '$4.99',
-      period: '/month',
-      description: 'Perfect for trying out Premium features',
+  // Prices come from the single source of truth (shared/subscription-plans).
+  // Only the marketing copy (colour, description, feature bullets) lives here.
+  const planCopy: Record<string, { color: string; description: string; features: string[] }> = {
+    monthly: {
       color: 'sky',
+      description: 'Perfect for trying out Premium features',
       features: [
         'Unlimited Hero Characters',
         'Unlimited Daily Habits',
         'Advanced Progress Reports',
         'Premium Rewards & Avatars',
         'Voice Reminders',
-        'Priority Support'
-      ]
+        'Priority Support',
+      ],
     },
-    {
-      id: 'quarterly',
-      name: 'Premium Quarterly',
-      price: '$12.99',
-      period: '/quarter',
-      description: 'Most popular - Save 35%!',
+    quarterly: {
       color: 'coral',
-      popular: true,
+      description: 'Most popular — great value',
       features: [
         'Everything in Premium',
-        'Save 35% vs Monthly',
         'Quarterly Family Reports',
         'Early Access to New Features',
         'Enhanced Analytics',
-        'Family Challenge Mode'
-      ]
+        'Family Challenge Mode',
+      ],
     },
-    {
-      id: 'yearly',
-      name: 'Premium Yearly',
-      price: '$39.99',
-      period: '/year',
-      description: 'Best value - Save 60%!',
+    yearly: {
       color: 'mint',
+      description: 'Best value for the whole year',
       features: [
         'Everything in Premium',
-        'Save 60% vs Monthly',
         'Exclusive Hero Avatars',
         'Family Sharing Features',
         'Custom Habit Templates',
-        'Premium Support Priority'
-      ]
-    }
-  ];
+        'Premium Support Priority',
+      ],
+    },
+  };
+
+  const plans = SUBSCRIPTION_PLANS.map((p) => ({
+    id: p.id,
+    name: `Premium ${p.name.replace(' Plan', '')}`,
+    price: `$${p.price}`,
+    period: p.interval === 'year' ? '/year' : p.intervalCount > 1 ? '/quarter' : '/month',
+    savings: p.savings,
+    popular: !!p.popular,
+    ...(planCopy[p.id] ?? { color: 'sky', description: '', features: p.features }),
+  }));
 
   return (
     <div className="min-h-screen hero-gradient relative overflow-hidden">

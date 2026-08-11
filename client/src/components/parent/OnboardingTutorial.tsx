@@ -308,7 +308,7 @@ export default function OnboardingTutorial({
               onClick={nextStep}
               className={`flex items-center gap-2 ${
                 currentStep === onboardingSteps.length - 1
-                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  ? "bg-mint hover:bg-mint/80 text-white"
                   : "super-button"
               }`}
             >

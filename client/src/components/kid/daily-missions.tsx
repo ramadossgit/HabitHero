@@ -459,7 +459,7 @@ export default function DailyMissions({ childId }: DailyMissionsProps) {
                       className={`${buttonColor} text-white px-4 py-2 rounded-full font-bold ${hoverButtonColor} transition-colors shadow-lg`}
                       style={{ color: 'white' }}
                       onClick={() => completeMissionMutation.mutate(habit.id)}
-                      disabled={completeMissionMutation.isPending}
+                      disabled={completeMissionMutation.isPending && completeMissionMutation.variables === habit.id}
                       data-testid={`complete-habit-${habit.id}`}
                     >
                       {completeMissionMutation.isPending ? "Completing..." : 

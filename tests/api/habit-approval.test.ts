@@ -1,34 +1,74 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+// @vitest-environment node
+//
+// Integration tests for the habit-approval + auto-approval API, run
+// against the real database (DATABASE_URL from .env). Data is seeded
+// through the storage layer, so assertions exercise the true stack.
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
-import { createServer } from 'http'
 import express from 'express'
 import { registerRoutes } from '../../server/routes'
+import { storage } from '../../server/storage'
+
+const uniq = Date.now()
 
 describe('Habit Approval API', () => {
   let app: express.Application
   let server: any
+  let parentId = ''
+  let childId = ''
+  let habitId = ''
+  let completionId = ''
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    // Seed a real family
+    const parent = await storage.createUser({
+      email: `approval${uniq}@test.local`,
+      password: 'hashed-not-used',
+      firstName: 'Approval',
+      lastName: 'Tester',
+      familyCode: `F${String(uniq).slice(-7)}`,
+    } as any)
+    parentId = parent.id
+
+    const child = await storage.createChild({
+      parentId,
+      name: 'TestKid',
+      avatarType: 'robot',
+      age: 8,
+    } as any)
+    childId = child.id
+
+    const habit = await storage.createHabit({
+      childId,
+      name: 'Test Habit',
+      icon: '⭐',
+      xpReward: 50,
+    } as any)
+    habitId = habit.id
+
+    const completion = await storage.createHabitCompletion({
+      habitId,
+      childId,
+      date: new Date().toISOString().split('T')[0],
+      xpEarned: 50,
+      rewardPointsEarned: 0,
+    } as any)
+    completionId = completion.id
+
+    // App authenticated as the seeded parent (premium for settings tests)
     app = express()
     app.use(express.json())
-    
-    // Mock authentication middleware
-    app.use((req, res, next) => {
-      req.user = {
-        id: 'test-parent-id',
-        subscriptionStatus: 'active'
-      }
+    app.use((req: any, res, next) => {
+      req.user = { ...parent, subscriptionStatus: 'active' }
       req.isAuthenticated = () => true
       next()
     })
-
     server = await registerRoutes(app)
-  })
+  }, 30000)
 
-  afterEach(() => {
-    if (server) {
-      server.close()
-    }
+  afterAll(async () => {
+    if (server) server.close()
+    if (childId) await storage.deleteChild(childId).catch(() => {})
   })
 
   describe('GET /api/pending-habits/all', () => {
@@ -38,48 +78,53 @@ describe('Habit Approval API', () => {
         .expect(200)
 
       expect(Array.isArray(response.body)).toBe(true)
-      if (response.body.length > 0) {
-        expect(response.body[0]).toHaveProperty('completion')
-        expect(response.body[0]).toHaveProperty('child')
-        expect(response.body[0]).toHaveProperty('habit')
-      }
+      expect(response.body.length).toBeGreaterThanOrEqual(1)
+      expect(response.body[0]).toHaveProperty('completion')
+      expect(response.body[0]).toHaveProperty('child')
+      expect(response.body[0]).toHaveProperty('habit')
     })
 
     it('should require authentication', async () => {
       const unauthenticatedApp = express()
       unauthenticatedApp.use(express.json())
-      await registerRoutes(unauthenticatedApp)
+      unauthenticatedApp.use((req: any, res, next) => {
+        req.isAuthenticated = () => false
+        next()
+      })
+      const s = await registerRoutes(unauthenticatedApp)
 
       await request(unauthenticatedApp)
         .get('/api/pending-habits/all')
         .expect(401)
+      s.close()
     })
   })
 
   describe('POST /api/habit-completions/:completionId/approve', () => {
-    it('should approve a habit completion with valid data', async () => {
-      const mockCompletionId = 'test-completion-id'
-      
+    it('should approve a habit completion and award XP + points', async () => {
       const response = await request(app)
-        .post(`/api/habit-completions/${mockCompletionId}/approve`)
-        .send({
-          approvedBy: 'test-parent-id',
-          message: 'Great job!',
-          isAutoApproval: false
-        })
+        .post(`/api/habit-completions/${completionId}/approve`)
+        .send({ message: 'Great job!' })
         .expect(200)
 
-      expect(response.body).toHaveProperty('success', true)
+      expect(response.body.status).toBe('approved')
+
+      const child = await storage.getChild(childId)
+      expect(child!.totalXp).toBe(50)
+      expect(child!.rewardPoints).toBeGreaterThan(0)
     })
 
-    it('should reject approval without required approvedBy field', async () => {
-      const mockCompletionId = 'test-completion-id'
-      
+    it('should reject re-approval of an already reviewed completion', async () => {
       await request(app)
-        .post(`/api/habit-completions/${mockCompletionId}/approve`)
-        .send({
-          message: 'Great job!'
-        })
+        .post(`/api/habit-completions/${completionId}/approve`)
+        .send({ message: 'Again?' })
+        .expect(400)
+    })
+
+    it('should return an error for a non-existent completion', async () => {
+      await request(app)
+        .post('/api/habit-completions/does-not-exist/approve')
+        .send({ message: 'Hello' })
         .expect(400)
     })
   })
@@ -114,6 +159,11 @@ describe('Habit Approval API', () => {
           .expect(200)
 
         expect(response.body).toMatchObject(settingsData)
+
+        // Settings persist for the seeded parent
+        const readBack = await request(app).get('/api/auto-approval-settings').expect(200)
+        expect(readBack.body.enabled).toBe(true)
+        expect(readBack.body.timeValue).toBe(24)
       })
 
       it('should validate timeValue is within acceptable range', async () => {
@@ -150,7 +200,7 @@ describe('Habit Approval API', () => {
         // Mock non-premium user
         const freeUserApp = express()
         freeUserApp.use(express.json())
-        freeUserApp.use((req, res, next) => {
+        freeUserApp.use((req: any, res, next) => {
           req.user = {
             id: 'free-user-id',
             subscriptionStatus: 'free'
@@ -158,7 +208,7 @@ describe('Habit Approval API', () => {
           req.isAuthenticated = () => true
           next()
         })
-        await registerRoutes(freeUserApp)
+        const s = await registerRoutes(freeUserApp)
 
         const settingsData = {
           enabled: true,
@@ -172,6 +222,7 @@ describe('Habit Approval API', () => {
           .put('/api/auto-approval-settings')
           .send(settingsData)
           .expect(403) // Forbidden for free users
+        s.close()
       })
     })
 

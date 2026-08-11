@@ -28,7 +28,7 @@ export default function TrialStatusBanner() {
     return (
       <Card className="fun-card border-4 border-coral bg-gradient-to-r from-coral/10 to-sky/10 mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-coral rounded-full flex items-center justify-center">
                 <Crown className="w-6 h-6 text-white" />
@@ -61,7 +61,7 @@ export default function TrialStatusBanner() {
     return (
       <Card className="fun-card border-4 border-mint bg-gradient-to-r from-mint/10 to-sky/10 mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-mint rounded-full flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-white" />
@@ -76,7 +76,7 @@ export default function TrialStatusBanner() {
                 </p>
               </div>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline"
                 onClick={() => setLocation("/subscription")}
@@ -101,7 +101,7 @@ export default function TrialStatusBanner() {
     return (
       <Card className="fun-card border-4 border-orange-500 bg-gradient-to-r from-orange-500/10 to-coral/10 mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
                 <Clock className="w-6 h-6 text-white" />

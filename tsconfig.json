@@ -18,7 +18,8 @@
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["shared/*"],
-      "@server/*": ["server/*"]
+      "@server/*": ["server/*"],
+      "react-native": ["./node_modules/@types/react-native"]
     }
   }
 }

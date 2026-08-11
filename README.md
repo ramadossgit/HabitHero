@@ -16,6 +16,7 @@ Habit Heroes transforms daily habit tracking into an engaging adventure for kids
 ### ✨ Key Features
 
 - 🎮 **Gamified Experience** - XP, levels, streaks, and achievements
+- 🕹️ **Mini-Game Arcade** - 23 built-in mini-games (quizzes, puzzles, memory, coding, wellness) filtered by the child's age group (3-5, 6-8, 9-12). Kids buy games with reward points earned from habits; every purchase needs parent approval (points are held in escrow and refunded if declined), and each game has 3 unlockable difficulty levels
 - 🦸 **Avatar Customization** - Multiple character types with unlockable gear
 - ✅ **Habit Management** - Create, track, and complete daily habits
 - 🎁 **Reward System** - Parent-configured rewards and approval workflows
@@ -57,23 +58,20 @@ npm run dev
 
 ## 📚 Documentation
 
-### Getting Started
+One document per topic — no duplicates.
 
 | Document | Description |
 |----------|-------------|
-| **[QUICK_START.md](QUICK_START.md)** | ⚡ 5-minute setup guide |
-| **[LOCAL_DEPLOYMENT_GUIDE.md](LOCAL_DEPLOYMENT_GUIDE.md)** | 📘 Complete local deployment instructions |
-| **[DATABASE_SETUP.md](DATABASE_SETUP.md)** | 🗄️ PostgreSQL configuration guide |
-| **[MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)** | 📊 Replit to local migration report |
-
-### Advanced
-
-| Document | Description |
-|----------|-------------|
-| **[DOCKER_SETUP.md](DOCKER_SETUP.md)** | 🐳 Docker deployment guide |
-| **[design_guidelines.md](design_guidelines.md)** | 🎨 UI/UX design standards |
+| **[QUICK_START.md](QUICK_START.md)** | ⚡ Fastest way to run the app locally |
+| **[start-habithero.cmd](start-habithero.cmd)** | 🚀 One-click launcher (DB + server + Expo) |
+| **[docs/LOCAL_DEPLOYMENT_GUIDE.md](docs/LOCAL_DEPLOYMENT_GUIDE.md)** | 📘 Full local deployment |
+| **[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md)** | 🗄️ PostgreSQL configuration |
+| **[docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md)** | 🐳 Docker deployment |
+| **[docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md)** | 🎨 UI/UX design standards |
 | **[docs/TDD_WORKFLOW.md](docs/TDD_WORKFLOW.md)** | 🧪 Testing workflow |
-| **[MOBILE_QUICK_START.md](MOBILE_QUICK_START.md)** | 📱 Mobile app setup |
+| **[HabitHeroesMobile/README.md](HabitHeroesMobile/README.md)** | 📱 Mobile app (iOS/Android) |
+| **[client/src/minigames/README.md](client/src/minigames/README.md)** | 🎮 Add a mini-game or level |
+| **[Mini_game/README.md](Mini_game/README.md)** | 🗃️ Archived original mini-game prototype |
 
 ---
 
@@ -153,6 +151,17 @@ HabitHero/
 
 ## 🔧 Available Scripts
 
+### One-click pilot launcher (Windows)
+
+```bash
+start-habithero.cmd            # database + server + Expo mobile app
+start-habithero.cmd -NoMobile  # backend only
+```
+
+Starts the local database (bootstraps it on first run), the app server,
+updates the mobile app's server URL to this PC's current LAN IP, and opens
+Expo for phones/tablets. See start-habithero.ps1 for details.
+
 ### Development
 
 ```bash
@@ -174,9 +183,30 @@ npm run db:studio        # Open Drizzle Studio (GUI)
 ### Testing
 
 ```bash
-npm test                 # Run unit tests
+npm test                 # Vitest: unit + component + API integration tests
 npm run test:ui          # Run tests with UI
-npm run test:e2e         # Run E2E tests with Playwright
+npm run test:e2e         # Playwright browser E2E (starts the dev server if needed)
+npx playwright test --project=chromium   # E2E on Chromium only (fastest)
+```
+
+Notes:
+- The API integration suite (`tests/api/`) and Playwright E2E run against a
+  real server + database; they skip themselves (vitest) or auto-start the
+  dev server (Playwright) as appropriate.
+- Without `STRIPE_SECRET_KEY`, subscription tests exercise the built-in
+  dev-mode simulation; with a key they exercise the real Stripe flow.
+- `tests/mobile/` is an Appium/WebdriverIO device suite (run via wdio, not
+  vitest).
+
+### Local database
+
+If you don't have a running PostgreSQL that matches `.env`, a project-local
+instance can be created with the PostgreSQL binaries (this repo's `.env`
+points at one on port 5433; data lives in the git-ignored `.localdb/`):
+
+```bash
+"C:\Program Files\PostgreSQLin\pg_ctl.exe" -D .localdb -o "-p 5433" start
+npm run db:push          # apply schema
 ```
 
 ---

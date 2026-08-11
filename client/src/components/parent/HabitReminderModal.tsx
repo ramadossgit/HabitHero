@@ -127,9 +127,9 @@ export default function HabitReminderModal({ isOpen, onClose, habit }: HabitRemi
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-mint to-sky text-white">
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-mint to-sky text-white">
           <div className="flex items-center gap-3">
             <Bell className="w-6 h-6" />
             <div>
